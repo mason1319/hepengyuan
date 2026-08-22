@@ -14,7 +14,7 @@ build/
 
 # Browser checks and temporary files
 output/
+.playwright-cli/
 playwright-report/
 test-results/
 *.tmp
-
