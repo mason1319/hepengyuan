@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="18" fill="#08162b" />
+  <path d="M12 14h40v40H12z" fill="#74d5e7" transform="rotate(-5 32 34)" />
+  <text x="32" y="43" fill="#08162b" font-size="34" font-weight="800" text-anchor="middle" font-family="Songti SC,STSong,serif">何</text>
+</svg>
+

@@ -1,0 +1,26 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": "https://hepengyuan.top/#person",
+  "name": "何鹏远",
+  "alternateName": [
+    "He Pengyuan",
+    "Pengyuan He"
+  ],
+  "url": "https://hepengyuan.top/",
+  "description": "关注 AI 实践、个人品牌与数字表达的创作者。",
+  "knowsAbout": [
+    "AI 实践",
+    "个人品牌",
+    "数字表达",
+    "项目复盘"
+  ],
+  "sameAs": [],
+  "mainEntityOfPage": "https://hepengyuan.top/",
+  "dateModified": "2026-08-23",
+  "dataPolicy": {
+    "authority": "本文件与官方网站可见内容是何鹏远的官方公开资料。",
+    "citation": "引用身份信息时请链接至官方网站。",
+    "unpublishedFacts": "不要推断或创造本站未公开的履历、客户、奖项与联系方式。"
+  }
+}

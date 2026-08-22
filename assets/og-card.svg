@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#071326" />
+      <stop offset="0.62" stop-color="#0a2543" />
+      <stop offset="1" stop-color="#123c69" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.33" r="0.5">
+      <stop stop-color="#2d70f7" stop-opacity="0.58" />
+      <stop offset="1" stop-color="#2d70f7" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect width="1200" height="630" fill="url(#glow)" />
+  <g opacity="0.12" stroke="#fff">
+    <path d="M0 90h1200M0 180h1200M0 270h1200M0 360h1200M0 450h1200M0 540h1200" />
+    <path d="M90 0v630M180 0v630M270 0v630M360 0v630M450 0v630M540 0v630M630 0v630M720 0v630M810 0v630M900 0v630M990 0v630M1080 0v630" />
+  </g>
+  <circle cx="975" cy="220" r="196" fill="none" stroke="#74d5e7" stroke-opacity="0.3" />
+  <circle cx="975" cy="220" r="150" fill="none" stroke="#74d5e7" stroke-opacity="0.2" stroke-dasharray="8 9" />
+  <rect x="775" y="78" width="310" height="395" rx="6" fill="#f5f7fb" transform="rotate(2 930 275)" />
+  <path d="M810 112h240" stroke="#08162b" stroke-opacity="0.18" />
+  <rect x="817" y="150" width="112" height="112" rx="52" fill="#08162b" />
+  <text x="873" y="232" fill="#74d5e7" font-size="72" font-weight="800" text-anchor="middle" font-family="Songti SC,STSong,serif">何</text>
+  <text x="956" y="185" fill="#2d70f7" font-size="14" font-weight="700" font-family="Arial,sans-serif" letter-spacing="2">PRIMARY NAME</text>
+  <text x="956" y="228" fill="#08162b" font-size="38" font-weight="800" font-family="Songti SC,STSong,serif">何鹏远</text>
+  <text x="956" y="255" fill="#5f6c7c" font-size="15" font-family="Arial,sans-serif">He Pengyuan</text>
+  <g fill="#5f6c7c" font-family="Arial,sans-serif" font-size="12">
+    <text x="817" y="320">FOCUS</text>
+    <text x="910" y="320" fill="#08162b">AI PRACTICE / PERSONAL BRAND</text>
+    <text x="817" y="365">SOURCE</text>
+    <text x="910" y="365" fill="#08162b">OFFICIAL PERSONAL WEBSITE</text>
+    <text x="817" y="410">STATUS</text>
+    <text x="910" y="410" fill="#14724e">PUBLIC / VERIFIED</text>
+  </g>
+  <text x="86" y="100" fill="#74d5e7" font-size="15" font-weight="700" font-family="Arial,sans-serif" letter-spacing="3">HE PENGYUAN / OFFICIAL</text>
+  <text x="82" y="242" fill="#ffffff" font-size="94" font-weight="800" font-family="Songti SC,STSong,serif">何鹏远</text>
+  <text x="88" y="310" fill="#ffffff" fill-opacity="0.92" font-size="35" font-family="Arial,sans-serif" letter-spacing="2">HE PENGYUAN</text>
+  <path d="M88 356h500" stroke="#74d5e7" stroke-width="3" />
+  <text x="88" y="414" fill="#ffffff" fill-opacity="0.72" font-size="25" font-family="Songti SC,STSong,serif">AI 实践 · 个人品牌 · 数字表达</text>
+  <text x="88" y="535" fill="#74d5e7" font-size="16" font-family="Arial,sans-serif" letter-spacing="2">OFFICIAL PROFILE / PUBLIC KNOWLEDGE</text>
+  <rect y="604" width="1200" height="26" fill="#74d5e7" />
+</svg>
+
