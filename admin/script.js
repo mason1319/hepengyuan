@@ -1,5 +1,6 @@
 const allowedTypes = new Set([
   "image/jpeg",
+  "image/jpg",
   "image/png",
   "image/webp",
   "image/avif",
@@ -11,6 +12,7 @@ const form = document.querySelector("#upload-form");
 const fileInput = document.querySelector("#media-file");
 const fileDrop = document.querySelector("[data-file-drop]");
 const fileName = document.querySelector("[data-file-name]");
+const fileHelp = document.querySelector("[data-file-help]");
 const altInput = form.elements.alt;
 const submitButton = document.querySelector("[data-submit]");
 const formStatus = document.querySelector("[data-form-status]");
@@ -42,6 +44,74 @@ const LIBRARY_TIMEOUT_MS = 15_000;
 function setStatus(element, message, { error = false } = {}) {
   element.textContent = message;
   if (element === formStatus) element.dataset.error = error ? "true" : "false";
+}
+
+function selectedFileInfo(file) {
+  if (!file) return null;
+  const mimeType = String(file.type || "").trim().toLowerCase();
+  if (!allowedTypes.has(mimeType)) return null;
+  return { mediaType: mimeType.startsWith("image/") ? "image" : "video" };
+}
+
+function validationContainer(control) {
+  if (control === fileInput) return fileDrop;
+  return control.closest(".field, .privacy-check");
+}
+
+function clearValidationState(control) {
+  control?.removeAttribute("aria-invalid");
+  const container = control ? validationContainer(control) : null;
+  if (container) delete container.dataset.invalid;
+}
+
+function validationLabel(control) {
+  if (control === fileInput) return "选择支持的照片或视频";
+  const labels = {
+    slug: "填写公开网址 slug",
+    title: "填写标题",
+    alt: "填写图片替代文字",
+    privacyConfirmed: "勾选隐私检查",
+  };
+  return labels[control.name] || "完成必填项";
+}
+
+function showUploadValidation() {
+  const invalidControls = [...form.elements].filter(
+    (control) => control.willValidate && !control.validity.valid,
+  );
+  invalidControls.forEach((control) => {
+    control.setAttribute("aria-invalid", "true");
+    const container = validationContainer(control);
+    if (container) container.dataset.invalid = "true";
+  });
+  const missing = [...new Set(invalidControls.map(validationLabel))];
+  setStatus(formStatus, `请先完成：${missing.join("、")}。`, { error: true });
+  if (invalidControls.includes(fileInput)) {
+    fileHelp.textContent = fileInput.validationMessage;
+    fileHelp.dataset.error = "true";
+  }
+  form.reportValidity();
+
+  const firstInvalid = invalidControls[0];
+  const firstContainer = firstInvalid ? validationContainer(firstInvalid) : null;
+  window.requestAnimationFrame(() => {
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    firstContainer?.scrollIntoView({ block: "center", behavior });
+    firstInvalid?.focus({ preventScroll: true });
+  });
+}
+
+function refreshUploadValidationStatus() {
+  if (formStatus.dataset.error !== "true") return;
+  const invalidControls = [...form.elements].filter(
+    (control) => control.willValidate && !control.validity.valid,
+  );
+  if (invalidControls.length === 0) {
+    setStatus(formStatus, "必填项已完成，可以上传并保存草稿。");
+    return;
+  }
+  const missing = [...new Set(invalidControls.map(validationLabel))];
+  setStatus(formStatus, `还需：${missing.join("、")}。`, { error: true });
 }
 
 async function apiRequest(path, options = {}) {
@@ -194,9 +264,25 @@ async function createVideoPoster(file) {
 
 function updateFileState() {
   const file = fileInput.files?.[0];
+  const info = selectedFileInfo(file);
+  clearValidationState(fileInput);
+  fileInput.setCustomValidity("");
+  fileHelp.removeAttribute("data-error");
+  fileHelp.textContent = "支持 JPEG / PNG / WebP / AVIF / MP4 / WebM；iPhone HEIC / MOV 请先导出为 JPEG / MP4";
   fileDrop.dataset.active = file ? "true" : "false";
   fileName.textContent = file ? `${file.name} · ${formatBytes(file.size)}` : "选择本地照片或视频";
-  altInput.required = Boolean(file?.type.startsWith("image/"));
+  altInput.required = info?.mediaType === "image";
+
+  if (file && !info) {
+    fileInput.setCustomValidity("文件格式不支持。iPhone HEIC / MOV 请先导出为 JPEG / MP4。");
+    fileInput.setAttribute("aria-invalid", "true");
+    fileDrop.dataset.invalid = "true";
+    fileHelp.textContent = fileInput.validationMessage;
+    fileHelp.dataset.error = "true";
+    setStatus(formStatus, fileInput.validationMessage, { error: true });
+  } else if (file) {
+    setStatus(formStatus, "文件已选择，请填写资料并确认隐私检查。");
+  }
 
   if (file && !form.elements.slug.value) {
     const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
@@ -620,36 +706,50 @@ deleteDialog.addEventListener("close", () => {
   }
 });
 
+form.addEventListener("input", (event) => {
+  const control = event.target;
+  if (!control?.willValidate || !control.validity.valid) return;
+  clearValidationState(control);
+  refreshUploadValidationStatus();
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (uploadInProgress) return;
   const file = fileInput.files?.[0];
+  const info = selectedFileInfo(file);
 
   if (!file) {
     fileInput.setCustomValidity("请选择一个本地照片或视频文件。");
-  } else if (!allowedTypes.has(file.type)) {
-    fileInput.setCustomValidity("只支持 JPEG、PNG、WebP、AVIF、MP4 和 WebM 文件。");
+  } else if (!info) {
+    fileInput.setCustomValidity("文件格式不支持。iPhone HEIC / MOV 请先导出为 JPEG / MP4。");
   } else {
     fileInput.setCustomValidity("");
   }
 
-  if (file && form.elements.category.value === "learning" && !file.type.startsWith("video/")) {
+  if (file && info && form.elements.category.value === "learning" && info.mediaType !== "video") {
     fileInput.setCustomValidity("学习视频分类只接受 MP4 或 WebM 视频。");
   }
 
-  altInput.required = Boolean(file?.type.startsWith("image/"));
-  if (!form.reportValidity() || !file) return;
+  altInput.required = info?.mediaType === "image";
+  [...form.elements].forEach(clearValidationState);
+  if (!form.checkValidity() || !file || !info) {
+    showUploadValidation();
+    return;
+  }
 
   uploadInProgress = true;
   submitButton.disabled = true;
+  submitButton.textContent = "正在处理并上传…";
   form.setAttribute("aria-busy", "true");
-  setStatus(formStatus, "正在创建草稿上传任务…");
-  setProgress(0, file.size, "正在创建上传任务");
 
   try {
+    setStatus(formStatus, "正在创建草稿上传任务…");
+    setProgress(0, file.size, "正在创建上传任务");
     let publicFile = file;
     let posterBlob = null;
     let durationSeconds = null;
-    if (file.type.startsWith("image/")) {
+    if (info.mediaType === "image") {
       setStatus(formStatus, "正在生成去除 EXIF/GPS 的 WebP 公开版…");
       publicFile = await sanitizeImage(file);
     } else {
@@ -679,6 +779,7 @@ form.addEventListener("submit", async (event) => {
   } finally {
     uploadInProgress = false;
     submitButton.disabled = false;
+    submitButton.textContent = "上传并保存草稿";
     form.removeAttribute("aria-busy");
   }
 });
