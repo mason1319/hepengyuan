@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises";
 
 const file = "samples/s1/index.html";
+const cssFile = "samples/s1/styles.css";
 const failures = [];
 let html = "";
+let css = "";
 
 const serviceCards = [
   { id: "consulting", name: "入门咨询", kicker: "问清需求", points: ["需求诊断", "工具建议", "风险提醒"] },
@@ -313,10 +315,185 @@ function hasDuplicateCountIssue(issues, selector) {
   });
 }
 
+function stripCssComments(content) {
+  return content.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+function cssRules(content) {
+  const rules = [];
+  const matcher = /([^{}]+)\{([^{}]*)\}/g;
+  let match;
+
+  while ((match = matcher.exec(stripCssComments(content)))) {
+    rules.push({ selector: match[1].trim(), declarations: match[2].trim() });
+  }
+
+  return rules;
+}
+
+function selectorIncludes(item, selector) {
+  const normalizedSelector = escapeRegExp(selector).replace(/\s+/g, "\\s+");
+  const startsWithSelectorToken = /^[.#[]/.test(selector);
+  const pattern = startsWithSelectorToken
+    ? new RegExp(normalizedSelector + "(?![\\w-])")
+    : new RegExp("(?:^|[^\\w-])" + normalizedSelector + "(?![\\w-])");
+  return pattern.test(item);
+}
+
+function rulesForSelector(content, selector) {
+  return cssRules(content).filter((rule) => (
+    rule.selector
+      .split(",")
+      .map((item) => item.trim())
+      .some((item) => item === selector || selectorIncludes(item, selector))
+  ));
+}
+
+function selectorHasDeclaration(content, selector, declarationPattern) {
+  return rulesForSelector(content, selector).some((rule) => declarationPattern.test(rule.declarations));
+}
+
+function validateStyles(content) {
+  const issues = [];
+  const clean = stripCssComments(content);
+  const tokens = [
+    ["--orange", "#ff5312"],
+    ["--ink", "#111111"],
+    ["--paper", "#fffdf7"],
+    ["--yellow", "#ffce19"],
+    ["--blue", null],
+    ["--purple", null],
+    ["--cream", null],
+  ];
+
+  for (const [token, value] of tokens) {
+    const pattern = value
+      ? new RegExp(escapeRegExp(token) + "\\s*:\\s*" + escapeRegExp(value) + "(?:\\s*;|\\s*$)", "im")
+      : new RegExp(escapeRegExp(token) + "\\s*:\\s*#[0-9a-f]{6}(?:\\s*;|\\s*$)", "im");
+    if (!pattern.test(clean)) issues.push("missing or invalid color token " + token);
+  }
+
+  const requiredSelectors = [
+    ".site-header",
+    ".header-cta",
+    "#mobile-nav",
+    ".comic-bubble",
+    ".hero-portrait",
+    ".portrait-sticker",
+    ".button-primary",
+    ".button-secondary",
+    ".trust-strip ul",
+    ".trust-strip li",
+    ".service-grid",
+    ".service-card",
+    ".service-kicker",
+    ".service-select",
+    ".service-disclaimer",
+    ".process-list",
+    ".process-number",
+    ".faq-list",
+    ".contact-copy",
+  ];
+  for (const selector of requiredSelectors) {
+    if (rulesForSelector(clean, selector).length === 0) issues.push("missing selector " + selector);
+  }
+
+  for (const breakpoint of ["900px", "640px"]) {
+    if (!new RegExp("@media\\s*\\(\\s*max-width\\s*:\\s*" + breakpoint + "\\s*\\)", "i").test(clean)) {
+      issues.push("missing responsive breakpoint " + breakpoint);
+    }
+  }
+
+  const touchSelectors = [".button", ".header-cta", ".menu-toggle", ".service-select", ".contact-copy button", "summary", "#mobile-nav a"];
+  for (const selector of touchSelectors) {
+    if (!selectorHasDeclaration(clean, selector, /min-height\s*:\s*(?:2\.75rem|44px)\b/i)) {
+      issues.push("touch target must have a 44px minimum height: " + selector);
+    }
+  }
+
+  const focusRules = rulesForSelector(clean, ":focus-visible");
+  if (!focusRules.some((rule) => (
+    /outline\s*:\s*(?:2px|3px)\s+solid\s+var\(--ink\)/i.test(rule.declarations)
+    && /box-shadow\s*:\s*0\s+0\s+0\s+(?:3px|4px)\s+var\(--yellow\)/i.test(rule.declarations)
+  ))) {
+    issues.push(":focus-visible must use a black outline and yellow outer ring");
+  }
+
+  if (!selectorHasDeclaration(clean, ".skip-link", /position\s*:\s*fixed/i)
+    || !selectorHasDeclaration(clean, ".skip-link:focus", /transform\s*:\s*translateY\(0\)/i)) {
+    issues.push("skip link must stay off-canvas until focused");
+  }
+
+  if (!selectorHasDeclaration(clean, ".reveal", /opacity\s*:\s*1\b/i)) {
+    issues.push(".reveal must be visible by default");
+  }
+  if (!selectorHasDeclaration(clean, ".js .reveal", /opacity\s*:\s*0\b/i)) {
+    issues.push(".js .reveal must provide the enhanced hidden state");
+  }
+  if (!selectorHasDeclaration(clean, ".js .reveal.is-visible", /opacity\s*:\s*1\b/i)) {
+    issues.push(".js .reveal.is-visible must restore visibility");
+  }
+  if (!/@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)[\s\S]*\.js\s+\.reveal[\s\S]*opacity\s*:\s*1\b/i.test(clean)
+    || !/@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)[\s\S]*(?:animation|transition)\s*:\s*none\b/i.test(clean)) {
+    issues.push("reduced-motion mode must show reveal content without animation");
+  }
+
+  for (const [position, token] of [[1, "--blue"], [2, "--purple"], [3, "--orange"]]) {
+    const selector = ".service-card:nth-child(" + position + ")";
+    if (!rulesForSelector(clean, selector).some((rule) => (
+      rule.declarations.includes("var(" + token + ")")
+      && /box-shadow\s*:/i.test(rule.declarations)
+    ))) {
+      issues.push(selector + " must use its accent token in a hard shadow");
+    }
+  }
+  if (!rulesForSelector(clean, '[data-selected="true"]').some((rule) => (
+    /transform\s*:/i.test(rule.declarations) && /box-shadow\s*:/i.test(rule.declarations)
+  ))) {
+    issues.push("selected service cards need an explicit pressed visual state");
+  }
+
+  if (!/grid-template-areas\s*:\s*["']copy["']\s*["']portrait["']\s*["']actions["']/i.test(clean)) {
+    issues.push("mobile hero must order copy, portrait, then actions");
+  }
+  if (!rulesForSelector(clean, ".hero-copy").some((rule) => /grid-area\s*:\s*copy\b/i.test(rule.declarations))
+    || !rulesForSelector(clean, ".hero-portrait").some((rule) => /grid-area\s*:\s*portrait\b/i.test(rule.declarations))
+    || !rulesForSelector(clean, ".hero-actions").some((rule) => /grid-area\s*:\s*actions\b/i.test(rule.declarations))) {
+    issues.push("hero children must declare named grid areas");
+  }
+  if (!selectorHasDeclaration(clean, ".hero-portrait", /margin-bottom\s*:\s*clamp\(\s*16px\s*,/i)) {
+    issues.push("mobile portrait-to-actions gap must use clamp with a 16px floor");
+  }
+
+  const forbiddenEffects = [
+    [/\b(?:linear|radial|conic)-gradient\s*\(/i, "CSS gradients are forbidden"],
+    [/\bbackdrop-filter\s*:/i, "backdrop-filter is forbidden"],
+  ];
+  for (const [pattern, message] of forbiddenEffects) {
+    if (pattern.test(clean)) issues.push(message);
+  }
+  if (/body[^{}]*\.menu-open[^{}]*\{[^{}]*overflow(?:-[xy])?\s*:\s*(?:hidden|clip)\b/i.test(clean)) {
+    issues.push("body.menu-open must not lock overflow");
+  }
+
+  return issues;
+}
+
 try {
   html = await readFile(file, "utf8");
 } catch {
   failures.push(file + ": missing");
+}
+
+try {
+  css = await readFile(cssFile, "utf8");
+  if (!css.trim()) failures.push(cssFile + ": empty");
+} catch {
+  failures.push(cssFile + ": missing");
+}
+
+if (css.trim()) {
+  for (const issue of validateStyles(css)) failures.push(cssFile + ": " + issue);
 }
 
 if (html) {
@@ -582,8 +759,8 @@ if (html) {
 }
 
 if (failures.length > 0) {
-  console.error("S1 HTML validation failed:\n" + failures.map((item) => "- " + item).join("\n"));
+  console.error("S1 validation failed:\n" + failures.map((item) => "- " + item).join("\n"));
   process.exit(1);
 }
 
-console.log("S1 HTML validation passed: semantic structure and compliance checks.");
+console.log("S1 validation passed: semantic HTML, compliance, and comic CSS checks.");
