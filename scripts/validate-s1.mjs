@@ -618,6 +618,24 @@ function validateStyles(content, options = {}) {
     }
   }
 
+  const genericServiceHover = effectiveDeclarations(rules, ".service-select:hover");
+  const purpleServiceHover = effectiveDeclarations(rules, ".service-card:nth-child(2) .service-select:hover");
+  const selectedServiceHoverSelector = '.service-card[data-selected="true"] .service-select:hover';
+  const selectedServiceHover = effectiveDeclarations(rules, selectedServiceHoverSelector);
+  const purpleHoverOrder = exactRules(rules, ".service-card:nth-child(2) .service-select:hover").at(-1)?.sourceOrder ?? -1;
+  const selectedHoverOrder = exactRules(rules, selectedServiceHoverSelector).at(-1)?.sourceOrder ?? -1;
+  if (genericServiceHover.get("color") !== "var(--ink)") {
+    issues.push("generic service-select hover must use ink text");
+  }
+  if (purpleServiceHover.get("color") !== "var(--paper)") {
+    issues.push("purple service-select hover must use paper text");
+  }
+  if (selectedServiceHover.get("background") !== "var(--yellow)"
+    || selectedServiceHover.get("color") !== "var(--ink)"
+    || selectedHoverOrder <= purpleHoverOrder) {
+    issues.push("selected service-select hover must finish with yellow background and ink text");
+  }
+
   const mobileHero = effectiveDeclarations(rules, ".hero", 640);
   if (!/^"copy"\s+"portrait"\s+"actions"$/i.test(mobileHero.get("grid-template-areas") ?? "")) {
     issues.push("640px mobile hero must finally order copy, portrait, then actions");
@@ -633,15 +651,21 @@ function validateStyles(content, options = {}) {
   }
 
   const mobileStates = [
+    ["html:not(.js) .site-header", "position", "static", "no-JS fallback header must not obscure anchor targets"],
     [".menu-toggle", "display", "none", "no-JS menu toggle must remain hidden"],
     ["#mobile-nav[hidden]", "display", "grid", "no-JS fallback navigation must override hidden and stay visible"],
     ["#mobile-nav", "position", "static", "no-JS fallback navigation must participate in header layout"],
+    [".js .site-header", "position", "sticky", "enhanced header must remain sticky"],
     [".js .menu-toggle", "display", "grid", "enhanced mode must show the menu toggle"],
     [".js #mobile-nav[hidden]", "display", "none", "enhanced mode must hide the collapsed mobile navigation"],
     [".js #mobile-nav", "position", "absolute", "enhanced mobile navigation must open as a compact overlay"],
   ];
-  for (const [selector, property, expected, message] of mobileStates) {
-    if (effectiveDeclarations(rules, selector, 900).get(property) !== expected) issues.push(message);
+  for (const width of [640, 900]) {
+    for (const [selector, property, expected, message] of mobileStates) {
+      if (effectiveDeclarations(rules, selector, width).get(property) !== expected) {
+        issues.push(width + "px: " + message);
+      }
+    }
   }
 
   const forbiddenEffects = [
@@ -679,6 +703,16 @@ function validateStyles(content, options = {}) {
         "body menu lock",
         content + "\nbody.menu-open {overflow-y: clip;}",
         "menu-open state must not lock body overflow",
+      ],
+      [
+        "fallback header dead rule",
+        content + "\n@media (max-width: 900px) {html:not(.js) .site-header {position: sticky;} html:not(.js) .unused .site-header {position: static;}}",
+        "no-JS fallback header must not obscure anchor targets",
+      ],
+      [
+        "service hover dead rule",
+        content + "\n.service-select:hover {color: var(--paper);} .unused .service-select:hover {color: var(--ink);}",
+        "generic service-select hover must use ink text",
       ],
     ];
     for (const [label, sample, expected] of regressions) {

@@ -814,8 +814,17 @@ summary {
 
 .service-select:hover {
   background: var(--card-accent);
-  color: var(--paper);
+  color: var(--ink);
   transform: translate(-2px, -2px);
+}
+
+.service-card:nth-child(2) .service-select:hover {
+  color: var(--paper);
+}
+
+.service-card[data-selected="true"] .service-select:hover {
+  background: var(--yellow);
+  color: var(--ink);
 }
 
 .service-select:active {
@@ -1117,6 +1126,10 @@ summary {
     display: none;
   }
 
+  html:not(.js) .site-header {
+    position: static;
+  }
+
   .menu-toggle {
     display: none;
   }
@@ -1143,6 +1156,7 @@ summary {
   }
 
   .js .site-header {
+    position: sticky;
     grid-template-rows: auto;
   }
 
@@ -1479,7 +1493,7 @@ summary {
   }
 
   .services {
-    padding-top: 2.6rem;
+    padding-top: 1.35rem;
   }
 
   .section-heading {
@@ -1489,6 +1503,14 @@ summary {
 
   .section-heading h2 {
     font-size: clamp(2.25rem, 10.5vw, 3.15rem);
+  }
+
+  .services .section-heading {
+    margin-bottom: 0.65rem;
+  }
+
+  .services .section-heading h2 {
+    font-size: clamp(1.95rem, 8.5vw, 2.6rem);
   }
 
   .section-heading p {
