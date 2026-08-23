@@ -6,7 +6,15 @@ const allowedTypes = new Set([
   "image/avif",
   "video/mp4",
   "video/webm",
+  "video/quicktime",
 ]);
+
+function fileMimeType(file) {
+  const declared = String(file?.type || "").trim().toLowerCase();
+  if (declared) return declared;
+  const extension = String(file?.name || "").split(".").pop()?.toLowerCase();
+  return extension === "mov" ? "video/quicktime" : "";
+}
 
 const form = document.querySelector("#upload-form");
 const fileInput = document.querySelector("#media-file");
@@ -48,7 +56,7 @@ function setStatus(element, message, { error = false } = {}) {
 
 function selectedFileInfo(file) {
   if (!file) return null;
-  const mimeType = String(file.type || "").trim().toLowerCase();
+  const mimeType = fileMimeType(file);
   if (!allowedTypes.has(mimeType)) return null;
   return { mediaType: mimeType.startsWith("image/") ? "image" : "video" };
 }
@@ -268,13 +276,13 @@ function updateFileState() {
   clearValidationState(fileInput);
   fileInput.setCustomValidity("");
   fileHelp.removeAttribute("data-error");
-  fileHelp.textContent = "支持 JPEG / PNG / WebP / AVIF / MP4 / WebM；iPhone HEIC / MOV 请先导出为 JPEG / MP4";
+  fileHelp.textContent = "支持 JPEG / PNG / WebP / AVIF / MP4 / WebM / MOV；iPhone HEIC 仍请先导出为 JPEG";
   fileDrop.dataset.active = file ? "true" : "false";
   fileName.textContent = file ? `${file.name} · ${formatBytes(file.size)}` : "选择本地照片或视频";
   altInput.required = info?.mediaType === "image";
 
   if (file && !info) {
-    fileInput.setCustomValidity("文件格式不支持。iPhone HEIC / MOV 请先导出为 JPEG / MP4。");
+    fileInput.setCustomValidity("文件格式不支持。iPhone HEIC 请先导出为 JPEG；MOV 可直接上传。");
     fileInput.setAttribute("aria-invalid", "true");
     fileDrop.dataset.invalid = "true";
     fileHelp.textContent = fileInput.validationMessage;
@@ -310,7 +318,7 @@ function uploadPayload(file, durationSeconds = null) {
     country: values.get("country"),
     city: values.get("city"),
     capturedOn: values.get("capturedOn"),
-    mimeType: file.type,
+    mimeType: fileMimeType(file),
     fileSize: file.size,
     durationSeconds,
   };
@@ -334,18 +342,19 @@ async function uploadFile(file, metadata, posterBlob = null) {
     body: JSON.stringify(metadata),
   });
   const uploadedParts = [];
+  const mimeType = fileMimeType(file);
 
   let completed = null;
   try {
     for (let partNumber = 1; partNumber <= created.totalParts; partNumber += 1) {
       const start = (partNumber - 1) * created.partSize;
       const end = Math.min(start + created.partSize, file.size);
-      const chunk = file.slice(start, end, file.type);
+      const chunk = file.slice(start, end, mimeType);
       setProgress(start, file.size, `上传分片 ${partNumber} / ${created.totalParts}`);
 
       const part = await apiRequest(
         `/api/admin/uploads/${encodeURIComponent(created.sessionId)}/parts/${partNumber}`,
-        { method: "PUT", body: chunk, headers: { "Content-Type": file.type } },
+        { method: "PUT", body: chunk, headers: { "Content-Type": mimeType } },
       );
       uploadedParts.push(part);
       setProgress(end, file.size, `已完成分片 ${partNumber} / ${created.totalParts}`);
@@ -607,10 +616,10 @@ function renderMediaItem(item) {
     posterButton.addEventListener("click", () => {
       const picker = document.createElement("input");
       picker.type = "file";
-      picker.accept = "video/mp4,video/webm";
+      picker.accept = "video/mp4,video/webm,video/quicktime,.mov";
       picker.addEventListener("change", async () => {
         const localVideo = picker.files?.[0];
-        if (!localVideo || !localVideo.type.startsWith("video/") || rowMutationInProgress || !article.isConnected) return;
+        if (!localVideo || !allowedTypes.has(fileMimeType(localVideo)) || !fileMimeType(localVideo).startsWith("video/") || rowMutationInProgress || !article.isConnected) return;
         setRowMutationBusy(true);
         libraryStatus.textContent = `正在为“${item.title}”重新生成封面…`;
         try {
@@ -722,13 +731,13 @@ form.addEventListener("submit", async (event) => {
   if (!file) {
     fileInput.setCustomValidity("请选择一个本地照片或视频文件。");
   } else if (!info) {
-    fileInput.setCustomValidity("文件格式不支持。iPhone HEIC / MOV 请先导出为 JPEG / MP4。");
+    fileInput.setCustomValidity("文件格式不支持。iPhone HEIC 请先导出为 JPEG；MOV 可直接上传。");
   } else {
     fileInput.setCustomValidity("");
   }
 
   if (file && info && form.elements.category.value === "learning" && info.mediaType !== "video") {
-    fileInput.setCustomValidity("学习视频分类只接受 MP4 或 WebM 视频。");
+    fileInput.setCustomValidity("学习视频分类只接受 MP4、WebM 或 MOV 视频。");
   }
 
   altInput.required = info?.mediaType === "image";
