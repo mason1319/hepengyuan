@@ -21,6 +21,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   background: var(--paper);
 }
@@ -425,7 +429,8 @@ progress::-moz-progress-bar {
 
 .primary-action,
 .publish-action,
-.quiet-action {
+.quiet-action,
+.delete-action {
   min-height: 2.75rem;
   padding: 0.65rem 1rem;
   border-radius: 0.5rem;
@@ -451,7 +456,8 @@ progress::-moz-progress-bar {
 
 .primary-action:disabled,
 .publish-action:disabled,
-.quiet-action:disabled {
+.quiet-action:disabled,
+.delete-action:disabled {
   cursor: wait;
   opacity: 0.55;
 }
@@ -463,6 +469,20 @@ progress::-moz-progress-bar {
   color: var(--blue-dark);
   border: 1px solid var(--line-strong);
   background: #fff;
+}
+
+.delete-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--red);
+  border: 1px solid #e0abab;
+  background: #fff7f7;
+}
+
+.delete-action:hover {
+  border-color: var(--red);
+  background: #fdeaea;
 }
 
 .form-status {
@@ -594,6 +614,11 @@ progress::-moz-progress-bar {
   background: #dff5ec;
 }
 
+.state-pill[data-deleting="true"] {
+  color: #8d2525;
+  background: #fde3e3;
+}
+
 .media-path,
 .media-meta {
   margin: 0.32rem 0 0;
@@ -608,6 +633,7 @@ progress::-moz-progress-bar {
 .media-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.55rem;
 }
 
@@ -628,6 +654,120 @@ progress::-moz-progress-bar {
   color: var(--muted);
   border: 1px dashed var(--line-strong);
   border-radius: 0.75rem;
+}
+
+.delete-dialog {
+  width: min(30rem, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  color: var(--ink);
+  border: 0;
+  border-radius: 1rem;
+  background: transparent;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.delete-dialog::backdrop {
+  background: rgba(7, 24, 46, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.delete-dialog-card {
+  margin: 0;
+  border: 2px solid var(--ink);
+  border-radius: 1rem;
+  background: var(--sheet);
+  box-shadow: 0 10px 0 #711f25, 0 28px 70px rgba(7, 24, 46, 0.34);
+  overflow: hidden;
+}
+
+.delete-dialog-signal {
+  padding: 0.7rem 1.25rem;
+  color: #fff;
+  background: var(--red);
+  font: 900 0.72rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.15em;
+}
+
+.delete-dialog-content {
+  padding: clamp(1.35rem, 4vw, 2rem);
+}
+
+.delete-dialog .section-code {
+  color: var(--red);
+}
+
+.delete-dialog h2 {
+  margin: 0;
+  font-size: clamp(1.65rem, 6vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.delete-dialog-copy {
+  margin: 1rem 0 0;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+.delete-dialog-scope {
+  margin: 1rem 0 0;
+  padding: 0.9rem 1rem 0.9rem 2rem;
+  color: var(--ink-soft);
+  border: 1px solid #e8c1c1;
+  border-radius: 0.65rem;
+  background: #fff7f7;
+  font-size: 0.88rem;
+  line-height: 1.75;
+}
+
+.delete-dialog-busy,
+.delete-dialog-error {
+  margin: 1rem 0 0;
+  padding: 0.8rem 0.9rem;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.delete-dialog-busy {
+  color: var(--blue-dark);
+  border-left: 4px solid var(--blue);
+  background: var(--blue-soft);
+}
+
+.delete-dialog-error {
+  color: #7b1c22;
+  border-left: 4px solid var(--red);
+  background: #fdeaea;
+}
+
+.delete-dialog-actions {
+  margin-top: 1.35rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
+.delete-confirm-action {
+  color: #fff;
+  border-color: #781f25;
+  background: linear-gradient(180deg, #ca4949, #9c292f);
+  box-shadow: 0 5px 0 #68191f;
+  transform: translateY(-2px);
+}
+
+.delete-confirm-action:hover {
+  color: #fff;
+  border-color: #5e151b;
+  background: linear-gradient(180deg, #d65353, #9c292f);
+}
+
+.delete-confirm-action:active {
+  box-shadow: 0 2px 0 #68191f;
+  transform: translateY(1px);
 }
 
 footer {
@@ -729,7 +869,20 @@ footer {
 
   .media-actions {
     grid-column: 1 / -1;
-    justify-content: flex-end;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .media-actions .delete-action {
+    grid-column: 1 / -1;
+  }
+
+  .delete-dialog-actions {
+    flex-direction: column;
+  }
+
+  .delete-dialog-actions > * {
+    width: 100%;
   }
 
   footer {

@@ -4,6 +4,8 @@ import {
   abortMultipartUpload,
   completeMultipartUpload,
   createMultipartUpload,
+  deleteMedia,
+  drainMediaCleanupQueue,
   findPublishedMedia,
   listAdminMedia,
   listPublishedMedia,
@@ -158,6 +160,11 @@ async function handleAdminApi(request, env, identity, baseUrl) {
 
   if (path === "/api/admin/media") {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
+    try {
+      await drainMediaCleanupQueue(env);
+    } catch (error) {
+      console.error("Media cleanup queue drain failed", error);
+    }
     const items = await listAdminMedia(env, baseUrl);
     return jsonResponse({ identity: { email: identity.email }, items });
   }
@@ -207,8 +214,13 @@ async function handleAdminApi(request, env, identity, baseUrl) {
 
   const mediaId = pathSegment(path, "/api/admin/media/");
   if (mediaId) {
-    if (request.method !== "PATCH") return methodNotAllowed(["PATCH"]);
+    if (request.method !== "PATCH" && request.method !== "DELETE") {
+      return methodNotAllowed(["PATCH", "DELETE"]);
+    }
     assertSameOrigin(request, env);
+    if (request.method === "DELETE") {
+      return jsonResponse(await deleteMedia(env, mediaId, identity));
+    }
     const payload = await readJson(request);
     const item = await setMediaStatus(env, mediaId, payload.status, baseUrl);
     return jsonResponse({ item });
@@ -452,6 +464,13 @@ export default {
     } catch (error) {
       return errorResponse(request, error);
     }
+  },
+  async scheduled(_controller, env, ctx) {
+    ctx.waitUntil(
+      drainMediaCleanupQueue(env, 100).catch((error) => {
+        console.error("Scheduled media cleanup queue drain failed", error);
+      }),
+    );
   },
 };
 
