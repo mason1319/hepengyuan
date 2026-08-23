@@ -12,6 +12,7 @@ build/
 *.sqlite
 .wrangler/
 .superpowers/
+.worktrees/
 
 # Browser checks and temporary files
 output/
