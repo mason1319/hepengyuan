@@ -96,35 +96,52 @@ function normalizeVisibleText(content) {
       .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, ""),
   )
     .replace(/<[^>]*>/g, "")
-    .replace(/\s+/gu, "");
+    .replace(/\s+/gu, " ")
+    .trim();
 }
 
-function hasUnnegatedMatch(text, pattern) {
-  const flags = pattern.flags.includes("g") ? pattern.flags : pattern.flags + "g";
-  const matcher = new RegExp(pattern.source, flags);
-  let match;
+function splitClauses(text) {
+  return text.split(/[。！？!?；;，,]+/).map((clause) => clause.trim()).filter(Boolean);
+}
 
-  while ((match = matcher.exec(text))) {
-    const context = text.slice(Math.max(0, match.index - 6), match.index);
-    if (!/(?:不提供|不展示|不会|不保证|不|非|无|未)/.test(context)) return true;
-    if (match[0].length === 0) matcher.lastIndex += 1;
-  }
+function testPattern(text, pattern) {
+  return new RegExp(pattern.source, pattern.flags.replace("g", "")).test(text);
+}
 
-  return false;
+function hasPositiveClause(text, pattern, negationPattern) {
+  return splitClauses(text).some((clause) => (
+    testPattern(clause, pattern) && !testPattern(clause, negationPattern)
+  ));
 }
 
 function findComplianceViolations(content) {
   const visibleText = normalizeVisibleText(content);
   const compliancePatterns = [
-    [/官方充值|官方渠道|OpenAI官方|Anthropic官方|官方授权|官方代理|销量|客户案例|立即支付|购买账号|充值套餐/, "forbidden claim"],
-    [/[$¥￥]\d+(?:[.,]\d+)?|\d+(?:\.\d+)?元|(?:人民币|RMB|CNY)\d+(?:[.,]\d+)?|(?:报价|售价|限时价|套餐价|低至|仅需)(?:(?:人民币|RMB|CNY)|[$¥￥])?\d+(?:[.,]\d+)?/i, "price commitment"],
-    [/即时到账|秒到|\d+(?:秒|分钟|小时|天)(?:内)?到账|\d+h到账|当天到账|永久使用|无限时长/i, "timing or delivery commitment"],
-    [/保证成功|确保成功|包成功|承诺有效|成功率\d+(?:[.,]\d+)?%?|百分百|100%|零风险|绝对安全|问题有保障|永久免费/, "result or guarantee commitment"],
+    {
+      label: "forbidden claim",
+      pattern: /官方充值|官方渠道|OpenAI\s*官方|Anthropic\s*官方|官方授权|官方代理|销量|客户案例|立即支付|购买账号|充值套餐/i,
+      negation: /(?:不提供|不属于|并非|不是|非)\s*(?:任何形式的)?(?:官方充值|官方渠道|OpenAI\s*官方|Anthropic\s*官方|官方授权|官方代理)/i,
+    },
+    {
+      label: "price commitment",
+      pattern: /[$¥￥]\s*\d+(?:[.,]\d+)?|\d+(?:\.\d+)?\s*元|(?:人民币|RMB|CNY)\s*\d+(?:[.,]\d+)?|(?:报价|售价|限时价|套餐价|低至|仅需)\s*(?:(?:人民币|RMB|CNY)\s*|[$¥￥]\s*)?\d+(?:[.,]\d+)?/i,
+      negation: /(?:不展示|不提供|不标注|未公布)(?:任何形式的|任何|公开的|服务中的)?(?:价格|报价|售价|限时价|套餐价|低至|仅需|人民币|RMB|CNY|[$¥￥])/i,
+    },
+    {
+      label: "timing or delivery commitment",
+      pattern: /即时到账|秒到|\d+\s*(?:秒|分钟|小时|天)(?:内)?\s*到账|\d+\s*h\s*到账|当天到账|永久使用|无限时长/i,
+      negation: /(?:不承诺|不提供)(?:任何形式的|任何|相关|上述|服务中的)?(?:即时到账|秒到|\d+\s*(?:秒|分钟|小时|天)(?:内)?\s*到账|\d+\s*h\s*到账|当天到账|永久使用|无限时长)/i,
+    },
+    {
+      label: "result or guarantee commitment",
+      pattern: /保证成功|确保成功|包成功|承诺有效|成功率\s*\d+(?:[.,]\d+)?%?|百分百|100%|零风险|绝对安全|问题有保障|永久免费/i,
+      negation: /不保证成功|(?:不承诺|绝不会)(?:向(?:你|用户|客户|任何人))?(?:作出|给予|提供|承诺)?(?:任何)?(?:形式的)?(?:保证成功|确保成功|包成功|承诺有效)/i,
+    },
   ];
   const violations = [];
 
-  for (const [pattern, label] of compliancePatterns) {
-    if (hasUnnegatedMatch(visibleText, pattern)) violations.push(label);
+  for (const { label, pattern, negation } of compliancePatterns) {
+    if (hasPositiveClause(visibleText, pattern, negation)) violations.push(label);
   }
   return violations;
 }
@@ -275,6 +292,14 @@ function replaceFirst(content, pattern, replacement) {
   return { changed, content: result };
 }
 
+function hasDuplicateCountIssue(issues, selector) {
+  const pattern = new RegExp("^expected exactly one " + escapeRegExp(selector) + " element, found (\\d+)$");
+  return issues.some((issue) => {
+    const match = issue.match(pattern);
+    return match && Number(match[1]) > 1;
+  });
+}
+
 try {
   html = await readFile(file, "utf8");
 } catch {
@@ -323,7 +348,7 @@ if (html) {
     ? extractElements(heroPortrait, "span").filter((span) => (
       hasClass(span.openTag, "portrait-sticker")
       && hasAttribute(span.openTag, "aria-hidden", "true")
-      && normalizeVisibleText(elementText(span)) === "AI×工作流"
+      && normalizeVisibleText(elementText(span)) === "AI × 工作流"
     ))
     : [];
   if (portraitStickers.length !== 1) {
@@ -415,7 +440,7 @@ if (html) {
     }
     if (!extractElements(contactSection, "strong").some((strong) => (
       hasAttribute(strong.openTag, "data-contact-name")
-      && normalizeVisibleText(elementText(strong)) === "TerraSol明远"
+      && normalizeVisibleText(elementText(strong)) === "TerraSol 明远"
     ))) {
       failures.push(file + ": contact data-contact-name must contain TerraSol 明远");
     }
@@ -429,8 +454,9 @@ if (html) {
   }
 
   const complianceRegressions = [
-    ["split claim", "官方<span>渠道</span>，限时价 ¥99，保证成功。", ["forbidden claim", "price commitment", "result or guarantee commitment"]],
-    ["quoted price and delivery", "报价人民币 99，24h 到账，包成功。", ["price commitment", "timing or delivery commitment", "result or guarantee commitment"]],
+    ["split claim", html + "无。官方<span>渠道</span>，限时价 ¥99，保证成功。", ["forbidden claim", "price commitment", "result or guarantee commitment"]],
+    ["quoted price and delivery", html + "无。报价人民币 99，24h 到账，包成功。", ["price commitment", "timing or delivery commitment", "result or guarantee commitment"]],
+    ["unrelated negations", html + "不看别家，报价人民币99；不必久等，24h到账；不用担心，包成功；不用犹豫，官方渠道。", ["forbidden claim", "price commitment", "timing or delivery commitment", "result or guarantee commitment"]],
   ];
   for (const [label, sample, expected] of complianceRegressions) {
     const violations = findComplianceViolations(sample);
@@ -441,7 +467,8 @@ if (html) {
     }
   }
   for (const [label, sample] of [
-    ["negated claims", "不展示价格，不保证成功，不提供即时到账服务。"],
+    ["negated claims", html + "不展示价格，不保证成功，不提供即时到账服务。"],
+    ["long explicit negations", html + "本页面不提供任何形式的官方渠道服务，也绝不会向你承诺保证成功。"],
     ["service disclaimer", "不代售账号；实际范围、周期与费用以双方确认结果为准。"],
     ["independent disclaimer", "何鹏远 / HPY · 独立服务说明页 · 与 OpenAI、Anthropic 无隶属关系。"],
   ]) {
@@ -472,7 +499,7 @@ if (html) {
     );
     if (!duplicateToggleMutation.changed) {
       failures.push(file + ": mobile navigation regression could not insert a second toggle");
-    } else if (!validateMobileNavigation(duplicateToggleMutation.content).some((issue) => issue.includes("[data-menu-toggle] element, found 2"))) {
+    } else if (!hasDuplicateCountIssue(validateMobileNavigation(duplicateToggleMutation.content), "[data-menu-toggle]")) {
       failures.push(file + ": mobile navigation regression did not reject a second toggle");
     }
   }
@@ -484,7 +511,7 @@ if (html) {
     const duplicateNavMutation = replaceFirst(html, exactMobileNav.html, exactMobileNav.html + "<nav id=\"mobile-nav\"></nav>");
     if (!duplicateNavMutation.changed) {
       failures.push(file + ": mobile navigation regression could not insert a second mobile-nav id");
-    } else if (!validateMobileNavigation(duplicateNavMutation.content).some((issue) => issue.includes("[id=mobile-nav] element, found 2"))) {
+    } else if (!hasDuplicateCountIssue(validateMobileNavigation(duplicateNavMutation.content), "[id=mobile-nav]")) {
       failures.push(file + ": mobile navigation regression did not reject a duplicate mobile-nav id");
     }
   }
