@@ -32,7 +32,7 @@
     {
       "binding": "MEDIA_DB",
       "database_name": "hepengyuan-media",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "database_id": "99a911f4-3626-4784-b0f4-129e7238b5ea",
       "migrations_dir": "migrations"
     }
   ],
@@ -44,9 +44,9 @@
   ],
   "vars": {
     "PUBLIC_SITE_URL": "https://hepengyuan.top",
-    "CF_ACCESS_ISSUER": "REPLACE_WITH_CF_ACCESS_ISSUER",
-    "CF_ACCESS_AUD": "REPLACE_WITH_CF_ACCESS_AUD",
-    "ADMIN_EMAILS": "REPLACE_WITH_ADMIN_LOGIN_EMAIL"
+    "CF_ACCESS_ISSUER": "https://green-wave-2b0b.cloudflareaccess.com",
+    "CF_ACCESS_AUD": "6c472d5dca6caba01813c252e51ef8ddadb600b77f8686d4094c0f5e9cb99675",
+    "ADMIN_EMAILS": "653091hepeng@gmail.com"
   },
   "observability": {
     "enabled": true
