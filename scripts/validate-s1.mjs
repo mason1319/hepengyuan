@@ -8,6 +8,7 @@ const failures = [];
 let html = "";
 let css = "";
 let script = "";
+let interactionLoopRegression = null;
 
 const serviceCards = [
   { id: "consulting", name: "入门咨询", kicker: "问清需求", points: ["需求诊断", "工具建议", "风险提醒"] },
@@ -896,10 +897,11 @@ class InteractionEventTarget {
     this.listeners.set(type, listeners);
   }
 
-  async dispatch(type, init = {}) {
+  dispatch(type, init = {}) {
     const event = { ...init, target: init.target ?? this };
     const results = (this.listeners.get(type) ?? []).map((listener) => listener(event));
-    await Promise.all(results.map((result) => Promise.resolve(result)));
+    const pending = results.filter((result) => result && typeof result.then === "function");
+    return pending.length > 0 ? Promise.all(pending) : undefined;
   }
 }
 
@@ -1084,7 +1086,7 @@ function createInteractionFixture(options = {}) {
       writeText(value) {
         clipboardCalls.push(value);
         if (options.clipboardWriteText) return options.clipboardWriteText(value, clipboardCalls.length);
-        return Promise.resolve();
+        return undefined;
       },
     },
   };
@@ -1166,14 +1168,46 @@ function executeInteractionScript(content, options = {}) {
   const context = createContext(fixture.sandbox, {
     name: "s1-interaction-validator",
     codeGeneration: { strings: false, wasm: false },
+    microtaskMode: "afterEvaluate",
   });
 
   try {
     const compiled = new VmScript(content, { filename: scriptFile, displayErrors: false });
     compiled.runInContext(context, { timeout: 200, displayErrors: false });
-    return { ...fixture, error: null };
+    return { ...fixture, context, error: null };
   } catch (error) {
-    return { ...fixture, error };
+    return { ...fixture, context, error };
+  }
+}
+
+function flushInteractionMicrotasks(fixture) {
+  const flush = new VmScript("void 0", { filename: scriptFile + "#microtasks", displayErrors: false });
+  flush.runInContext(fixture.context, { timeout: 200, displayErrors: false });
+}
+
+let interactionDispatchSequence = 0;
+
+async function dispatchInteraction(fixture, target, type, init = {}) {
+  interactionDispatchSequence += 1;
+  const suffix = String(interactionDispatchSequence);
+  const targetKey = "__s1Target" + suffix;
+  const typeKey = "__s1Type" + suffix;
+  const initKey = "__s1Init" + suffix;
+  fixture.context[targetKey] = target;
+  fixture.context[typeKey] = type;
+  fixture.context[initKey] = init;
+
+  try {
+    const invocation = new VmScript(
+      targetKey + ".dispatch(" + typeKey + ", " + initKey + ")",
+      { filename: scriptFile + "#interaction", displayErrors: false },
+    );
+    const result = invocation.runInContext(fixture.context, { timeout: 200, displayErrors: false });
+    return await result;
+  } finally {
+    delete fixture.context[targetKey];
+    delete fixture.context[typeKey];
+    delete fixture.context[initKey];
   }
 }
 
@@ -1189,14 +1223,14 @@ async function validateInteractionBehavior(content) {
   }
 
   try {
-    await baseline.menuToggle.dispatch("click");
+    await dispatchInteraction(baseline, baseline.menuToggle, "click");
     if (baseline.menuToggle.getAttribute("aria-expanded") !== "true"
       || baseline.mobileNav.hidden
       || baseline.menuLabel.textContent !== "关闭导航") {
       issues.push("behavior: menu click must synchronize expanded, hidden, and close-label state");
     }
 
-    await baseline.document.dispatch("keydown", { key: "Escape", target: baseline.document.body });
+    await dispatchInteraction(baseline, baseline.document, "keydown", { key: "Escape", target: baseline.document.body });
     if (baseline.menuToggle.getAttribute("aria-expanded") !== "false"
       || !baseline.mobileNav.hidden
       || baseline.menuLabel.textContent !== "打开导航"
@@ -1207,15 +1241,17 @@ async function validateInteractionBehavior(content) {
     issues.push("behavior: menu interaction threw " + describeInteractionError(error));
   }
 
+  let serviceCorePassed = false;
   try {
-    await baseline.serviceButtons[1].dispatch("click");
+    await dispatchInteraction(baseline, baseline.serviceButtons[1], "click");
     const selectedCards = baseline.serviceCards.filter((card) => card.dataset.selected === "true");
     const pressedButtons = baseline.serviceButtons.filter((button) => button.getAttribute("aria-pressed") === "true");
-    if (selectedCards.length !== 1
-      || selectedCards[0] !== baseline.serviceCards[1]
-      || pressedButtons.length !== 1
-      || pressedButtons[0] !== baseline.serviceButtons[1]
-      || baseline.selectedServiceStatus.textContent !== "当前关注：环境协助") {
+    serviceCorePassed = selectedCards.length === 1
+      && selectedCards[0] === baseline.serviceCards[1]
+      && pressedButtons.length === 1
+      && pressedButtons[0] === baseline.serviceButtons[1]
+      && baseline.selectedServiceStatus.textContent === "当前关注：环境协助";
+    if (!serviceCorePassed) {
       issues.push("behavior: service button click must produce one synchronized selected service");
     }
   } catch (error) {
@@ -1227,7 +1263,7 @@ async function validateInteractionBehavior(content) {
     if (baseline.clipboardCalls.length !== 0) {
       issues.push("behavior: clipboard access must not run during page initialization");
     }
-    await baseline.copyButton.dispatch("click");
+    await dispatchInteraction(baseline, baseline.copyButton, "click");
     clipboardCorePassed = baseline.clipboardCalls.length === 1
       && baseline.clipboardCalls[0] === "TerraSol 明远"
       && baseline.copyStatus.textContent === "已复制：TerraSol 明远";
@@ -1257,15 +1293,25 @@ async function validateInteractionBehavior(content) {
     if (fallback.document.documentElement.classList.contains("js")) {
       issues.push("behavior: " + label + " must remove the js class");
     }
-    try {
-      await fallback.serviceButtons[0].dispatch("click");
-      await fallback.copyButton.dispatch("click");
-      if (fallback.serviceCards[0].dataset.selected !== "true"
-        || fallback.clipboardCalls[0] !== "TerraSol 明远") {
-        issues.push("behavior: " + label + " must not disable independent service and copy interactions");
+    if (serviceCorePassed) {
+      try {
+        await dispatchInteraction(fallback, fallback.serviceButtons[0], "click");
+        if (fallback.serviceCards[0].dataset.selected !== "true") {
+          issues.push("behavior: " + label + " must not disable independent service selection");
+        }
+      } catch (error) {
+        issues.push("behavior: " + label + " independent service interaction threw " + describeInteractionError(error));
       }
-    } catch (error) {
-      issues.push("behavior: " + label + " independent interaction threw " + describeInteractionError(error));
+    }
+    if (clipboardCorePassed) {
+      try {
+        await dispatchInteraction(fallback, fallback.copyButton, "click");
+        if (fallback.clipboardCalls[0] !== "TerraSol 明远") {
+          issues.push("behavior: " + label + " must not disable independent copy interaction");
+        }
+      } catch (error) {
+        issues.push("behavior: " + label + " independent copy interaction threw " + describeInteractionError(error));
+      }
     }
   }
 
@@ -1287,7 +1333,7 @@ async function validateInteractionBehavior(content) {
     let rejectFirstCopy = null;
     const race = executeInteractionScript(content, {
       clipboardWriteText(_value, callNumber) {
-        if (callNumber !== 1) return Promise.resolve();
+        if (callNumber !== 1) return undefined;
         return new Promise((_resolve, reject) => {
           rejectFirstCopy = reject;
         });
@@ -1297,13 +1343,15 @@ async function validateInteractionBehavior(content) {
       issues.push("behavior: repeat-copy setup threw " + describeInteractionError(race.error));
     } else {
       try {
-        const firstCopy = race.copyButton.dispatch("click");
-        const secondCopy = race.copyButton.dispatch("click");
+        const firstCopy = dispatchInteraction(race, race.copyButton, "click");
+        const secondCopy = dispatchInteraction(race, race.copyButton, "click");
         await secondCopy;
         if (typeof rejectFirstCopy !== "function") {
           issues.push("behavior: repeat-copy test did not reach the first clipboard request");
         } else {
           rejectFirstCopy(new Error("late clipboard rejection"));
+          await Promise.resolve();
+          flushInteractionMicrotasks(race);
           await firstCopy;
           if (race.document.execCommandCalls !== 0) {
             issues.push("behavior: a stale rejected copy request must not run fallbackCopy");
@@ -1473,6 +1521,12 @@ async function validateInteractions(content, options = {}) {
         content + '\nserviceCards.forEach((serviceCard) => serviceCard.addEventListener("click", () => {}));',
         "service cards must not be turned into click",
       ],
+      [
+        "synchronous listener loop",
+        content + '\ncopyButton.addEventListener("click", () => { while (true) {} });',
+        "Script execution timed out",
+        1_000,
+      ],
     ];
 
     if (!lazyClipboardMutation.changed || !deadClipboardMutation.changed) {
@@ -1492,10 +1546,19 @@ async function validateInteractions(content, options = {}) {
       );
     }
 
-    for (const [label, sample, expected] of regressions) {
+    for (const [label, sample, expected, maximumDuration] of regressions) {
+      const startedAt = Date.now();
       const mutationIssues = await validateInteractions(sample, { runRegressions: false });
-      if (!mutationIssues.some((issue) => issue.includes(expected))) {
+      const duration = Date.now() - startedAt;
+      const matchingIssue = mutationIssues.find((issue) => issue.includes(expected));
+      if (!matchingIssue) {
         issues.push("JavaScript regression " + label + " was not rejected");
+      }
+      if (maximumDuration !== undefined && duration > maximumDuration) {
+        issues.push("JavaScript regression " + label + " exceeded " + maximumDuration + "ms (took " + duration + "ms)");
+      }
+      if (label === "synchronous listener loop" && matchingIssue) {
+        interactionLoopRegression = { duration, message: matchingIssue };
       }
     }
   }
@@ -1799,3 +1862,11 @@ if (failures.length > 0) {
 }
 
 console.log("S1 validation passed: semantic HTML, compliance, comic CSS, and interaction checks.");
+if (interactionLoopRegression) {
+  console.log(
+    "S1 interaction timeout regression passed in "
+      + interactionLoopRegression.duration
+      + "ms: "
+      + interactionLoopRegression.message,
+  );
+}
