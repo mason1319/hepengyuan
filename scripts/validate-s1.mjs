@@ -2,9 +2,11 @@ import { readFile } from "node:fs/promises";
 
 const file = "samples/s1/index.html";
 const cssFile = "samples/s1/styles.css";
+const scriptFile = "samples/s1/script.js";
 const failures = [];
 let html = "";
 let css = "";
+let script = "";
 
 const serviceCards = [
   { id: "consulting", name: "入门咨询", kicker: "问清需求", points: ["需求诊断", "工具建议", "风险提醒"] },
@@ -737,6 +739,197 @@ function validateStyles(content, options = {}) {
   return issues;
 }
 
+function stripJavaScriptComments(content) {
+  let result = "";
+  let state = "code";
+  let escaped = false;
+
+  for (let index = 0; index < content.length; index += 1) {
+    const character = content[index];
+    const next = content[index + 1];
+
+    if (state === "line-comment") {
+      if (character === "\n" || character === "\r") {
+        result += character;
+        state = "code";
+      } else {
+        result += " ";
+      }
+      continue;
+    }
+
+    if (state === "block-comment") {
+      if (character === "*" && next === "/") {
+        result += "  ";
+        index += 1;
+        state = "code";
+      } else {
+        result += character === "\n" || character === "\r" ? character : " ";
+      }
+      continue;
+    }
+
+    if (state !== "code") {
+      result += character;
+      if (escaped) {
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (
+        (state === "single-quote" && character === "'")
+        || (state === "double-quote" && character === '"')
+        || (state === "template" && character === "`")
+      ) {
+        state = "code";
+      }
+      continue;
+    }
+
+    if (character === "/" && next === "/") {
+      result += "  ";
+      index += 1;
+      state = "line-comment";
+    } else if (character === "/" && next === "*") {
+      result += "  ";
+      index += 1;
+      state = "block-comment";
+    } else {
+      result += character;
+      if (character === "'") state = "single-quote";
+      if (character === '"') state = "double-quote";
+      if (character === "`") state = "template";
+    }
+  }
+
+  return result;
+}
+
+function validateInteractions(content, options = {}) {
+  const { runRegressions = true } = options;
+  const issues = [];
+  const clean = stripJavaScriptComments(content);
+  const source = clean.trim();
+
+  if (!source) return ["empty"];
+
+  if (!/^document\s*\.\s*documentElement\s*\.\s*classList\s*\.\s*add\(\s*["']js["']\s*\)\s*;/u.test(source)) {
+    issues.push("progressive-enhancement class must be the first unconditional statement");
+  }
+
+  const requiredPatterns = [
+    [/document\s*\.\s*querySelector\(\s*["']\[data-menu-toggle\]["']\s*\)/u, "mobile menu toggle hook is missing"],
+    [/document\s*\.\s*querySelector\(\s*["']\[data-mobile-nav\]["']\s*\)/u, "mobile navigation hook is missing"],
+    [/if\s*\(\s*menuToggle\s*&&\s*mobileNav\s*\)/u, "mobile navigation must tolerate missing hooks"],
+    [/querySelector\(\s*["']\.sr-only["']\s*\)/u, "mobile menu accessible label hook is missing"],
+    [/setAttribute\(\s*["']aria-expanded["']/u, "mobile menu aria-expanded synchronization is missing"],
+    [/\.\s*hidden\s*=/u, "mobile navigation hidden synchronization is missing"],
+    [/["']\u6253\u5f00\u5bfc\u822a["']/u, "mobile menu open label is missing"],
+    [/["']\u5173\u95ed\u5bfc\u822a["']/u, "mobile menu close label is missing"],
+    [/addEventListener\(\s*["']keydown["']/u, "Escape keyboard handling is missing"],
+    [/["']Escape["']/u, "Escape keyboard handling is missing"],
+    [/\.\s*focus\s*\(/u, "Escape must restore focus to the menu toggle"],
+    [/document\s*\.\s*addEventListener\(\s*["']click["']/u, "outside-click menu closing is missing"],
+    [/\.\s*contains\s*\(/u, "outside-click containment check is missing"],
+    [/addEventListener\(\s*["']resize["']/u, "desktop resize menu reset is missing"],
+    [/innerWidth\s*>\s*900/u, "desktop resize threshold must be greater than 900px"],
+    [/mobileNav\s*\.\s*addEventListener\(\s*["']click["']/u, "mobile navigation link closing is missing"],
+    [/\.\s*closest\(\s*["']a["']\s*\)/u, "mobile navigation must close from link activation"],
+    [/document\s*\.\s*querySelectorAll\(\s*["']\[data-service-select\]["']\s*\)/u, "service selection button binding is missing"],
+    [/serviceButtons\s*\.\s*forEach\s*\(/u, "service selection buttons are not iterated"],
+    [/button\s*\.\s*addEventListener\(\s*["']click["']/u, "service selection must bind to the button click"],
+    [/\.\s*closest\(\s*["']\[data-service-card\]["']\s*\)/u, "service selection card lookup is missing"],
+    [/document\s*\.\s*querySelectorAll\(\s*["']\[data-service-card\]["']\s*\)/u, "service single-selection reset is missing"],
+    [/\.\s*dataset\s*\.\s*selected\s*=\s*String\s*\(/u, "service card selected state is missing"],
+    [/setAttribute\(\s*["']aria-pressed["']/u, "service button aria-pressed state is missing"],
+    [/\.\s*dataset\s*\.\s*serviceName\b/u, "service-name hook is missing"],
+    [/document\s*\.\s*querySelector\(\s*["']\[data-selected-service\]["']\s*\)/u, "selected-service status hook is missing"],
+    [/`\u5f53\u524d\u5173\u6ce8\uff1a\$\{[^}]+\}`/u, "selected service live copy is missing"],
+    [/document\s*\.\s*querySelector\(\s*["']\[data-copy-contact\]["']\s*\)/u, "copy-contact button hook is missing"],
+    [/document\s*\.\s*querySelector\(\s*["']\[data-contact-name\]["']\s*\)/u, "contact-name hook is missing"],
+    [/document\s*\.\s*querySelector\(\s*["']\[data-copy-status\]["']\s*\)/u, "copy-status hook is missing"],
+    [/contactName\s*\.\s*textContent\s*\.\s*trim\s*\(\s*\)/u, "copy value must come from visible contact-name text"],
+    [/navigator\s*\.\s*clipboard\s*\.\s*writeText\s*\(/u, "Clipboard API action is missing"],
+    [/document\s*\.\s*createElement\(\s*["']textarea["']\s*\)/u, "clipboard fallback textarea is missing"],
+    [/document\s*\.\s*execCommand\(\s*["']copy["']\s*\)/u, "clipboard fallback copy command is missing"],
+    [/catch\s*\{[^}]*fallbackCopy\(\s*value\s*\)/su, "clipboard rejection must invoke the fallback copy path"],
+    [/finally\s*\{[^}]*\.\s*remove\s*\(\s*\)/su, "clipboard fallback must always clean up its temporary node"],
+    [/`\u5df2\u590d\u5236\uff1a\$\{[^}]+\}`/u, "clipboard success status is missing"],
+    [/`\u8bf7\u624b\u52a8\u590d\u5236\uff1a\$\{[^}]+\}`/u, "clipboard manual fallback status is missing"],
+    [/copyRequestId\s*\+=\s*1/u, "repeat-copy request ordering is missing"],
+    [/matchMedia\(\s*["']\(prefers-reduced-motion:\s*reduce\)["']\s*\)/u, "reduced-motion JavaScript guard is missing"],
+    [/IntersectionObserver/u, "IntersectionObserver reveal enhancement is missing"],
+    [/new\s+IntersectionObserver\s*\(/u, "IntersectionObserver construction is missing"],
+    [/querySelectorAll\(\s*["']\.reveal["']\s*\)/u, "reveal hooks are missing"],
+    [/classList\s*\.\s*add\(\s*["']is-visible["']\s*\)/u, "reveal visible state is missing"],
+    [/\.\s*unobserve\s*\(/u, "revealed items must be unobserved"],
+    [/getBoundingClientRect\s*\(/u, "first-viewport reveal safeguard is missing"],
+  ];
+
+  for (const [pattern, message] of requiredPatterns) {
+    if (!pattern.test(clean)) issues.push(message);
+  }
+
+  if (/\b(?:[A-Za-z_$][\w$]*Card|card|article)\s*\.\s*addEventListener\(\s*["'](?:click|keydown)["']/u.test(clean)) {
+    issues.push("service cards must not be turned into click or keyboard controls");
+  }
+  if (/\bpreventDefault\s*\(/u.test(clean)) {
+    issues.push("scripts must not intercept normal anchor navigation");
+  }
+  if (/\bmenu-open\b/iu.test(clean)) {
+    issues.push("scripts must not add a menu-open class to html or body");
+  }
+  const overflowMutation = /\boverflow(?:-x|-y|X|Y)?\b[^;\n]{0,180}\b(?:hidden|clip)\b/iu;
+  if (overflowMutation.test(clean)) {
+    issues.push("scripts must not lock page overflow");
+  }
+
+  if (runRegressions && issues.length === 0) {
+    const regressions = [
+      [
+        "comment-only spoof",
+        "/* document.documentElement.classList.add(\"js\"); data-menu-toggle aria-pressed navigator.clipboard.writeText IntersectionObserver prefers-reduced-motion */",
+        "empty",
+      ],
+      [
+        "wrapped initializer",
+        content.replace(
+          /^\s*document\s*\.\s*documentElement\s*\.\s*classList\s*\.\s*add\(\s*["']js["']\s*\)\s*;/u,
+          'try { document.documentElement.classList.add("js"); } catch {}',
+        ),
+        "first unconditional statement",
+      ],
+      [
+        "menu-open mutation",
+        content + '\ndocument.body.classList.add("menu-open");',
+        "must not add a menu-open class",
+      ],
+      [
+        "overflow-lock mutation",
+        content + '\ndocument.documentElement.style.overflow = "hidden";',
+        "must not lock page overflow",
+      ],
+      [
+        "object overflow-lock mutation",
+        content + '\nObject.assign(document.body.style, { overflow: "clip" });',
+        "must not lock page overflow",
+      ],
+      [
+        "service-card click mutation",
+        content + '\nserviceCards.forEach((serviceCard) => serviceCard.addEventListener("click", () => {}));',
+        "service cards must not be turned into click",
+      ],
+    ];
+
+    for (const [label, sample, expected] of regressions) {
+      if (!validateInteractions(sample, { runRegressions: false }).some((issue) => issue.includes(expected))) {
+        issues.push("JavaScript regression " + label + " was not rejected");
+      }
+    }
+  }
+
+  return issues;
+}
+
 try {
   html = await readFile(file, "utf8");
 } catch {
@@ -750,8 +943,19 @@ try {
   failures.push(cssFile + ": missing");
 }
 
+try {
+  script = await readFile(scriptFile, "utf8");
+  if (!script.trim()) failures.push(scriptFile + ": empty");
+} catch {
+  failures.push(scriptFile + ": missing");
+}
+
 if (css.trim()) {
   for (const issue of validateStyles(css)) failures.push(cssFile + ": " + issue);
+}
+
+if (script.trim()) {
+  for (const issue of validateInteractions(script)) failures.push(scriptFile + ": " + issue);
 }
 
 if (html) {
@@ -1021,4 +1225,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("S1 validation passed: semantic HTML, compliance, and comic CSS checks.");
+console.log("S1 validation passed: semantic HTML, compliance, comic CSS, and interaction checks.");
