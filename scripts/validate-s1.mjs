@@ -319,150 +319,329 @@ function stripCssComments(content) {
   return content.replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-function cssRules(content) {
-  const rules = [];
-  const matcher = /([^{}]+)\{([^{}]*)\}/g;
-  let match;
+function scanCssUntil(content, start, targets) {
+  let quote = null;
+  let escaped = false;
+  let parentheses = 0;
+  let brackets = 0;
 
-  while ((match = matcher.exec(stripCssComments(content)))) {
-    rules.push({ selector: match[1].trim(), declarations: match[2].trim() });
+  for (let index = start; index < content.length; index += 1) {
+    const character = content[index];
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (character === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character === "(") parentheses += 1;
+    if (character === ")") parentheses = Math.max(0, parentheses - 1);
+    if (character === "[") brackets += 1;
+    if (character === "]") brackets = Math.max(0, brackets - 1);
+    if (parentheses === 0 && brackets === 0 && targets.has(character)) return index;
   }
 
+  return -1;
+}
+
+function findClosingBrace(content, openingIndex) {
+  let depth = 1;
+  let quote = null;
+  let escaped = false;
+
+  for (let index = openingIndex + 1; index < content.length; index += 1) {
+    const character = content[index];
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (character === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+    } else if (character === "{") {
+      depth += 1;
+    } else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+
+  return -1;
+}
+
+function splitCssOutside(content, delimiter) {
+  const parts = [];
+  let cursor = 0;
+  let next = scanCssUntil(content, cursor, new Set([delimiter]));
+  while (next !== -1) {
+    parts.push(content.slice(cursor, next));
+    cursor = next + 1;
+    next = scanCssUntil(content, cursor, new Set([delimiter]));
+  }
+  parts.push(content.slice(cursor));
+  return parts;
+}
+
+function normalizeCssSelector(selector) {
+  return selector.trim().replace(/\s+/g, " ");
+}
+
+function parseCssDeclarations(content) {
+  const declarations = new Map();
+  for (const rawDeclaration of splitCssOutside(content, ";")) {
+    const colon = scanCssUntil(rawDeclaration, 0, new Set([":"]));
+    if (colon === -1) continue;
+    const property = rawDeclaration.slice(0, colon).trim().toLowerCase();
+    const value = rawDeclaration.slice(colon + 1).trim();
+    if (property && value) declarations.set(property, value);
+  }
+  return declarations;
+}
+
+function parseCssRules(content) {
+  const clean = stripCssComments(content);
+  const rules = [];
+  const order = { value: 0 };
+
+  function parseBlock(block, media) {
+    let cursor = 0;
+    while (cursor < block.length) {
+      const boundary = scanCssUntil(block, cursor, new Set(["{", ";"]));
+      if (boundary === -1) {
+        if (block.slice(cursor).trim()) throw new Error("unexpected trailing CSS");
+        break;
+      }
+      if (block[boundary] === ";") {
+        cursor = boundary + 1;
+        continue;
+      }
+
+      const prelude = block.slice(cursor, boundary).trim();
+      const closing = findClosingBrace(block, boundary);
+      if (closing === -1) throw new Error("unbalanced CSS block: " + prelude.slice(0, 60));
+      const body = block.slice(boundary + 1, closing);
+
+      if (/^@media\b/i.test(prelude)) {
+        parseBlock(body, [...media, prelude.replace(/^@media\s*/i, "").trim()]);
+      } else if (/^@(supports|layer|container|document)\b/i.test(prelude)) {
+        parseBlock(body, media);
+      } else if (!prelude.startsWith("@")) {
+        const declarations = parseCssDeclarations(body);
+        const sourceOrder = order.value;
+        order.value += 1;
+        for (const selector of splitCssOutside(prelude, ",").map(normalizeCssSelector).filter(Boolean)) {
+          rules.push({ selector, declarations, media: [...media], sourceOrder });
+        }
+      }
+
+      cursor = closing + 1;
+    }
+  }
+
+  parseBlock(clean, []);
   return rules;
 }
 
-function selectorIncludes(item, selector) {
-  const normalizedSelector = escapeRegExp(selector).replace(/\s+/g, "\\s+");
-  const startsWithSelectorToken = /^[.#[]/.test(selector);
-  const pattern = startsWithSelectorToken
-    ? new RegExp(normalizedSelector + "(?![\\w-])")
-    : new RegExp("(?:^|[^\\w-])" + normalizedSelector + "(?![\\w-])");
-  return pattern.test(item);
+function mediaApplies(rule, width, reducedMotion = false) {
+  return rule.media.every((condition) => {
+    if (/prefers-reduced-motion\s*:\s*reduce/i.test(condition)) return reducedMotion;
+    if (/prefers-reduced-motion/i.test(condition)) return false;
+    if (/\bprint\b/i.test(condition)) return false;
+    const maximums = [...condition.matchAll(/max-width\s*:\s*(\d+(?:\.\d+)?)px/gi)].map((match) => Number(match[1]));
+    const minimums = [...condition.matchAll(/min-width\s*:\s*(\d+(?:\.\d+)?)px/gi)].map((match) => Number(match[1]));
+    return maximums.every((maximum) => width <= maximum) && minimums.every((minimum) => width >= minimum);
+  });
 }
 
-function rulesForSelector(content, selector) {
-  return cssRules(content).filter((rule) => (
-    rule.selector
-      .split(",")
-      .map((item) => item.trim())
-      .some((item) => item === selector || selectorIncludes(item, selector))
-  ));
+function exactRules(rules, selector) {
+  const normalized = normalizeCssSelector(selector);
+  return rules.filter((rule) => rule.selector === normalized);
 }
 
-function selectorHasDeclaration(content, selector, declarationPattern) {
-  return rulesForSelector(content, selector).some((rule) => declarationPattern.test(rule.declarations));
+function effectiveDeclarations(rules, selector, width = 1440, reducedMotion = false) {
+  const declarations = new Map();
+  for (const rule of exactRules(rules, selector).filter((item) => mediaApplies(item, width, reducedMotion))) {
+    for (const [property, value] of rule.declarations) declarations.set(property, value);
+  }
+  return declarations;
 }
 
-function validateStyles(content) {
+function hasMediaMaximum(rule, width) {
+  return rule.media.some((condition) => new RegExp("max-width\\s*:\\s*" + width + "px", "i").test(condition));
+}
+
+function isHardOverflowLock(value) {
+  return /^(?:hidden|clip)(?:\s*!important)?$/i.test(value ?? "");
+}
+
+function isMenuOpenBodySelector(selector) {
+  return /body\.menu-open(?:\b|[.#[:])/i.test(selector)
+    || /\.menu-open(?:\b|[.#[:])[^,{]*[\s>+~]body(?:\b|[.#[:])/i.test(selector);
+}
+
+function validateStyles(content, options = {}) {
+  const { runRegressions = true } = options;
   const issues = [];
   const clean = stripCssComments(content);
+  let rules = [];
+
+  try {
+    rules = parseCssRules(content);
+  } catch (error) {
+    return ["CSS parser error: " + error.message];
+  }
+
   const tokens = [
     ["--orange", "#ff5312"],
     ["--ink", "#111111"],
     ["--paper", "#fffdf7"],
     ["--yellow", "#ffce19"],
-    ["--blue", null],
-    ["--purple", null],
-    ["--cream", null],
+    ["--blue", "#2e7eea"],
+    ["--purple", "#7239dd"],
+    ["--cream", "#f7f1e7"],
   ];
-
+  const rootDeclarations = effectiveDeclarations(rules, ":root");
   for (const [token, value] of tokens) {
-    const pattern = value
-      ? new RegExp(escapeRegExp(token) + "\\s*:\\s*" + escapeRegExp(value) + "(?:\\s*;|\\s*$)", "im")
-      : new RegExp(escapeRegExp(token) + "\\s*:\\s*#[0-9a-f]{6}(?:\\s*;|\\s*$)", "im");
-    if (!pattern.test(clean)) issues.push("missing or invalid color token " + token);
+    if (rootDeclarations.get(token) !== value) issues.push("color token " + token + " must be exactly " + value);
   }
 
   const requiredSelectors = [
-    ".site-header",
-    ".header-cta",
-    "#mobile-nav",
-    ".comic-bubble",
-    ".hero-portrait",
-    ".portrait-sticker",
-    ".button-primary",
-    ".button-secondary",
-    ".trust-strip ul",
-    ".trust-strip li",
-    ".service-grid",
-    ".service-card",
-    ".service-kicker",
-    ".service-select",
-    ".service-disclaimer",
-    ".process-list",
-    ".process-number",
-    ".faq-list",
-    ".contact-copy",
+    ".site-header", ".brand", ".desktop-nav", ".header-cta", ".menu-toggle", "#mobile-nav",
+    ".hero", ".hero-copy", ".hero-actions", ".burst-lines", ".comic-bubble", ".hero-portrait", ".portrait-sticker",
+    ".button", ".button-primary", ".button-secondary", ".trust-strip", ".trust-strip ul", ".trust-strip li",
+    ".services", ".section-heading", ".service-grid", ".service-card", ".service-kicker", ".service-select", ".service-disclaimer",
+    ".process", ".process-list", ".process-number", ".faq", ".faq-list", ".contact", ".contact-copy",
   ];
   for (const selector of requiredSelectors) {
-    if (rulesForSelector(clean, selector).length === 0) issues.push("missing selector " + selector);
+    if (exactRules(rules, selector).length === 0) issues.push("missing exact selector-list entry " + selector);
   }
 
-  for (const breakpoint of ["900px", "640px"]) {
-    if (!new RegExp("@media\\s*\\(\\s*max-width\\s*:\\s*" + breakpoint + "\\s*\\)", "i").test(clean)) {
-      issues.push("missing responsive breakpoint " + breakpoint);
-    }
+  for (const width of [900, 640]) {
+    if (!rules.some((rule) => hasMediaMaximum(rule, width))) issues.push("missing responsive breakpoint " + width + "px");
   }
 
-  const touchSelectors = [".button", ".header-cta", ".menu-toggle", ".service-select", ".contact-copy button", "summary", "#mobile-nav a"];
+  const touchSelectors = [".brand", ".button", ".header-cta", ".menu-toggle", ".service-select", ".contact-copy button", "summary", "#mobile-nav a"];
   for (const selector of touchSelectors) {
-    if (!selectorHasDeclaration(clean, selector, /min-height\s*:\s*(?:2\.75rem|44px)\b/i)) {
-      issues.push("touch target must have a 44px minimum height: " + selector);
+    const minimumHeight = effectiveDeclarations(rules, selector).get("min-height");
+    if (!/^(?:2\.75rem|44px)$/i.test(minimumHeight ?? "")) {
+      issues.push("touch target must have an explicit 44px minimum height: " + selector);
     }
   }
 
-  const focusRules = rulesForSelector(clean, ":focus-visible");
-  if (!focusRules.some((rule) => (
-    /outline\s*:\s*(?:2px|3px)\s+solid\s+var\(--ink\)/i.test(rule.declarations)
-    && /box-shadow\s*:\s*0\s+0\s+0\s+(?:3px|4px)\s+var\(--yellow\)/i.test(rule.declarations)
-  ))) {
-    issues.push(":focus-visible must use a black outline and yellow outer ring");
+  for (const selector of ["a", "button"]) {
+    if (effectiveDeclarations(rules, selector).get("touch-action") !== "manipulation") {
+      issues.push(selector + " must set touch-action: manipulation");
+    }
   }
 
-  if (!selectorHasDeclaration(clean, ".skip-link", /position\s*:\s*fixed/i)
-    || !selectorHasDeclaration(clean, ".skip-link:focus", /transform\s*:\s*translateY\(0\)/i)) {
+  const typographySelectors = [".desktop-nav", ".header-cta", ".button", ".service-select", "#mobile-nav a", ".contact-copy button"];
+  for (const selector of typographySelectors) {
+    const declarations = effectiveDeclarations(rules, selector);
+    for (const property of ["font-size", "font-weight", "line-height"]) {
+      if (!declarations.has(property)) issues.push(selector + " must explicitly set " + property);
+    }
+  }
+
+  const focusDeclarations = effectiveDeclarations(rules, ":focus-visible");
+  const focusRules = exactRules(rules, ":focus-visible").filter((rule) => mediaApplies(rule, 1440));
+  const finalFocusOrder = focusRules.at(-1)?.sourceOrder ?? -1;
+  const finalComponentOrder = Math.max(...rules.filter((rule) => (
+    [".header-cta", ".button", ".menu-toggle", ".service-select", ".contact-copy button"].includes(rule.selector)
+  )).map((rule) => rule.sourceOrder));
+  if (!/^(?:2px|3px)\s+solid\s+var\(--ink\)$/i.test(focusDeclarations.get("outline") ?? "")
+    || !/^0\s+0\s+0\s+(?:3px|4px)\s+var\(--yellow\)\s*!important$/i.test(focusDeclarations.get("box-shadow") ?? "")
+    || !/^none\s*!important$/i.test(focusDeclarations.get("transition") ?? "")
+    || finalFocusOrder <= finalComponentOrder) {
+    issues.push(":focus-visible must finish the cascade with an immediate black outline and !important yellow outer ring");
+  }
+
+  const skipLink = effectiveDeclarations(rules, ".skip-link");
+  const focusedSkipLink = effectiveDeclarations(rules, ".skip-link:focus");
+  if (skipLink.get("position") !== "fixed" || focusedSkipLink.get("transform") !== "translateY(0)") {
     issues.push("skip link must stay off-canvas until focused");
   }
 
-  if (!selectorHasDeclaration(clean, ".reveal", /opacity\s*:\s*1\b/i)) {
+  if (effectiveDeclarations(rules, ".reveal").get("opacity") !== "1") {
     issues.push(".reveal must be visible by default");
   }
-  if (!selectorHasDeclaration(clean, ".js .reveal", /opacity\s*:\s*0\b/i)) {
+  if (effectiveDeclarations(rules, ".js .reveal").get("opacity") !== "0") {
     issues.push(".js .reveal must provide the enhanced hidden state");
   }
-  if (!selectorHasDeclaration(clean, ".js .reveal.is-visible", /opacity\s*:\s*1\b/i)) {
+  if (effectiveDeclarations(rules, ".js .reveal.is-visible").get("opacity") !== "1") {
     issues.push(".js .reveal.is-visible must restore visibility");
   }
-  if (!/@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)[\s\S]*\.js\s+\.reveal[\s\S]*opacity\s*:\s*1\b/i.test(clean)
-    || !/@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)[\s\S]*(?:animation|transition)\s*:\s*none\b/i.test(clean)) {
+  const reducedReveal = effectiveDeclarations(rules, ".js .reveal", 1440, true);
+  const reducedUniversal = effectiveDeclarations(rules, "*", 1440, true);
+  if (reducedReveal.get("opacity") !== "1"
+    || !/^none\s*!important$/i.test(reducedUniversal.get("animation") ?? "")
+    || !/^none\s*!important$/i.test(reducedUniversal.get("transition") ?? "")) {
     issues.push("reduced-motion mode must show reveal content without animation");
   }
 
   for (const [position, token] of [[1, "--blue"], [2, "--purple"], [3, "--orange"]]) {
-    const selector = ".service-card:nth-child(" + position + ")";
-    if (!rulesForSelector(clean, selector).some((rule) => (
-      rule.declarations.includes("var(" + token + ")")
-      && /box-shadow\s*:/i.test(rule.declarations)
-    ))) {
-      issues.push(selector + " must use its accent token in a hard shadow");
+    const declarations = effectiveDeclarations(rules, ".service-card:nth-child(" + position + ")");
+    if (declarations.get("--card-accent") !== "var(" + token + ")"
+      || !/var\(--(?:blue|purple|orange)\)/.test(declarations.get("box-shadow") ?? "")) {
+      issues.push("service card " + position + " must use its approved accent in a hard shadow");
     }
   }
-  if (!rulesForSelector(clean, '[data-selected="true"]').some((rule) => (
-    /transform\s*:/i.test(rule.declarations) && /box-shadow\s*:/i.test(rule.declarations)
-  ))) {
+  const selectedCard = effectiveDeclarations(rules, '.service-card[data-selected="true"]');
+  if (!selectedCard.has("transform") || !selectedCard.has("box-shadow")) {
     issues.push("selected service cards need an explicit pressed visual state");
   }
 
-  if (!/grid-template-areas\s*:\s*["']copy["']\s*["']portrait["']\s*["']actions["']/i.test(clean)) {
-    issues.push("mobile hero must order copy, portrait, then actions");
+  for (const selector of [".header-cta", ".button-primary", "#mobile-nav a:last-child", ".contact-copy button"]) {
+    if (effectiveDeclarations(rules, selector).get("color") !== "var(--ink)") {
+      issues.push(selector + " must use ink text on orange");
+    }
   }
-  if (!rulesForSelector(clean, ".hero-copy").some((rule) => /grid-area\s*:\s*copy\b/i.test(rule.declarations))
-    || !rulesForSelector(clean, ".hero-portrait").some((rule) => /grid-area\s*:\s*portrait\b/i.test(rule.declarations))
-    || !rulesForSelector(clean, ".hero-actions").some((rule) => /grid-area\s*:\s*actions\b/i.test(rule.declarations))) {
+  const kickerColors = [
+    [".service-card:nth-child(1) .service-kicker", "var(--ink)"],
+    [".service-card:nth-child(2) .service-kicker", "var(--paper)"],
+    [".service-card:nth-child(3) .service-kicker", "var(--ink)"],
+  ];
+  for (const [selector, color] of kickerColors) {
+    if (effectiveDeclarations(rules, selector).get("color") !== color) {
+      issues.push(selector + " must use the approved contrast color " + color);
+    }
+  }
+
+  const mobileHero = effectiveDeclarations(rules, ".hero", 640);
+  if (!/^"copy"\s+"portrait"\s+"actions"$/i.test(mobileHero.get("grid-template-areas") ?? "")) {
+    issues.push("640px mobile hero must finally order copy, portrait, then actions");
+  }
+  if (effectiveDeclarations(rules, ".hero-copy").get("grid-area") !== "copy"
+    || effectiveDeclarations(rules, ".hero-portrait").get("grid-area") !== "portrait"
+    || effectiveDeclarations(rules, ".hero-actions").get("grid-area") !== "actions") {
     issues.push("hero children must declare named grid areas");
   }
-  if (!selectorHasDeclaration(clean, ".hero-portrait", /margin-bottom\s*:\s*clamp\(\s*16px\s*,/i)) {
-    issues.push("mobile portrait-to-actions gap must use clamp with a 16px floor");
+  const mobilePortraitMargin = effectiveDeclarations(rules, ".hero-portrait", 640).get("margin-bottom") ?? "";
+  if (!/^clamp\(\s*16px\s*,/i.test(mobilePortraitMargin)) {
+    issues.push("640px portrait-to-actions gap must use clamp with a 16px floor");
+  }
+
+  const mobileStates = [
+    [".menu-toggle", "display", "none", "no-JS menu toggle must remain hidden"],
+    ["#mobile-nav[hidden]", "display", "grid", "no-JS fallback navigation must override hidden and stay visible"],
+    ["#mobile-nav", "position", "static", "no-JS fallback navigation must participate in header layout"],
+    [".js .menu-toggle", "display", "grid", "enhanced mode must show the menu toggle"],
+    [".js #mobile-nav[hidden]", "display", "none", "enhanced mode must hide the collapsed mobile navigation"],
+    [".js #mobile-nav", "position", "absolute", "enhanced mobile navigation must open as a compact overlay"],
+  ];
+  for (const [selector, property, expected, message] of mobileStates) {
+    if (effectiveDeclarations(rules, selector, 900).get(property) !== expected) issues.push(message);
   }
 
   const forbiddenEffects = [
@@ -472,8 +651,41 @@ function validateStyles(content) {
   for (const [pattern, message] of forbiddenEffects) {
     if (pattern.test(clean)) issues.push(message);
   }
-  if (/body[^{}]*\.menu-open[^{}]*\{[^{}]*overflow(?:-[xy])?\s*:\s*(?:hidden|clip)\b/i.test(clean)) {
-    issues.push("body.menu-open must not lock overflow");
+  for (const rule of rules.filter((item) => isMenuOpenBodySelector(item.selector))) {
+    if (["overflow", "overflow-x", "overflow-y"].some((property) => isHardOverflowLock(rule.declarations.get(property)))) {
+      issues.push("menu-open state must not lock body overflow");
+      break;
+    }
+  }
+
+  if (runRegressions && issues.length === 0) {
+    const regressions = [
+      [
+        "mobile grid spoof",
+        content + '\n@media (max-width: 640px) {.hero {grid-template-areas: "actions" "portrait" "copy";} .unused .hero {grid-template-areas: "copy" "portrait" "actions";}}',
+        "640px mobile hero must finally order",
+      ],
+      [
+        "portrait gap spoof",
+        content + '\n@media (max-width: 640px) {.hero-portrait {margin-bottom: 0;} .unused .hero-portrait {margin-bottom: clamp(16px, 5vw, 28px);}}',
+        "640px portrait-to-actions gap",
+      ],
+      [
+        "descendant menu lock",
+        content + "\n.menu-open body {overflow: hidden;}",
+        "menu-open state must not lock body overflow",
+      ],
+      [
+        "body menu lock",
+        content + "\nbody.menu-open {overflow-y: clip;}",
+        "menu-open state must not lock body overflow",
+      ],
+    ];
+    for (const [label, sample, expected] of regressions) {
+      if (!validateStyles(sample, { runRegressions: false }).some((issue) => issue.includes(expected))) {
+        issues.push("CSS regression " + label + " was not rejected");
+      }
+    }
   }
 
   return issues;
