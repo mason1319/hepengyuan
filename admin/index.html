@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta name="color-scheme" content="light" />
+    <title>影像发布台｜何鹏远</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/admin/styles.css" />
+    <script src="/admin/script.js" type="module"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="返回何鹏远官方网站">
+        <span class="brand-mark" aria-hidden="true">何</span>
+        <span>
+          <strong>影像发布台</strong>
+          <small>HE PENGYUAN / PRIVATE DESK</small>
+        </span>
+      </a>
+      <div class="session">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span data-identity>正在验证管理员身份</span>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">R2 MEDIA INTAKE / DRAFT FIRST</p>
+          <h1 id="page-title">把本地影像，<br /><em>整理成可公开的记录。</em></h1>
+        </div>
+        <p class="intro-copy">
+          每次只上传一个文件。文件分片保存到 R2，资料先进入草稿；确认标题、地点与隐私后，再手动公开。
+        </p>
+      </section>
+
+      <div class="workspace">
+        <section class="upload-panel" aria-labelledby="upload-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-code">01 / NEW RECORD</p>
+              <h2 id="upload-title">新建影像记录</h2>
+            </div>
+            <span class="draft-stamp">默认草稿</span>
+          </div>
+
+          <form id="upload-form" novalidate>
+            <div class="file-drop" data-file-drop>
+              <input
+                id="media-file"
+                name="file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm"
+                required
+              />
+              <label for="media-file">
+                <span class="file-symbol" aria-hidden="true">＋</span>
+                <strong data-file-name>选择本地照片或视频</strong>
+                <small>照片会自动生成最长边 2560px 的 WebP 公开版；视频支持 MP4 / WebM</small>
+              </label>
+            </div>
+
+            <div class="form-grid">
+              <label class="field">
+                <span>归档分类</span>
+                <select name="category" required>
+                  <option value="travel">旅行影像</option>
+                  <option value="learning">学习视频</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>公开网址 slug</span>
+                <input name="slug" type="text" required maxlength="100" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="suzhou-lake-sunset" autocomplete="off" />
+                <small>只用小写字母、数字和连字符</small>
+              </label>
+
+              <label class="field field-wide">
+                <span>标题</span>
+                <input name="title" type="text" required maxlength="120" placeholder="填写本人确认的标题" />
+              </label>
+
+              <label class="field field-wide">
+                <span>描述</span>
+                <textarea name="description" maxlength="2000" rows="4" placeholder="说明画面、学习主题或拍摄背景；没有确认的信息请留空"></textarea>
+              </label>
+
+              <label class="field field-wide">
+                <span>图片替代文字</span>
+                <input name="alt" type="text" maxlength="500" placeholder="客观描述画面内容；上传图片时必填" />
+                <small>帮助读屏用户和搜索引擎理解图片，不堆砌关键词</small>
+              </label>
+
+              <label class="field">
+                <span>国家或地区</span>
+                <input name="country" type="text" maxlength="80" placeholder="未确认可留空" />
+              </label>
+
+              <label class="field">
+                <span>城市</span>
+                <input name="city" type="text" maxlength="100" placeholder="不填写敏感精确位置" />
+              </label>
+
+              <label class="field">
+                <span>拍摄 / 记录日期</span>
+                <input name="capturedOn" type="date" />
+              </label>
+            </div>
+
+            <label class="privacy-check">
+              <input name="privacyConfirmed" type="checkbox" required />
+              <span>我已检查不应公开的票据、人脸等敏感信息；照片会重编码并移除 EXIF/GPS，视频不会自动清除元数据，已在上传前自行检查。</span>
+            </label>
+
+            <div class="upload-progress" hidden data-progress-panel>
+              <div>
+                <strong data-progress-label>准备上传</strong>
+                <span data-progress-percent>0%</span>
+              </div>
+              <progress value="0" max="100" data-progress>0%</progress>
+              <small>32 MiB 分片上传；页面关闭后，未完成的任务需要重新开始。</small>
+            </div>
+
+            <div class="form-actions">
+              <button class="primary-action" type="submit" data-submit>上传并保存草稿</button>
+              <p class="form-status" role="status" aria-live="polite" data-form-status></p>
+            </div>
+          </form>
+        </section>
+
+        <aside class="rules-panel" aria-labelledby="rules-title">
+          <p class="section-code">PUBLISHING RULES</p>
+          <h2 id="rules-title">公开前的三道门</h2>
+          <ol>
+            <li><span>01</span><div><strong>本人确认</strong><p>国家、城市、日期和说明不靠推断。</p></div></li>
+            <li><span>02</span><div><strong>隐私检查</strong><p>不要公开住址、实时位置、证件或他人隐私；视频需先检查元数据。</p></div></li>
+            <li><span>03</span><div><strong>手动发布</strong><p>上传完成仍是草稿，只有点击“公开”才会上线。</p></div></li>
+          </ol>
+          <p class="storage-note">原始本地文件不会进入 Git；公开文件由随机对象键保存到 Cloudflare R2。</p>
+        </aside>
+      </div>
+
+      <section class="library" aria-labelledby="library-title">
+        <div class="section-heading library-heading">
+          <div>
+            <p class="section-code">02 / LIBRARY</p>
+            <h2 id="library-title">草稿与已公开内容</h2>
+          </div>
+          <button class="quiet-action" type="button" data-refresh>刷新列表</button>
+        </div>
+
+        <p class="library-status" role="status" aria-live="polite" data-library-status>正在读取媒体库…</p>
+        <div class="media-list" data-media-list></div>
+
+        <template id="media-item-template">
+          <article class="media-row">
+            <div class="media-kind" data-kind aria-hidden="true">IMG</div>
+            <div class="media-main">
+              <div class="media-title-line">
+                <h3 data-title></h3>
+                <span class="state-pill" data-state></span>
+              </div>
+              <p class="media-path" data-path></p>
+              <p class="media-meta" data-meta></p>
+            </div>
+            <div class="media-actions">
+              <a class="quiet-action" data-view hidden>查看</a>
+              <button class="publish-action" type="button" data-toggle></button>
+            </div>
+          </article>
+        </template>
+      </section>
+    </main>
+
+    <footer>
+      <span>PRIVATE ADMIN · CLOUDFLARE ACCESS PROTECTED</span>
+      <a href="/">返回公开网站</a>
+    </footer>
+  </body>
+</html>

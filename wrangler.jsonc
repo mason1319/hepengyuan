@@ -1,0 +1,54 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "hepengyuan-personal-site",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-07-07",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "hepengyuan.top",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/admin",
+      "/admin/*",
+      "/api/*",
+      "/media/file/*",
+      "/media/poster/*",
+      "/travel",
+      "/travel/*",
+      "/learning",
+      "/learning/*",
+      "/stories/*",
+      "/sitemap-media.xml"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "MEDIA_DB",
+      "database_name": "hepengyuan-media",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "hepengyuan-media"
+    }
+  ],
+  "vars": {
+    "PUBLIC_SITE_URL": "https://hepengyuan.top",
+    "CF_ACCESS_ISSUER": "REPLACE_WITH_CF_ACCESS_ISSUER",
+    "CF_ACCESS_AUD": "REPLACE_WITH_CF_ACCESS_AUD",
+    "ADMIN_EMAILS": "REPLACE_WITH_ADMIN_LOGIN_EMAIL"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
