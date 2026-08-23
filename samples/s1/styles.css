@@ -1493,7 +1493,7 @@ summary {
   }
 
   .services {
-    padding-top: 1.35rem;
+    padding-top: 0.75rem;
   }
 
   .section-heading {
@@ -1506,7 +1506,7 @@ summary {
   }
 
   .services .section-heading {
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.3rem;
   }
 
   .services .section-heading h2 {

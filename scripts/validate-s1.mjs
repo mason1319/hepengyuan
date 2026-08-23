@@ -636,18 +636,20 @@ function validateStyles(content, options = {}) {
     issues.push("selected service-select hover must finish with yellow background and ink text");
   }
 
-  const mobileHero = effectiveDeclarations(rules, ".hero", 640);
-  if (!/^"copy"\s+"portrait"\s+"actions"$/i.test(mobileHero.get("grid-template-areas") ?? "")) {
-    issues.push("640px mobile hero must finally order copy, portrait, then actions");
+  for (const width of [640, 900]) {
+    const responsiveHero = effectiveDeclarations(rules, ".hero", width);
+    if (!/^"copy"\s+"portrait"\s+"actions"$/i.test(responsiveHero.get("grid-template-areas") ?? "")) {
+      issues.push(width + "px hero must finally order copy, portrait, then actions");
+    }
+    const responsivePortraitMargin = effectiveDeclarations(rules, ".hero-portrait", width).get("margin-bottom") ?? "";
+    if (!/^clamp\(\s*16px\s*,/i.test(responsivePortraitMargin)) {
+      issues.push(width + "px portrait-to-actions gap must use clamp with a 16px floor");
+    }
   }
   if (effectiveDeclarations(rules, ".hero-copy").get("grid-area") !== "copy"
     || effectiveDeclarations(rules, ".hero-portrait").get("grid-area") !== "portrait"
     || effectiveDeclarations(rules, ".hero-actions").get("grid-area") !== "actions") {
     issues.push("hero children must declare named grid areas");
-  }
-  const mobilePortraitMargin = effectiveDeclarations(rules, ".hero-portrait", 640).get("margin-bottom") ?? "";
-  if (!/^clamp\(\s*16px\s*,/i.test(mobilePortraitMargin)) {
-    issues.push("640px portrait-to-actions gap must use clamp with a 16px floor");
   }
 
   const mobileStates = [
@@ -687,12 +689,22 @@ function validateStyles(content, options = {}) {
       [
         "mobile grid spoof",
         content + '\n@media (max-width: 640px) {.hero {grid-template-areas: "actions" "portrait" "copy";} .unused .hero {grid-template-areas: "copy" "portrait" "actions";}}',
-        "640px mobile hero must finally order",
+        "640px hero must finally order",
       ],
       [
         "portrait gap spoof",
         content + '\n@media (max-width: 640px) {.hero-portrait {margin-bottom: 0;} .unused .hero-portrait {margin-bottom: clamp(16px, 5vw, 28px);}}',
         "640px portrait-to-actions gap",
+      ],
+      [
+        "tablet grid hidden by mobile override",
+        content + '\n@media (max-width: 900px) {.hero {grid-template-areas: "actions" "portrait" "copy";}} @media (max-width: 640px) {.hero {grid-template-areas: "copy" "portrait" "actions";}}',
+        "900px hero must finally order",
+      ],
+      [
+        "tablet gap hidden by mobile override",
+        content + "\n@media (max-width: 900px) {.hero-portrait {margin-bottom: 0;}} @media (max-width: 640px) {.hero-portrait {margin-bottom: clamp(16px, 4vw, 22px);}}",
+        "900px portrait-to-actions gap",
       ],
       [
         "descendant menu lock",
