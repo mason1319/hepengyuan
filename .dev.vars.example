@@ -1,0 +1,8 @@
+# Copy to .dev.vars for local Wrangler development. Never commit .dev.vars.
+ADMIN_DEV_BYPASS=true
+PUBLIC_SITE_URL=http://localhost:8787
+
+# Production must validate Cloudflare Access even though Access also protects /admin/* at the edge.
+CF_ACCESS_ISSUER=https://YOUR_TEAM.cloudflareaccess.com
+CF_ACCESS_AUD=REPLACE_WITH_ACCESS_APPLICATION_AUD
+ADMIN_EMAILS=you@example.com

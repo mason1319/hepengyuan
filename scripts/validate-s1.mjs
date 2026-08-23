@@ -528,6 +528,7 @@ function validateStyles(content, options = {}) {
     ".button", ".button-primary", ".button-secondary", ".trust-strip", ".trust-strip ul", ".trust-strip li",
     ".services", ".section-heading", ".service-grid", ".service-card", ".service-kicker", ".service-select", ".service-disclaimer",
     ".process", ".process-list", ".process-number", ".faq", ".faq-list", ".contact", ".contact-copy",
+    ".contact-heading", ".contact-layout", ".contact-directory", ".contact-entry", ".contact-qr-grid", ".contact-qr-card", ".contact-legal",
   ];
   for (const selector of requiredSelectors) {
     if (exactRules(rules, selector).length === 0) issues.push("missing exact selector-list entry " + selector);
@@ -537,7 +538,7 @@ function validateStyles(content, options = {}) {
     if (!rules.some((rule) => hasMediaMaximum(rule, width))) issues.push("missing responsive breakpoint " + width + "px");
   }
 
-  const touchSelectors = [".brand", ".button", ".header-cta", ".menu-toggle", ".service-select", ".contact-copy button", "summary", "#mobile-nav a"];
+  const touchSelectors = [".brand", ".button", ".header-cta", ".menu-toggle", ".service-select", ".contact-entry", "summary", "#mobile-nav a"];
   for (const selector of touchSelectors) {
     const minimumHeight = effectiveDeclarations(rules, selector).get("min-height");
     if (!/^(?:2\.75rem|44px)$/i.test(minimumHeight ?? "")) {
@@ -551,7 +552,7 @@ function validateStyles(content, options = {}) {
     }
   }
 
-  const typographySelectors = [".desktop-nav", ".header-cta", ".button", ".service-select", "#mobile-nav a", ".contact-copy button"];
+  const typographySelectors = [".desktop-nav", ".header-cta", ".button", ".service-select", "#mobile-nav a", ".contact-entry"];
   for (const selector of typographySelectors) {
     const declarations = effectiveDeclarations(rules, selector);
     for (const property of ["font-size", "font-weight", "line-height"]) {
@@ -563,7 +564,7 @@ function validateStyles(content, options = {}) {
   const focusRules = exactRules(rules, ":focus-visible").filter((rule) => mediaApplies(rule, 1440));
   const finalFocusOrder = focusRules.at(-1)?.sourceOrder ?? -1;
   const finalComponentOrder = Math.max(...rules.filter((rule) => (
-    [".header-cta", ".button", ".menu-toggle", ".service-select", ".contact-copy button"].includes(rule.selector)
+    [".header-cta", ".button", ".menu-toggle", ".service-select", ".contact-entry"].includes(rule.selector)
   )).map((rule) => rule.sourceOrder));
   if (!/^(?:2px|3px)\s+solid\s+var\(--ink\)$/i.test(focusDeclarations.get("outline") ?? "")
     || !/^0\s+0\s+0\s+(?:3px|4px)\s+var\(--yellow\)\s*!important$/i.test(focusDeclarations.get("box-shadow") ?? "")
@@ -607,7 +608,7 @@ function validateStyles(content, options = {}) {
     issues.push("selected service cards need an explicit pressed visual state");
   }
 
-  for (const selector of [".header-cta", ".button-primary", "#mobile-nav a:last-child", ".contact-copy button"]) {
+  for (const selector of [".header-cta", ".button-primary", "#mobile-nav a:last-child"]) {
     if (effectiveDeclarations(rules, selector).get("color") !== "var(--ink)") {
       issues.push(selector + " must use ink text on orange");
     }
@@ -1063,8 +1064,13 @@ function createInteractionFixture(options = {}) {
   selectedServiceStatus.textContent = "当前未选择服务方案";
 
   const copyButton = createElement("button");
+  copyButton.dataset.copyValue = "TerraSol-Ai";
+  copyButton.dataset.copyLabel = "微信号";
+  const douyinCopyButton = createElement("button");
+  douyinCopyButton.dataset.copyValue = "HPY131419";
+  douyinCopyButton.dataset.copyLabel = "抖音号";
   const contactName = createElement("strong");
-  contactName.textContent = "TerraSol 明远";
+  contactName.textContent = "TerraSol-Ai";
   const copyStatus = createElement("p");
 
   const revealItems = [createElement("div"), createElement("section")];
@@ -1079,6 +1085,7 @@ function createInteractionFixture(options = {}) {
   document.setQuery("[data-copy-status]", copyStatus);
   document.setQueryAll("[data-service-select]", serviceButtons);
   document.setQueryAll("[data-service-card]", serviceCardsElements);
+  document.setQueryAll("[data-copy-value]", [copyButton, douyinCopyButton]);
   document.setQueryAll(".reveal", revealItems);
 
   const clipboardCalls = [];
@@ -1151,6 +1158,7 @@ function createInteractionFixture(options = {}) {
     serviceButtons,
     selectedServiceStatus,
     copyButton,
+    douyinCopyButton,
     contactName,
     copyStatus,
     revealItems,
@@ -1265,11 +1273,13 @@ async function validateInteractionBehavior(content) {
       issues.push("behavior: clipboard access must not run during page initialization");
     }
     await dispatchInteraction(baseline, baseline.copyButton, "click");
-    clipboardCorePassed = baseline.clipboardCalls.length === 1
-      && baseline.clipboardCalls[0] === "TerraSol 明远"
-      && baseline.copyStatus.textContent === "已复制：TerraSol 明远";
+    await dispatchInteraction(baseline, baseline.douyinCopyButton, "click");
+    clipboardCorePassed = baseline.clipboardCalls.length === 2
+      && baseline.clipboardCalls[0] === "TerraSol-Ai"
+      && baseline.clipboardCalls[1] === "HPY131419"
+      && baseline.copyStatus.textContent === "已复制抖音号：HPY131419";
     if (!clipboardCorePassed) {
-      issues.push("behavior: clipboard click must call writeText with the visible contact name and report success");
+      issues.push("behavior: WeChat and Douyin copy buttons must write their own visible values and report success");
     }
   } catch (error) {
     issues.push("behavior: clipboard interaction threw " + describeInteractionError(error));
@@ -1307,7 +1317,7 @@ async function validateInteractionBehavior(content) {
     if (clipboardCorePassed) {
       try {
         await dispatchInteraction(fallback, fallback.copyButton, "click");
-        if (fallback.clipboardCalls[0] !== "TerraSol 明远") {
+        if (fallback.clipboardCalls[0] !== "TerraSol-Ai") {
           issues.push("behavior: " + label + " must not disable independent copy interaction");
         }
       } catch (error) {
@@ -1345,7 +1355,7 @@ async function validateInteractionBehavior(content) {
     } else {
       try {
         const firstCopy = dispatchInteraction(race, race.copyButton, "click");
-        const secondCopy = dispatchInteraction(race, race.copyButton, "click");
+        const secondCopy = dispatchInteraction(race, race.douyinCopyButton, "click");
         await secondCopy;
         if (typeof rejectFirstCopy !== "function") {
           issues.push("behavior: repeat-copy test did not reach the first clipboard request");
@@ -1357,8 +1367,8 @@ async function validateInteractionBehavior(content) {
           if (race.document.execCommandCalls !== 0) {
             issues.push("behavior: a stale rejected copy request must not run fallbackCopy");
           }
-          if (race.copyStatus.textContent !== "已复制：TerraSol 明远") {
-            issues.push("behavior: a stale rejected copy request must not roll back the latest status");
+          if (race.copyStatus.textContent !== "已复制抖音号：HPY131419") {
+            issues.push("behavior: a stale rejected WeChat copy must not roll back the latest Douyin status");
           }
         }
       } catch (error) {
@@ -1413,16 +1423,18 @@ async function validateInteractions(content, options = {}) {
     [/document\s*\.\s*querySelector\(\s*["']\[data-selected-service\]["']\s*\)/u, "selected-service status hook is missing"],
     [/`\u5f53\u524d\u5173\u6ce8\uff1a\$\{[^}]+\}`/u, "selected service live copy is missing"],
     [/document\s*\.\s*querySelector\(\s*["']\[data-copy-contact\]["']\s*\)/u, "copy-contact button hook is missing"],
+    [/document\s*\.\s*querySelectorAll\(\s*["']\[data-copy-value\]["']\s*\)/u, "multi-contact copy button hooks are missing"],
     [/document\s*\.\s*querySelector\(\s*["']\[data-contact-name\]["']\s*\)/u, "contact-name hook is missing"],
     [/document\s*\.\s*querySelector\(\s*["']\[data-copy-status\]["']\s*\)/u, "copy-status hook is missing"],
-    [/contactName\s*\.\s*textContent\s*\.\s*trim\s*\(\s*\)/u, "copy value must come from visible contact-name text"],
+    [/dataset\s*\.\s*copyValue\?\s*\.\s*trim\s*\(\s*\)/u, "copy value must come from the clicked contact entry"],
     [/navigator\s*\.\s*clipboard\s*\.\s*writeText\s*\(/u, "Clipboard API action is missing"],
     [/document\s*\.\s*createElement\(\s*["']textarea["']\s*\)/u, "clipboard fallback textarea is missing"],
     [/document\s*\.\s*execCommand\(\s*["']copy["']\s*\)/u, "clipboard fallback copy command is missing"],
     [/catch\s*\{[^}]*fallbackCopy\(\s*value\s*\)/su, "clipboard rejection must invoke the fallback copy path"],
     [/finally\s*\{[^}]*\.\s*remove\s*\(\s*\)/su, "clipboard fallback must always clean up its temporary node"],
-    [/`\u5df2\u590d\u5236\uff1a\$\{[^}]+\}`/u, "clipboard success status is missing"],
-    [/`\u8bf7\u624b\u52a8\u590d\u5236\uff1a\$\{[^}]+\}`/u, "clipboard manual fallback status is missing"],
+    [/statusPrefix\s*=\s*label\s*\?/u, "clipboard success label is missing"],
+    [/fallbackPrefix\s*=\s*label\s*\?/u, "clipboard manual fallback label is missing"],
+    [/copyStatus\s*\.\s*textContent\s*=\s*copied\s*\?/u, "clipboard result status is missing"],
     [/copyRequestId\s*\+=\s*1/u, "repeat-copy request ordering is missing"],
     [/matchMedia\(\s*["']\(prefers-reduced-motion:\s*reduce\)["']\s*\)/u, "reduced-motion JavaScript guard is missing"],
     [/IntersectionObserver/u, "IntersectionObserver reveal enhancement is missing"],
@@ -1542,7 +1554,7 @@ async function validateInteractions(content, options = {}) {
         [
           "dead clipboard branch",
           deadClipboardMutation.content,
-          "clipboard click must call writeText",
+          "WeChat and Douyin copy buttons",
         ],
       );
     }
@@ -1741,15 +1753,22 @@ if (html) {
     }
     if (!extractElements(contactSection, "button").some((button) => (
       hasAttribute(button.openTag, "data-copy-contact")
-      && normalizeVisibleText(elementText(button)) === "复制联系名称"
+      && normalizeVisibleText(elementText(button)).includes("TerraSol-Ai")
+      && normalizeVisibleText(elementText(button)).includes("复制微信号")
     ))) {
-      failures.push(file + ": contact copy button must visibly say 复制联系名称");
+      failures.push(file + ": contact copy button must visibly show TerraSol-Ai and 复制微信号");
+    }
+    if (!extractElements(contactSection, "button").some((button) => (
+      hasAttribute(button.openTag, "data-copy-value", "HPY131419")
+      && normalizeVisibleText(elementText(button)).includes("复制抖音号")
+    ))) {
+      failures.push(file + ": contact copy button must visibly show HPY131419 and 复制抖音号");
     }
     if (!extractElements(contactSection, "strong").some((strong) => (
       hasAttribute(strong.openTag, "data-contact-name")
-      && normalizeVisibleText(elementText(strong)) === "TerraSol 明远"
+      && normalizeVisibleText(elementText(strong)) === "TerraSol-Ai"
     ))) {
-      failures.push(file + ": contact data-contact-name must contain TerraSol 明远");
+      failures.push(file + ": contact data-contact-name must contain TerraSol-Ai");
     }
     if (!openingTags(contactSection, "[a-z][\\w-]*").some((tag) => (
       hasAttribute(tag, "role", "status")
@@ -1757,6 +1776,44 @@ if (html) {
       && hasAttribute(tag, "data-copy-status")
     ))) {
       failures.push(file + ": contact live status must include role=status, aria-live=polite, and data-copy-status");
+    }
+
+    const contactText = normalizeVisibleText(contactSection);
+    for (const requiredContact of [
+      "HPY131419",
+      "653091hepeng@163.com",
+      "653091hepeng@gmail.com",
+      "13145113319",
+      "@mason1413",
+      "@X_mason13",
+      "@beimingzi",
+    ]) {
+      if (!contactText.includes(requiredContact)) {
+        failures.push(file + ": contact section is missing " + requiredContact);
+      }
+    }
+
+    for (const requiredHref of [
+      "mailto:653091hepeng@163.com",
+      "mailto:653091hepeng@gmail.com",
+      "tel:+8613145113319",
+      "https://t.me/mason1413",
+      "https://x.com/X_mason13",
+      "https://www.youtube.com/@beimingzi",
+      "https://u.wechat.com/EMtqddT4ZiSg6ogvLEtCx1M?s=2",
+    ]) {
+      if (!contactSection.includes(`href="${requiredHref}"`)) {
+        failures.push(file + ": contact section is missing href " + requiredHref);
+      }
+    }
+
+    for (const requiredAsset of [
+      "../../assets/wechat-terrasol-ai-qr.jpg",
+      "../../assets/douyin-hpy131419-code.jpg",
+    ]) {
+      if (!contactSection.includes(`src="${requiredAsset}"`)) {
+        failures.push(file + ": contact section is missing QR asset " + requiredAsset);
+      }
     }
   }
 

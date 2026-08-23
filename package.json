@@ -2,12 +2,17 @@
   "name": "he-pengyuan-personal-site",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "何鹏远的个人 IP 官方网站，面向 SEO 与 GEO 可发现性设计。",
   "scripts": {
     "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
+    "dev:worker": "npm run build && npx --yes wrangler@4.125.0 dev --local --port 8787",
     "validate": "node scripts/validate.mjs",
     "build": "npm run validate && node scripts/build.mjs",
-    "cloudflare:setup": "npx --yes wrangler@latest pages project create hepengyuan-personal-site --production-branch main",
-    "release": "node scripts/release-preflight.mjs && npm run build && npx --yes wrangler@latest pages deploy dist --project-name hepengyuan-personal-site --branch main"
+    "db:migrate:local": "npx --yes wrangler@4.125.0 d1 migrations apply hepengyuan-media --local",
+    "db:migrate:remote": "npx --yes wrangler@4.125.0 d1 migrations apply hepengyuan-media --remote",
+    "cloudflare:whoami": "npx --yes wrangler@4.125.0 whoami",
+    "smoke:production": "node scripts/smoke-production.mjs",
+    "release": "node scripts/release-preflight.mjs && npm run build && npm run db:migrate:remote && npx --yes wrangler@4.125.0 deploy && npm run smoke:production"
   }
 }

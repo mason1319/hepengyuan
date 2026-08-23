@@ -79,6 +79,7 @@ serviceButtons.forEach((button) => {
 });
 
 const copyButton = document.querySelector("[data-copy-contact]");
+const copyButtons = document.querySelectorAll("[data-copy-value]");
 const contactName = document.querySelector("[data-contact-name]");
 const copyStatus = document.querySelector("[data-copy-status]");
 let copyRequestId = 0;
@@ -89,7 +90,7 @@ function fallbackCopy(value) {
 
   textarea.value = value;
   textarea.setAttribute("readonly", "");
-  textarea.setAttribute("aria-hidden", "true");
+  textarea.setAttribute("tabindex", "-1");
   Object.assign(textarea.style, {
     position: "fixed",
     top: "0",
@@ -114,11 +115,15 @@ function fallbackCopy(value) {
   }
 }
 
-async function copyContactName() {
-  if (!contactName || !copyStatus) return;
+async function copyContactName(trigger = copyButton) {
+  if (!copyStatus) return;
 
-  const value = contactName.textContent.trim();
+  const value = trigger?.dataset.copyValue?.trim() || contactName?.textContent.trim();
   if (!value) return;
+
+  const label = trigger?.dataset.copyLabel?.trim();
+  const statusPrefix = label ? `已复制${label}` : "已复制";
+  const fallbackPrefix = label ? `请手动复制${label}` : "请手动复制";
 
   const requestId = copyRequestId += 1;
   let copied = false;
@@ -136,11 +141,13 @@ async function copyContactName() {
   }
 
   if (requestId !== copyRequestId) return;
-  copyStatus.textContent = copied ? `已复制：${value}` : `请手动复制：${value}`;
+  copyStatus.textContent = copied ? `${statusPrefix}：${value}` : `${fallbackPrefix}：${value}`;
 }
 
-if (copyButton && contactName && copyStatus) {
-  copyButton.addEventListener("click", copyContactName);
+if (copyStatus && copyButtons.length > 0) {
+  copyButtons.forEach((button) => {
+    button.addEventListener("click", () => copyContactName(button));
+  });
 }
 
 const revealItems = document.querySelectorAll(".reveal");
