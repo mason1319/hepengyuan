@@ -10,6 +10,7 @@ export const MIME_TYPES = Object.freeze({
   "image/avif": { mediaType: "image", extension: "avif" },
   "video/mp4": { mediaType: "video", extension: "mp4" },
   "video/webm": { mediaType: "video", extension: "webm" },
+  "video/quicktime": { mediaType: "video", extension: "mov" },
 });
 
 export class MediaError extends Error {
@@ -48,7 +49,7 @@ export function validateCreateInput(input) {
   const mimeInfo = MIME_TYPES[mimeType];
 
   if (!mimeInfo) {
-    throw new MediaError(415, "只支持 JPEG、PNG、WebP、AVIF、MP4 和 WebM 文件。SVG 与 HTML 不允许上传。");
+    throw new MediaError(415, "只支持 JPEG、PNG、WebP、AVIF、MP4、WebM 和 MOV 文件。SVG 与 HTML 不允许上传。");
   }
 
   const fileSize = Number(input.fileSize);
@@ -62,7 +63,7 @@ export function validateCreateInput(input) {
   }
 
   if (category === "learning" && mimeInfo.mediaType !== "video") {
-    throw new MediaError(400, "学习视频分类只接受 MP4 或 WebM 视频。");
+    throw new MediaError(400, "学习视频分类只接受 MP4、WebM 或 MOV 视频。");
   }
 
   const slug = String(input.slug || "").trim().toLowerCase();
@@ -88,7 +89,7 @@ export function validateCreateInput(input) {
     mimeInfo.mediaType === "video" &&
     (!Number.isFinite(durationSeconds) || durationSeconds <= 0 || durationSeconds > 7 * 24 * 60 * 60)
   ) {
-    throw new MediaError(400, "视频时长无效，请选择浏览器可读取的 MP4 或 WebM 文件。");
+    throw new MediaError(400, "视频时长无效，请选择浏览器可读取的 MP4、WebM 或 MOV 文件。");
   }
 
   return {
@@ -135,6 +136,7 @@ export function matchesFileSignature(bytes, mimeType) {
       return brands.includes("avif") || brands.includes("avis");
     }
     case "video/mp4":
+    case "video/quicktime":
       return ascii(bytes, 4, 4) === "ftyp";
     case "video/webm":
       return startsWith(bytes, [0x1a, 0x45, 0xdf, 0xa3]);

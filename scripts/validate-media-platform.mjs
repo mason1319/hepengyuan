@@ -98,7 +98,7 @@ for (const expected of [
 }
 assert(!wrangler.includes('"directory": "."'), "Static Assets must never publish the repository root");
 
-for (const expected of ["noindex,nofollow,noarchive", "type=\"file\"", "privacyConfirmed", "默认草稿", "data-delete", "data-delete-dialog", "data-delete-confirm", "永久删除", "data-file-help", "iPhone HEIC / MOV"]) {
+for (const expected of ["noindex,nofollow,noarchive", "type=\"file\"", "privacyConfirmed", "默认草稿", "data-delete", "data-delete-dialog", "data-delete-confirm", "永久删除", "data-file-help", "video/quicktime", "MOV"]) {
   assert(adminHtml.includes(expected), `admin interface is missing ${expected}`);
 }
 for (const expected of ["sanitizeImage", "createVideoPoster", "补封面", "mediaSavedWithoutPoster", "showModal", "confirmPendingDeletion", 'method: "DELETE"', "selectedFileInfo", "showUploadValidation", "正在处理并上传"]) {
@@ -163,6 +163,13 @@ const validVideo = validateCreateInput({
 assert(validVideo.totalParts === 2, "multipart part count is incorrect");
 assert(validVideo.durationSeconds === 62.5, "video duration was not preserved");
 
+const validMov = validateCreateInput({
+  ...validVideo,
+  slug: "iphone-travel-video",
+  mimeType: "video/quicktime",
+});
+assert(validMov.extension === "mov" && validMov.mediaType === "video", "MOV video was rejected");
+
 const validImage = validateCreateInput({
   category: "travel",
   slug: "verified-travel-photo",
@@ -190,8 +197,10 @@ await expectMediaError(
 );
 
 const webpHeader = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]);
+const movHeader = new Uint8Array([0, 0, 0, 0, 0x66, 0x74, 0x79, 0x70, 0x71, 0x74, 0x20, 0x20]);
 assert(matchesFileSignature(webpHeader, "image/webp"), "valid WebP signature was rejected");
 assert(!matchesFileSignature(webpHeader, "video/mp4"), "mismatched WebP signature was accepted as MP4");
+assert(matchesFileSignature(movHeader, "video/quicktime"), "valid MOV signature was rejected");
 
 assert(JSON.stringify(parseByteRange("bytes=0-99", 1000)) === JSON.stringify({ offset: 0, length: 100, start: 0, end: 99 }), "explicit byte range is incorrect");
 assert(JSON.stringify(parseByteRange("bytes=-50", 1000)) === JSON.stringify({ offset: 950, length: 50, start: 950, end: 999 }), "suffix byte range is incorrect");

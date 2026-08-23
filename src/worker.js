@@ -310,7 +310,7 @@ async function handleMediaFile(request, env, row) {
     "Content-Type": row.mime_type,
     "Accept-Ranges": "bytes",
     "Cache-Control": REVOCABLE_PUBLIC_CACHE,
-    "Content-Disposition": `inline; filename="${row.slug}.${row.mime_type.split("/")[1].replace("jpeg", "jpg")}"`,
+    "Content-Disposition": `inline; filename="${row.slug}.${row.mime_type === "video/quicktime" ? "mov" : row.mime_type.split("/")[1].replace("jpeg", "jpg")}"`,
     ...securityHeaders,
   });
   if (etag) headers.set("ETag", etag);
