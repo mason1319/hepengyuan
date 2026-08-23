@@ -1,198 +1,90 @@
-const header = document.querySelector("[data-header]");
-const menuButton = document.querySelector(".menu-toggle");
-const mobileNav = document.querySelector("#mobile-nav");
-const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+document.documentElement?.classList?.add?.("js");
 
-const updateHeader = () => {
-  header?.classList.toggle("is-scrolled", window.scrollY > 24);
-};
+const menuToggle = document.querySelector("[data-menu-toggle]");
+const mobileNav = document.querySelector("[data-mobile-nav]");
 
-updateHeader();
-window.addEventListener("scroll", updateHeader, { passive: true });
+function setMenuOpen(isOpen) {
+  if (!menuToggle || !mobileNav) return;
 
-const closeMenu = () => {
-  if (!menuButton || !mobileNav) return;
-  menuButton.setAttribute("aria-expanded", "false");
-  const label = menuButton.querySelector(".sr-only");
-  if (label) label.textContent = "打开导航";
-  mobileNav.hidden = true;
-  document.body.classList.remove("menu-open");
-};
+  menuToggle.setAttribute("aria-expanded", String(isOpen));
+  mobileNav.hidden = !isOpen;
 
-menuButton?.addEventListener("click", () => {
-  if (!mobileNav) return;
-  const isOpen = menuButton.getAttribute("aria-expanded") === "true";
-  menuButton.setAttribute("aria-expanded", String(!isOpen));
-  const label = menuButton.querySelector(".sr-only");
-  if (label) label.textContent = isOpen ? "打开导航" : "关闭导航";
-  mobileNav.hidden = isOpen;
-  document.body.classList.toggle("menu-open", !isOpen);
-});
+  const label = menuToggle.querySelector(".sr-only");
+  if (label) label.textContent = isOpen ? "关闭导航" : "打开导航";
+}
 
-mobileNav?.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
+function closeMenu({ restoreFocus = false } = {}) {
+  setMenuOpen(false);
+  if (restoreFocus && menuToggle) menuToggle.focus();
+}
 
-window.addEventListener("resize", () => {
-  if (window.innerWidth > 860) closeMenu();
-});
-
-const revealItems = document.querySelectorAll(".reveal");
-
-if (reducedMotion || !("IntersectionObserver" in window)) {
-  revealItems.forEach((item) => item.classList.add("is-visible"));
+if (!menuToggle || !mobileNav) {
+  document.documentElement?.classList?.remove?.("js");
 } else {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("is-visible");
-        observer.unobserve(entry.target);
-      });
-    },
-    { rootMargin: "0px 0px -8%", threshold: 0.12 },
-  );
-
-  revealItems.forEach((item) => observer.observe(item));
-}
-
-const tiltCard = document.querySelector("[data-tilt-card]");
-
-if (tiltCard && !reducedMotion && window.matchMedia("(pointer: fine)").matches) {
-  tiltCard.addEventListener("pointermove", (event) => {
-    const rect = tiltCard.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width - 0.5;
-    const y = (event.clientY - rect.top) / rect.height - 0.5;
-    tiltCard.style.transform = `rotateX(${-y * 4}deg) rotateY(${x * 5}deg) rotateZ(2.2deg)`;
-  });
-
-  tiltCard.addEventListener("pointerleave", () => {
-    tiltCard.style.transform = "rotate(2.2deg)";
-  });
-}
-
-const mediaBoard = document.querySelector("[data-media-feed]");
-
-function safeSitePath(value, fallback = "#media") {
-  if (typeof value !== "string" || !value.trim()) return fallback;
   try {
-    const resolved = new URL(value, window.location.origin);
-    return resolved.origin === window.location.origin ? resolved.href : fallback;
+    setMenuOpen(false);
+
+    menuToggle.addEventListener("click", () => {
+      const isOpen = menuToggle.getAttribute("aria-expanded") !== "true";
+      setMenuOpen(isOpen);
+    });
+
+    mobileNav.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.closest("a")) closeMenu();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && menuToggle.getAttribute("aria-expanded") === "true") {
+        closeMenu({ restoreFocus: true });
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (menuToggle.getAttribute("aria-expanded") !== "true") return;
+      if (!(event.target instanceof Node)) return;
+      if (menuToggle.contains(event.target) || mobileNav.contains(event.target)) return;
+      closeMenu();
+    });
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 900) closeMenu();
+    });
   } catch {
-    return fallback;
+    document.documentElement?.classList?.remove?.("js");
   }
 }
 
-function mediaMetaText(item) {
-  const location = [item.country, item.city].filter(Boolean).join(" · ");
-  const date = typeof item.capturedOn === "string" ? item.capturedOn : "";
-  const seconds = Math.round(Number(item.durationSeconds));
-  const duration = Number.isFinite(seconds) && seconds > 0
-    ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
-    : "";
-  return [location, date, duration].filter(Boolean).join(" / ") || "地点与时间以详情页公开信息为准";
-}
+const serviceButtons = document.querySelectorAll("[data-service-select]");
+const serviceCards = document.querySelectorAll("[data-service-card]");
+const selectedServiceStatus = document.querySelector("[data-selected-service]");
 
-function createMediaArchiveCard(item) {
-  const article = document.createElement("article");
-  article.className = "media-entry-card";
+serviceButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const selectedCard = button.closest("[data-service-card]");
+    if (!selectedCard) return;
 
-  const storyUrl = safeSitePath(item.storyUrl);
-  const contentUrl = safeSitePath(item.contentUrl, "");
-  const thumbnailUrl = safeSitePath(item.thumbnailUrl, "");
-  const visualLink = document.createElement("a");
-  visualLink.className = "media-entry-visual";
-  visualLink.href = storyUrl;
-  visualLink.setAttribute("aria-label", `查看影像档案：${item.title || "未命名内容"}`);
+    serviceCards.forEach((serviceCard) => {
+      const isSelected = serviceCard === selectedCard;
+      serviceCard.dataset.selected = String(isSelected);
 
-  if (item.mediaType === "image" && contentUrl) {
-    const image = document.createElement("img");
-    image.src = contentUrl;
-    image.alt = item.alt || item.title || "何鹏远公开旅行照片";
-    image.loading = "lazy";
-    image.decoding = "async";
-    visualLink.append(image);
-  } else {
-    visualLink.classList.add("is-video");
-    if (thumbnailUrl) {
-      const image = document.createElement("img");
-      image.src = thumbnailUrl;
-      image.alt = "";
-      image.loading = "lazy";
-      image.decoding = "async";
-      visualLink.append(image);
+      const selectButton = serviceCard.querySelector("[data-service-select]");
+      if (selectButton) selectButton.setAttribute("aria-pressed", String(isSelected));
+    });
+
+    const serviceName = selectedCard.dataset.serviceName;
+    if (selectedServiceStatus && serviceName) {
+      selectedServiceStatus.textContent = `当前关注：${serviceName}`;
     }
-    const playMark = document.createElement("span");
-    playMark.className = "media-entry-play";
-    playMark.setAttribute("aria-hidden", "true");
-    playMark.textContent = "▶";
-    visualLink.append(playMark);
-  }
+  });
+});
 
-  const body = document.createElement("div");
-  body.className = "media-entry-body";
+const copyButton = document.querySelector("[data-copy-contact]");
+const copyButtons = document.querySelectorAll("[data-copy-public]");
+const contactName = document.querySelector("[data-contact-name]");
+const copyStatus = document.querySelector("[data-contact-note]");
+let copyRequestId = 0;
 
-  const label = document.createElement("p");
-  label.className = "media-entry-label";
-  const category = item.category === "learning" ? "LEARNING" : "TRAVEL";
-  const mediaType = item.mediaType === "video" ? "VIDEO" : "PHOTO";
-  label.textContent = `${category} / ${mediaType}`;
-
-  const title = document.createElement("h3");
-  const titleLink = document.createElement("a");
-  titleLink.href = storyUrl;
-  titleLink.textContent = item.title || "未命名影像";
-  title.append(titleLink);
-
-  const description = document.createElement("p");
-  description.className = "media-entry-description";
-  description.textContent = item.description || "查看这条公开影像的完整说明。";
-
-  const meta = document.createElement("p");
-  meta.className = "media-entry-meta";
-  meta.textContent = mediaMetaText(item);
-
-  const detailLink = document.createElement("a");
-  detailLink.className = "media-entry-link";
-  detailLink.href = storyUrl;
-  detailLink.textContent = "查看完整档案 ↗";
-
-  body.append(label, title, description, meta, detailLink);
-  article.append(visualLink, body);
-  return article;
-}
-
-async function loadPublishedMedia() {
-  if (!mediaBoard) return;
-
-  const feedUrl = safeSitePath(mediaBoard.dataset.mediaFeed, "/api/media.json");
-  const mediaItems = mediaBoard.querySelector("[data-media-items]");
-  if (!mediaItems) return;
-
-  try {
-    const response = await fetch(feedUrl, { headers: { Accept: "application/json" } });
-    if (!response.ok) return;
-    const payload = await response.json();
-    const items = Array.isArray(payload?.items) ? payload.items : [];
-    if (items.length === 0) return;
-
-    mediaItems.replaceChildren(...items.map(createMediaArchiveCard));
-    mediaBoard.dataset.mediaStatus = "published";
-
-    const status = mediaBoard.querySelector("[data-media-feed-status]");
-    const title = mediaBoard.querySelector("[data-media-feed-title]");
-    if (status) status.textContent = `STATUS / ${items.length} PUBLISHED`;
-    if (title) title.textContent = `${items.length} 条本人确认的公开影像。`;
-  } catch {
-    // 静态发布规则本身就是可靠且不会过期的降级内容。
-  }
-}
-
-loadPublishedMedia();
-
-const contactNote = document.querySelector("[data-contact-note]");
-const publicCopyButtons = document.querySelectorAll("[data-copy-public]");
-let publicCopyRequestId = 0;
-
-function fallbackPublicCopy(value) {
+function fallbackCopy(value) {
   const textarea = document.createElement("textarea");
   const previousFocus = document.activeElement;
 
@@ -201,10 +93,12 @@ function fallbackPublicCopy(value) {
   textarea.setAttribute("tabindex", "-1");
   Object.assign(textarea.style, {
     position: "fixed",
+    top: "0",
     left: "-9999px",
     width: "1px",
     height: "1px",
     opacity: "0",
+    pointerEvents: "none",
   });
 
   try {
@@ -220,14 +114,17 @@ function fallbackPublicCopy(value) {
   }
 }
 
-async function copyPublicContact(button) {
-  if (!contactNote) return;
+async function copyContactName(trigger = copyButton) {
+  if (!copyStatus) return;
 
-  const value = button.dataset.copyValue?.trim();
-  const label = button.dataset.copyLabel?.trim() || "账号";
+  const value = trigger?.dataset.copyValue?.trim() || contactName?.textContent.trim();
   if (!value) return;
 
-  const requestId = publicCopyRequestId += 1;
+  const label = trigger?.dataset.copyLabel?.trim();
+  const statusPrefix = label ? `已复制${label}` : "已复制";
+  const fallbackPrefix = label ? `请手动复制${label}` : "请手动复制";
+
+  const requestId = copyRequestId += 1;
   let copied = false;
 
   try {
@@ -235,20 +132,161 @@ async function copyPublicContact(button) {
       await navigator.clipboard.writeText(value);
       copied = true;
     } else {
-      copied = fallbackPublicCopy(value);
+      copied = fallbackCopy(value);
     }
   } catch {
-    if (requestId !== publicCopyRequestId) return;
-    copied = fallbackPublicCopy(value);
+    if (requestId !== copyRequestId) return;
+    copied = fallbackCopy(value);
   }
 
-  if (requestId !== publicCopyRequestId) return;
-  contactNote.textContent = copied ? `已复制${label}：${value}` : `请手动复制${label}：${value}`;
+  if (requestId !== copyRequestId) return;
+  copyStatus.textContent = copied ? `${statusPrefix}：${value}` : `${fallbackPrefix}：${value}`;
 }
 
-publicCopyButtons.forEach((button) => {
-  button.addEventListener("click", () => copyPublicContact(button));
-});
+if (copyStatus && copyButtons.length > 0) {
+  copyButtons.forEach((button) => {
+    button.addEventListener("click", () => copyContactName(button));
+  });
+}
 
-const yearTarget = document.querySelector("[data-current-year]");
-if (yearTarget) yearTarget.textContent = String(new Date().getFullYear());
+const revealItems = document.querySelectorAll(".reveal");
+
+function reveal(item) {
+  item.classList.add("is-visible");
+}
+
+function revealAll() {
+  revealItems.forEach(reveal);
+}
+
+let reducedMotion = false;
+try {
+  reducedMotion = typeof window.matchMedia === "function"
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+} catch {
+  reducedMotion = true;
+}
+
+let IntersectionObserverConstructor = null;
+try {
+  const candidate = window.IntersectionObserver;
+  if (typeof candidate === "function") IntersectionObserverConstructor = candidate;
+} catch {
+  IntersectionObserverConstructor = null;
+}
+
+if (reducedMotion || !IntersectionObserverConstructor) {
+  revealAll();
+} else {
+  try {
+    const observer = new IntersectionObserverConstructor((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        reveal(entry.target);
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -8%", threshold: 0.1 });
+
+    revealItems.forEach((item) => {
+      const bounds = item.getBoundingClientRect();
+      if (bounds.top < window.innerHeight && bounds.bottom > 0) {
+        reveal(item);
+      } else {
+        observer.observe(item);
+      }
+    });
+  } catch {
+    revealAll();
+  }
+}
+
+const mediaBoard = document.querySelector("[data-media-feed]");
+
+function safeSitePath(value, fallback = "#media") {
+  if (typeof value !== "string" || !value.trim()) return fallback;
+  try {
+    const resolved = new URL(value, window.location.origin);
+    return resolved.origin === window.location.origin ? resolved.href : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function createMediaCard(item) {
+  const article = document.createElement("article");
+  article.className = "media-entry-card";
+  const storyUrl = safeSitePath(item.storyUrl);
+  const contentUrl = safeSitePath(item.contentUrl, "");
+  const thumbnailUrl = safeSitePath(item.thumbnailUrl, "");
+  const visual = document.createElement("a");
+  visual.className = "media-entry-visual";
+  visual.href = storyUrl;
+  visual.setAttribute("aria-label", `查看影像档案：${item.title || "未命名内容"}`);
+
+  if (item.mediaType === "image" && contentUrl) {
+    const image = document.createElement("img");
+    image.src = contentUrl;
+    image.alt = item.alt || item.title || "何鹏远公开旅行照片";
+    image.loading = "lazy";
+    visual.append(image);
+  } else {
+    visual.classList.add("is-video");
+    if (thumbnailUrl) {
+      const image = document.createElement("img");
+      image.src = thumbnailUrl;
+      image.alt = "";
+      image.loading = "lazy";
+      visual.append(image);
+    }
+    const playMark = document.createElement("span");
+    playMark.className = "media-entry-play";
+    playMark.setAttribute("aria-hidden", "true");
+    playMark.textContent = "▶";
+    visual.append(playMark);
+  }
+
+  const body = document.createElement("div");
+  body.className = "media-entry-body";
+  const label = document.createElement("p");
+  label.className = "media-entry-label";
+  label.textContent = `${item.category === "learning" ? "LEARNING" : "TRAVEL"} / ${item.mediaType === "video" ? "VIDEO" : "PHOTO"}`;
+  const title = document.createElement("h3");
+  const titleLink = document.createElement("a");
+  titleLink.href = storyUrl;
+  titleLink.textContent = item.title || "未命名影像";
+  title.append(titleLink);
+  const description = document.createElement("p");
+  description.className = "media-entry-description";
+  description.textContent = item.description || "查看这条公开影像的完整说明。";
+  const meta = document.createElement("p");
+  meta.className = "media-entry-meta";
+  meta.textContent = [item.country, item.city, item.capturedOn].filter(Boolean).join(" · ") || "地点与时间以详情页公开信息为准";
+  body.append(label, title, description, meta);
+  article.append(visual, body);
+  return article;
+}
+
+async function loadPublishedMedia() {
+  if (!mediaBoard) return;
+  const itemsElement = mediaBoard.querySelector("[data-media-items]");
+  if (!itemsElement) return;
+  try {
+    const response = await fetch(safeSitePath(mediaBoard.dataset.mediaFeed, "/api/media.json"), {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return;
+    const payload = await response.json();
+    const items = Array.isArray(payload?.items) ? payload.items : [];
+    if (!items.length) return;
+    itemsElement.replaceChildren(...items.map(createMediaCard));
+    mediaBoard.dataset.mediaStatus = "published";
+    const status = mediaBoard.querySelector("[data-media-feed-status]");
+    const title = mediaBoard.querySelector("[data-media-feed-title]");
+    if (status) status.textContent = `STATUS / ${items.length} PUBLISHED`;
+    if (title) title.textContent = `${items.length} 条本人确认的公开影像。`;
+  } catch {
+    // 静态空状态仍然完整可读。
+  }
+}
+
+loadPublishedMedia();
