@@ -98,10 +98,10 @@ for (const expected of [
 }
 assert(!wrangler.includes('"directory": "."'), "Static Assets must never publish the repository root");
 
-for (const expected of ["noindex,nofollow,noarchive", "type=\"file\"", "privacyConfirmed", "默认草稿", "data-delete", "data-delete-dialog", "data-delete-confirm", "永久删除"]) {
+for (const expected of ["noindex,nofollow,noarchive", "type=\"file\"", "privacyConfirmed", "默认草稿", "data-delete", "data-delete-dialog", "data-delete-confirm", "永久删除", "data-file-help", "iPhone HEIC / MOV"]) {
   assert(adminHtml.includes(expected), `admin interface is missing ${expected}`);
 }
-for (const expected of ["sanitizeImage", "createVideoPoster", "补封面", "mediaSavedWithoutPoster", "showModal", "confirmPendingDeletion", 'method: "DELETE"']) {
+for (const expected of ["sanitizeImage", "createVideoPoster", "补封面", "mediaSavedWithoutPoster", "showModal", "confirmPendingDeletion", 'method: "DELETE"', "selectedFileInfo", "showUploadValidation", "正在处理并上传"]) {
   assert(adminScript.includes(expected), `admin upload behavior is missing ${expected}`);
 }
 for (const expected of ["libraryRequestGeneration", "AbortController", "populateDeleteDialog", "deleteDialogBusy", "deleteDialogTitle.focus", "setRowMutationBusy"]) {
