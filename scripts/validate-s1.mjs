@@ -104,14 +104,27 @@ function splitClauses(text) {
   return text.split(/[。！？!?；;，,]+/).map((clause) => clause.trim()).filter(Boolean);
 }
 
-function testPattern(text, pattern) {
-  return new RegExp(pattern.source, pattern.flags.replace("g", "")).test(text);
+function allMatches(text, pattern) {
+  const flags = pattern.flags.includes("g") ? pattern.flags : pattern.flags + "g";
+  const matcher = new RegExp(pattern.source, flags);
+  const matches = [];
+  let match;
+
+  while ((match = matcher.exec(text))) {
+    matches.push({ start: match.index, end: match.index + match[0].length });
+    if (match[0].length === 0) matcher.lastIndex += 1;
+  }
+
+  return matches;
 }
 
-function hasPositiveClause(text, pattern, negationPattern) {
-  return splitClauses(text).some((clause) => (
-    testPattern(clause, pattern) && !testPattern(clause, negationPattern)
-  ));
+function hasUncoveredPositiveOccurrence(text, pattern, negationPattern) {
+  return splitClauses(text).some((clause) => {
+    const negations = allMatches(clause, negationPattern);
+    return allMatches(clause, pattern).some((positive) => (
+      !negations.some((negation) => positive.start >= negation.start && positive.start < negation.end)
+    ));
+  });
 }
 
 function findComplianceViolations(content) {
@@ -119,8 +132,8 @@ function findComplianceViolations(content) {
   const compliancePatterns = [
     {
       label: "forbidden claim",
-      pattern: /官方充值|官方渠道|OpenAI\s*官方|Anthropic\s*官方|官方授权|官方代理|销量|客户案例|立即支付|购买账号|充值套餐/i,
-      negation: /(?:不提供|不属于|并非|不是|非)\s*(?:任何形式的)?(?:官方充值|官方渠道|OpenAI\s*官方|Anthropic\s*官方|官方授权|官方代理)/i,
+      pattern: /官方\s*充值|官方\s*渠道|OpenAI\s*官方|Anthropic\s*官方|官方\s*授权|官方\s*代理|销量|客户\s*案例|立即\s*支付|购买\s*账号|充值\s*套餐/i,
+      negation: /(?:不提供|不属于|并非|不是|非)\s*(?:任何形式的)?(?:官方\s*充值|官方\s*渠道|OpenAI\s*官方|Anthropic\s*官方|官方\s*授权|官方\s*代理)/i,
     },
     {
       label: "price commitment",
@@ -141,7 +154,7 @@ function findComplianceViolations(content) {
   const violations = [];
 
   for (const { label, pattern, negation } of compliancePatterns) {
-    if (hasPositiveClause(visibleText, pattern, negation)) violations.push(label);
+    if (hasUncoveredPositiveOccurrence(visibleText, pattern, negation)) violations.push(label);
   }
   return violations;
 }
@@ -453,108 +466,116 @@ if (html) {
     }
   }
 
-  const complianceRegressions = [
-    ["split claim", html + "无。官方<span>渠道</span>，限时价 ¥99，保证成功。", ["forbidden claim", "price commitment", "result or guarantee commitment"]],
-    ["quoted price and delivery", html + "无。报价人民币 99，24h 到账，包成功。", ["price commitment", "timing or delivery commitment", "result or guarantee commitment"]],
-    ["unrelated negations", html + "不看别家，报价人民币99；不必久等，24h到账；不用担心，包成功；不用犹豫，官方渠道。", ["forbidden claim", "price commitment", "timing or delivery commitment", "result or guarantee commitment"]],
-  ];
-  for (const [label, sample, expected] of complianceRegressions) {
-    const violations = findComplianceViolations(sample);
-    for (const category of expected) {
-      if (!violations.includes(category)) {
-        failures.push(file + ": compliance regression " + label + " missed " + category);
+  if (findComplianceViolations(html).length === 0) {
+    const complianceRegressions = [
+      ["split claim", html + "无。官方<span>渠道</span>，限时价 ¥99，保证成功。", ["forbidden claim", "price commitment", "result or guarantee commitment"]],
+      ["quoted price and delivery", html + "无。报价人民币 99，24h 到账，包成功。", ["price commitment", "timing or delivery commitment", "result or guarantee commitment"]],
+      ["unrelated negations", html + "不看别家，报价人民币99；不必久等，24h到账；不用担心，包成功；不用犹豫，官方渠道。", ["forbidden claim", "price commitment", "timing or delivery commitment", "result or guarantee commitment"]],
+      ["mixed occurrences", html + "不展示价格但现在报价人民币99；不保证成功但本服务包成功；不提供官方渠道但这里就是官方渠道。", ["forbidden claim", "price commitment", "result or guarantee commitment"]],
+      ["spaced split claim", html + "官方 <span>渠道</span>", ["forbidden claim"]],
+    ];
+    for (const [label, sample, expected] of complianceRegressions) {
+      const violations = findComplianceViolations(sample);
+      for (const category of expected) {
+        if (!violations.includes(category)) {
+          failures.push(file + ": compliance regression " + label + " missed " + category);
+        }
+      }
+    }
+    for (const [label, sample] of [
+      ["negated claims", html + "不展示价格，不保证成功，不提供即时到账服务。"],
+      ["long explicit negations", html + "本页面不提供任何形式的官方渠道服务，也绝不会向你承诺保证成功。"],
+      ["service disclaimer", "不代售账号；实际范围、周期与费用以双方确认结果为准。"],
+      ["independent disclaimer", "何鹏远 / HPY · 独立服务说明页 · 与 OpenAI、Anthropic 无隶属关系。"],
+    ]) {
+      if (findComplianceViolations(sample).length > 0) {
+        failures.push(file + ": compliance regression " + label + " was incorrectly rejected");
       }
     }
   }
-  for (const [label, sample] of [
-    ["negated claims", html + "不展示价格，不保证成功，不提供即时到账服务。"],
-    ["long explicit negations", html + "本页面不提供任何形式的官方渠道服务，也绝不会向你承诺保证成功。"],
-    ["service disclaimer", "不代售账号；实际范围、周期与费用以双方确认结果为准。"],
-    ["independent disclaimer", "何鹏远 / HPY · 独立服务说明页 · 与 OpenAI、Anthropic 无隶属关系。"],
-  ]) {
-    if (findComplianceViolations(sample).length > 0) {
-      failures.push(file + ": compliance regression " + label + " was incorrectly rejected");
-    }
-  }
 
-  const toggleMutation = replaceFirst(
-    html,
-    /(\s)data-menu-toggle(?=\s|=|>|\/)/i,
-    (match, whitespace) => whitespace + "data-menu-broken",
-  );
-  if (!toggleMutation.changed) {
-    failures.push(file + ": mobile navigation regression could not replace data-menu-toggle");
-  } else if (!validateMobileNavigation(toggleMutation.content).some((issue) => issue.includes("[data-menu-toggle] element, found 0"))) {
-    failures.push(file + ": mobile navigation regression did not reject a missing exact toggle hook");
-  }
-
-  const exactToggle = extractElements(html, "button").find((button) => hasAttribute(button.openTag, "data-menu-toggle"));
-  if (!exactToggle) {
-    failures.push(file + ": mobile navigation regression could not locate the exact toggle button");
-  } else {
-    const duplicateToggleMutation = replaceFirst(
+  if (validateMobileNavigation(html).length === 0) {
+    const toggleMutation = replaceFirst(
       html,
-      exactToggle.html,
-      exactToggle.html + "<button type=\"submit\" data-menu-toggle>额外按钮</button>",
+      /(\s)data-menu-toggle(?=\s|=|>|\/)/i,
+      (match, whitespace) => whitespace + "data-menu-broken",
     );
-    if (!duplicateToggleMutation.changed) {
-      failures.push(file + ": mobile navigation regression could not insert a second toggle");
-    } else if (!hasDuplicateCountIssue(validateMobileNavigation(duplicateToggleMutation.content), "[data-menu-toggle]")) {
-      failures.push(file + ": mobile navigation regression did not reject a second toggle");
+    if (!toggleMutation.changed) {
+      failures.push(file + ": mobile navigation regression could not replace data-menu-toggle");
+    } else if (!validateMobileNavigation(toggleMutation.content).some((issue) => issue.includes("[data-menu-toggle] element, found 0"))) {
+      failures.push(file + ": mobile navigation regression did not reject a missing exact toggle hook");
     }
-  }
 
-  const exactMobileNav = extractElements(html, "nav").find((nav) => hasAttribute(nav.openTag, "id", "mobile-nav"));
-  if (!exactMobileNav) {
-    failures.push(file + ": mobile navigation regression could not locate mobile-nav");
-  } else {
-    const duplicateNavMutation = replaceFirst(html, exactMobileNav.html, exactMobileNav.html + "<nav id=\"mobile-nav\"></nav>");
-    if (!duplicateNavMutation.changed) {
-      failures.push(file + ": mobile navigation regression could not insert a second mobile-nav id");
-    } else if (!hasDuplicateCountIssue(validateMobileNavigation(duplicateNavMutation.content), "[id=mobile-nav]")) {
-      failures.push(file + ": mobile navigation regression did not reject a duplicate mobile-nav id");
-    }
-  }
-
-  const prefixedHookMutation = replaceFirst(
-    html,
-    /(\s)data-menu-toggle(?=\s|=|>|\/)/i,
-    (match, whitespace) => whitespace + "x-data-menu-toggle",
-  );
-  if (!prefixedHookMutation.changed) {
-    failures.push(file + ": mobile navigation regression could not prefix the toggle hook");
-  } else if (!validateMobileNavigation(prefixedHookMutation.content).some((issue) => issue.includes("[data-menu-toggle] element, found 0"))) {
-    failures.push(file + ": mobile navigation regression treated x-data-menu-toggle as a real hook");
-  }
-
-  const servicesSection = extractSection(html, "services");
-  const firstServiceCard = servicesSection
-    ? extractElements(servicesSection, "article").find((article) => hasAttribute(article.openTag, "data-service-card", "consulting"))
-    : null;
-  if (!firstServiceCard) {
-    failures.push(file + ": service-card regression could not locate the consulting card");
-  } else {
-    const fourthPointCard = replaceFirst(firstServiceCard.html, /<\/ul\s*>/i, "<li>永久免费</li></ul>");
-    if (!fourthPointCard.changed) {
-      failures.push(file + ": service-card regression could not add a fourth point");
+    const exactToggle = extractElements(html, "button").find((button) => hasAttribute(button.openTag, "data-menu-toggle"));
+    if (!exactToggle) {
+      failures.push(file + ": mobile navigation regression could not locate the exact toggle button");
     } else {
-      const fourthPointMutation = replaceFirst(html, firstServiceCard.html, fourthPointCard.content);
-      if (!fourthPointMutation.changed) {
-        failures.push(file + ": service-card regression could not apply the fourth point mutation");
-      } else if (!validateServiceCards(fourthPointMutation.content).some((issue) => issue.includes("exactly 3 li"))) {
-        failures.push(file + ": service-card regression did not reject a fourth point");
+      const duplicateToggleMutation = replaceFirst(
+        html,
+        exactToggle.html,
+        exactToggle.html + "<button type=\"submit\" data-menu-toggle>额外按钮</button>",
+      );
+      if (!duplicateToggleMutation.changed) {
+        failures.push(file + ": mobile navigation regression could not insert a second toggle");
+      } else if (!hasDuplicateCountIssue(validateMobileNavigation(duplicateToggleMutation.content), "[data-menu-toggle]")) {
+        failures.push(file + ": mobile navigation regression did not reject a second toggle");
       }
     }
 
-    const extraButtonCard = replaceFirst(firstServiceCard.html, /<\/article\s*>$/i, "<button type=\"button\">额外按钮</button></article>");
-    if (!extraButtonCard.changed) {
-      failures.push(file + ": service-card regression could not add an ordinary button");
+    const exactMobileNav = extractElements(html, "nav").find((nav) => hasAttribute(nav.openTag, "id", "mobile-nav"));
+    if (!exactMobileNav) {
+      failures.push(file + ": mobile navigation regression could not locate mobile-nav");
     } else {
-      const extraButtonMutation = replaceFirst(html, firstServiceCard.html, extraButtonCard.content);
-      if (!extraButtonMutation.changed) {
-        failures.push(file + ": service-card regression could not apply the ordinary button mutation");
-      } else if (!validateServiceCards(extraButtonMutation.content).some((issue) => issue.includes("exactly one button"))) {
-        failures.push(file + ": service-card regression did not reject an ordinary extra button");
+      const duplicateNavMutation = replaceFirst(html, exactMobileNav.html, exactMobileNav.html + "<nav id=\"mobile-nav\"></nav>");
+      if (!duplicateNavMutation.changed) {
+        failures.push(file + ": mobile navigation regression could not insert a second mobile-nav id");
+      } else if (!hasDuplicateCountIssue(validateMobileNavigation(duplicateNavMutation.content), "[id=mobile-nav]")) {
+        failures.push(file + ": mobile navigation regression did not reject a duplicate mobile-nav id");
+      }
+    }
+
+    const prefixedHookMutation = replaceFirst(
+      html,
+      /(\s)data-menu-toggle(?=\s|=|>|\/)/i,
+      (match, whitespace) => whitespace + "x-data-menu-toggle",
+    );
+    if (!prefixedHookMutation.changed) {
+      failures.push(file + ": mobile navigation regression could not prefix the toggle hook");
+    } else if (!validateMobileNavigation(prefixedHookMutation.content).some((issue) => issue.includes("[data-menu-toggle] element, found 0"))) {
+      failures.push(file + ": mobile navigation regression treated x-data-menu-toggle as a real hook");
+    }
+  }
+
+  if (validateServiceCards(html).length === 0) {
+    const servicesSection = extractSection(html, "services");
+    const firstServiceCard = servicesSection
+      ? extractElements(servicesSection, "article").find((article) => hasAttribute(article.openTag, "data-service-card", "consulting"))
+      : null;
+    if (!firstServiceCard) {
+      failures.push(file + ": service-card regression could not locate the consulting card");
+    } else {
+      const fourthPointCard = replaceFirst(firstServiceCard.html, /<\/ul\s*>/i, "<li>永久免费</li></ul>");
+      if (!fourthPointCard.changed) {
+        failures.push(file + ": service-card regression could not add a fourth point");
+      } else {
+        const fourthPointMutation = replaceFirst(html, firstServiceCard.html, fourthPointCard.content);
+        if (!fourthPointMutation.changed) {
+          failures.push(file + ": service-card regression could not apply the fourth point mutation");
+        } else if (!validateServiceCards(fourthPointMutation.content).some((issue) => issue.includes("exactly 3 li"))) {
+          failures.push(file + ": service-card regression did not reject a fourth point");
+        }
+      }
+
+      const extraButtonCard = replaceFirst(firstServiceCard.html, /<\/article\s*>$/i, "<button type=\"button\">额外按钮</button></article>");
+      if (!extraButtonCard.changed) {
+        failures.push(file + ": service-card regression could not add an ordinary button");
+      } else {
+        const extraButtonMutation = replaceFirst(html, firstServiceCard.html, extraButtonCard.content);
+        if (!extraButtonMutation.changed) {
+          failures.push(file + ": service-card regression could not apply the ordinary button mutation");
+        } else if (!validateServiceCards(extraButtonMutation.content).some((issue) => issue.includes("exactly one button"))) {
+          failures.push(file + ": service-card regression did not reject an ordinary extra button");
+        }
       }
     }
   }
