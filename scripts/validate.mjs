@@ -1,3 +1,5 @@
+import "./validate-s1.mjs";
+
 import { readFile, stat } from "node:fs/promises";
 
 const requiredFiles = [
@@ -71,4 +73,3 @@ if (![html, robots, sitemap, JSON.stringify(profile)].every((content) => content
   console.error("Validation failed: production domain is inconsistent across public metadata.");
   process.exit(1);
 }
-
