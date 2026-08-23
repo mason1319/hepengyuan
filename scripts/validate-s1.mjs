@@ -1,9 +1,10 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { Script as VmScript, createContext } from "node:vm";
 
 const file = "samples/s1/index.html";
 const cssFile = "samples/s1/styles.css";
 const scriptFile = "samples/s1/script.js";
+const portraitAssetFile = "samples/s1/assets/hpy-comic.webp";
 const failures = [];
 let html = "";
 let css = "";
@@ -1584,6 +1585,24 @@ try {
   if (!script.trim()) failures.push(scriptFile + ": empty");
 } catch {
   failures.push(scriptFile + ": missing");
+}
+
+try {
+  const portraitAssetStat = await stat(portraitAssetFile);
+  if (!portraitAssetStat.isFile()) {
+    failures.push(portraitAssetFile + ": must be a regular file");
+  } else {
+    if (portraitAssetStat.size === 0) failures.push(portraitAssetFile + ": empty");
+    if (portraitAssetStat.size >= 1_000_000) failures.push(portraitAssetFile + ": must be smaller than 1000000 bytes");
+
+    const portraitAsset = await readFile(portraitAssetFile);
+    const hasWebpMagic = portraitAsset.length >= 12
+      && portraitAsset.subarray(0, 4).toString("ascii") === "RIFF"
+      && portraitAsset.subarray(8, 12).toString("ascii") === "WEBP";
+    if (!hasWebpMagic) failures.push(portraitAssetFile + ": invalid RIFF/WEBP magic");
+  }
+} catch {
+  failures.push(portraitAssetFile + ": missing");
 }
 
 if (css.trim()) {
