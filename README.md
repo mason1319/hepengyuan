@@ -29,7 +29,7 @@ npm run dev:worker
 - 上传完成默认是草稿，不会被访客、搜索引擎或 AI 看到。
 - 视频自动生成真实画面 poster；图片生成去除 EXIF/GPS 的 WebP 公开版。
 - 只有手动点击“公开”后，内容才进入主页、详情页、公开 JSON 和媒体 sitemap。
-- 随时可以“转为草稿”，同时关闭公开页面与媒体文件访问。
+- 随时可以“转为草稿”，或在明确确认后永久删除 R2 文件、封面与媒体记录。
 
 完整 Cloudflare 初始化与 Access 配置见 [docs/cloudflare-media-setup.md](docs/cloudflare-media-setup.md)。
 

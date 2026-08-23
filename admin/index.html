@@ -170,10 +170,38 @@
             <div class="media-actions">
               <a class="quiet-action" data-view hidden>查看</a>
               <button class="publish-action" type="button" data-toggle></button>
+              <button class="delete-action" type="button" data-delete>删除</button>
             </div>
           </article>
         </template>
       </section>
+
+      <dialog
+        class="delete-dialog"
+        data-delete-dialog
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-copy delete-dialog-scope"
+      >
+        <form class="delete-dialog-card" method="dialog" data-delete-form>
+          <div class="delete-dialog-signal" aria-hidden="true">PERMANENT DELETE</div>
+          <div class="delete-dialog-content">
+            <p class="section-code">IRREVERSIBLE ACTION</p>
+            <h2 id="delete-dialog-title" tabindex="-1" data-delete-dialog-title>永久删除这条记录？</h2>
+            <p id="delete-dialog-copy" class="delete-dialog-copy" data-delete-dialog-copy></p>
+            <ul id="delete-dialog-scope" class="delete-dialog-scope">
+              <li>删除 R2 中的媒体文件与视频封面</li>
+              <li>删除媒体资料并关闭本站公开入口</li>
+              <li>此操作无法撤销或恢复</li>
+            </ul>
+            <p class="delete-dialog-busy" role="status" aria-live="polite" tabindex="-1" data-delete-dialog-busy hidden></p>
+            <p class="delete-dialog-error" role="alert" data-delete-dialog-error hidden></p>
+            <div class="delete-dialog-actions">
+              <button class="quiet-action" type="submit" value="cancel" data-delete-cancel>保留记录</button>
+              <button class="delete-action delete-confirm-action" type="button" data-delete-confirm>永久删除</button>
+            </div>
+          </div>
+        </form>
+      </dialog>
     </main>
 
     <footer>

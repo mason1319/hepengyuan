@@ -23,8 +23,21 @@ const mediaList = document.querySelector("[data-media-list]");
 const libraryStatus = document.querySelector("[data-library-status]");
 const refreshButton = document.querySelector("[data-refresh]");
 const itemTemplate = document.querySelector("#media-item-template");
+const deleteDialog = document.querySelector("[data-delete-dialog]");
+const deleteDialogTitle = document.querySelector("[data-delete-dialog-title]");
+const deleteDialogCopy = document.querySelector("[data-delete-dialog-copy]");
+const deleteDialogBusy = document.querySelector("[data-delete-dialog-busy]");
+const deleteDialogError = document.querySelector("[data-delete-dialog-error]");
+const deleteCancelButton = document.querySelector("[data-delete-cancel]");
+const deleteConfirmButton = document.querySelector("[data-delete-confirm]");
 
 let uploadInProgress = false;
+let deletionInProgress = false;
+let pendingDeletion = null;
+let libraryRequestGeneration = 0;
+let libraryRequestController = null;
+const DELETE_TIMEOUT_MS = 20_000;
+const LIBRARY_TIMEOUT_MS = 15_000;
 
 function setStatus(element, message, { error = false } = {}) {
   element.textContent = message;
@@ -40,7 +53,9 @@ async function apiRequest(path, options = {}) {
   const payload = contentType.includes("application/json") ? await response.json() : null;
 
   if (!response.ok) {
-    throw new Error(payload?.error || `请求失败（${response.status}）`);
+    const error = new Error(payload?.error || `请求失败（${response.status}）`);
+    error.status = response.status;
+    throw error;
   }
 
   return payload;
@@ -274,6 +289,146 @@ async function uploadFile(file, metadata, posterBlob = null) {
   }
 }
 
+function appendEmptyLibrary() {
+  if (mediaList.querySelector(".empty-library")) return;
+  const empty = document.createElement("p");
+  empty.className = "empty-library";
+  empty.textContent = "还没有媒体记录。选择一个本地文件，先保存第一条草稿。";
+  mediaList.append(empty);
+}
+
+function populateDeleteDialog(item) {
+  const typeLabel = item.mediaType === "video" ? "视频" : "图片";
+  deleteDialogTitle.textContent = item.deletionPending ? `重试永久删除这条${typeLabel}？` : `永久删除这条${typeLabel}？`;
+  if (item.deletionPending) {
+    deleteDialogCopy.textContent = `“${item.title}”上次未清理完成，已从公开页面撤回。再次确认会继续删除剩余文件和记录。`;
+  } else if (item.status === "published") {
+    deleteDialogCopy.textContent = `“${item.title}”目前正在公开。确认后会先立即下线，再永久清理文件和记录。`;
+  } else {
+    deleteDialogCopy.textContent = `“${item.title}”目前是草稿。确认后会永久清理文件和记录。`;
+  }
+  deleteConfirmButton.textContent = item.deletionPending ? "重试永久删除" : "永久删除";
+}
+
+function openDeleteDialog(item, article, trigger) {
+  pendingDeletion = { item, article, trigger };
+  populateDeleteDialog(item);
+  deleteDialog.returnValue = "";
+  deleteDialogBusy.hidden = true;
+  deleteDialogBusy.textContent = "";
+  deleteDialogError.hidden = true;
+  deleteDialogError.textContent = "";
+  deleteCancelButton.disabled = false;
+  deleteConfirmButton.disabled = false;
+  deleteDialog.showModal();
+  window.requestAnimationFrame(() => {
+    deleteDialog.scrollTop = 0;
+    deleteDialogTitle.focus({ preventScroll: true });
+  });
+}
+
+function setDeleteDialogBusy(busy) {
+  deletionInProgress = busy;
+  if (busy) {
+    deleteDialog.setAttribute("aria-busy", "true");
+  } else {
+    deleteDialog.removeAttribute("aria-busy");
+  }
+  deleteCancelButton.disabled = busy;
+  deleteConfirmButton.disabled = busy;
+  deleteConfirmButton.textContent = busy ? "正在永久删除…" : pendingDeletion?.item.deletionPending ? "重试永久删除" : "永久删除";
+  deleteDialogBusy.hidden = !busy;
+  deleteDialogBusy.tabIndex = busy ? 0 : -1;
+  deleteDialogBusy.textContent = busy ? "正在永久删除并核对存储状态，请保持此窗口打开。最长等待约 35 秒。" : "";
+  if (busy) window.requestAnimationFrame(() => deleteDialogBusy.focus());
+}
+
+function invalidateLibraryRequests() {
+  libraryRequestGeneration += 1;
+  libraryRequestController?.abort();
+  libraryRequestController = null;
+  refreshButton.disabled = false;
+}
+
+function finishDeletion(context) {
+  invalidateLibraryRequests();
+  const rows = [...mediaList.querySelectorAll(".media-row")];
+  const current = rows.find((row) => row.dataset.mediaId === context.item.id);
+  const currentIndex = current ? rows.indexOf(current) : -1;
+  const focusTarget = current
+    ? rows[currentIndex + 1]?.querySelector("[data-delete]") || rows[currentIndex - 1]?.querySelector("[data-delete]")
+    : rows[0]?.querySelector("[data-delete]");
+
+  setDeleteDialogBusy(false);
+  deleteDialog.close("deleted");
+  current?.remove();
+
+  const remaining = mediaList.querySelectorAll(".media-row").length;
+  if (remaining === 0) appendEmptyLibrary();
+  libraryStatus.textContent = `已永久删除“${context.item.title}” · 剩余 ${remaining} 条记录`;
+  window.requestAnimationFrame(() => (focusTarget || refreshButton).focus());
+}
+
+async function requestPermanentDeletion(mediaId) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), DELETE_TIMEOUT_MS);
+  try {
+    return await apiRequest(`/api/admin/media/${encodeURIComponent(mediaId)}`, {
+      method: "DELETE",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("删除请求超时，正在核对服务器状态。");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+async function confirmPendingDeletion() {
+  if (!pendingDeletion || deletionInProgress) return;
+  const context = pendingDeletion;
+  setDeleteDialogBusy(true);
+  deleteDialogError.hidden = true;
+  context.article?.setAttribute("aria-busy", "true");
+  libraryStatus.textContent = `正在永久删除“${context.item.title}”…`;
+
+  try {
+    await requestPermanentDeletion(context.item.id);
+    finishDeletion(context);
+  } catch (error) {
+    const refreshed = await loadLibrary();
+    if (refreshed && !refreshed.items.some((item) => item.id === context.item.id)) {
+      finishDeletion(context);
+      return;
+    }
+
+    const refreshedItem = refreshed?.items.find((item) => item.id === context.item.id);
+    const refreshedArticle = [...mediaList.querySelectorAll(".media-row")].find(
+      (row) => row.dataset.mediaId === context.item.id,
+    );
+    if (refreshedItem) context.item = refreshedItem;
+    if (refreshedArticle) {
+      context.article = refreshedArticle;
+      context.trigger = refreshedArticle.querySelector("[data-delete]");
+    }
+    pendingDeletion = context;
+    populateDeleteDialog(context.item);
+    setDeleteDialogBusy(false);
+    context.article?.removeAttribute("aria-busy");
+
+    const retryHint = refreshedItem?.deletionPending
+      ? "内容已经撤回，不会继续公开；可以再次点击“重试永久删除”。"
+      : "未能确认删除状态，请检查网络后重试。";
+    deleteDialogError.textContent = `${error.message} ${retryHint}`;
+    deleteDialogError.hidden = false;
+    libraryStatus.textContent = `“${context.item.title}”删除未完成`;
+    deleteConfirmButton.focus();
+  }
+}
+
 function renderMediaItem(item) {
   const fragment = itemTemplate.content.cloneNode(true);
   const article = fragment.querySelector(".media-row");
@@ -284,12 +439,33 @@ function renderMediaItem(item) {
   const meta = fragment.querySelector("[data-meta]");
   const view = fragment.querySelector("[data-view]");
   const toggle = fragment.querySelector("[data-toggle]");
-  const isPublic = item.status === "published" && item.uploadState === "complete";
+  const deleteButton = fragment.querySelector("[data-delete]");
+  const isDeletionPending = Boolean(item.deletionPending);
+  const isPublic = !isDeletionPending && item.status === "published" && item.uploadState === "complete";
+  let rowMutationInProgress = false;
+  let rowButtonState = [];
+
+  function setRowMutationBusy(busy) {
+    rowMutationInProgress = busy;
+    article.toggleAttribute("aria-busy", busy);
+    if (busy) {
+      rowButtonState = [...article.querySelectorAll("button")].map((button) => [button, button.disabled]);
+      rowButtonState.forEach(([button]) => {
+        button.disabled = true;
+      });
+      return;
+    }
+    rowButtonState.forEach(([button, wasDisabled]) => {
+      if (button.isConnected) button.disabled = wasDisabled;
+    });
+    rowButtonState = [];
+  }
 
   kind.textContent = item.mediaType === "image" ? "IMG" : "VID";
   title.textContent = item.title;
-  state.textContent = item.uploadState === "uploading" ? "上传未完成" : isPublic ? "已公开" : "草稿";
+  state.textContent = isDeletionPending ? "删除待重试" : item.uploadState === "uploading" ? "上传未完成" : isPublic ? "已公开" : "草稿";
   state.dataset.public = isPublic ? "true" : "false";
+  state.dataset.deleting = isDeletionPending ? "true" : "false";
   path.textContent = `/stories/${item.slug}`;
 
   const details = [
@@ -311,10 +487,11 @@ function renderMediaItem(item) {
 
   toggle.textContent = isPublic ? "转为草稿" : "公开";
   toggle.dataset.draftAction = isPublic ? "true" : "false";
-  toggle.disabled = item.uploadState !== "complete";
+  toggle.disabled = isDeletionPending || item.uploadState !== "complete";
   toggle.addEventListener("click", async () => {
+    if (rowMutationInProgress) return;
     const nextStatus = isPublic ? "draft" : "published";
-    toggle.disabled = true;
+    setRowMutationBusy(true);
     libraryStatus.textContent = nextStatus === "published" ? `正在公开“${item.title}”…` : `正在把“${item.title}”转为草稿…`;
     try {
       await apiRequest(`/api/admin/media/${encodeURIComponent(item.id)}`, {
@@ -323,12 +500,20 @@ function renderMediaItem(item) {
       });
       await loadLibrary();
     } catch (error) {
-      libraryStatus.textContent = error.message;
-      toggle.disabled = false;
+      if (article.isConnected) {
+        libraryStatus.textContent = error.message;
+        setRowMutationBusy(false);
+      }
     }
   });
 
-  if (item.mediaType === "video" && item.uploadState === "complete" && !item.thumbnailReady) {
+  deleteButton.textContent = isDeletionPending ? "重试删除" : "删除";
+  deleteButton.setAttribute("aria-label", `${isDeletionPending ? "重试永久删除" : "永久删除"}“${item.title}”`);
+  deleteButton.addEventListener("click", () => {
+    if (!rowMutationInProgress) openDeleteDialog(item, article, deleteButton);
+  });
+
+  if (!isDeletionPending && item.mediaType === "video" && item.uploadState === "complete" && !item.thumbnailReady) {
     const posterButton = document.createElement("button");
     posterButton.type = "button";
     posterButton.className = "quiet-action";
@@ -339,8 +524,8 @@ function renderMediaItem(item) {
       picker.accept = "video/mp4,video/webm";
       picker.addEventListener("change", async () => {
         const localVideo = picker.files?.[0];
-        if (!localVideo || !localVideo.type.startsWith("video/")) return;
-        posterButton.disabled = true;
+        if (!localVideo || !localVideo.type.startsWith("video/") || rowMutationInProgress || !article.isConnected) return;
+        setRowMutationBusy(true);
         libraryStatus.textContent = `正在为“${item.title}”重新生成封面…`;
         try {
           const poster = await createVideoPoster(localVideo);
@@ -351,8 +536,10 @@ function renderMediaItem(item) {
           });
           await loadLibrary();
         } catch (error) {
-          libraryStatus.textContent = error.message;
-          posterButton.disabled = false;
+          if (article.isConnected) {
+            libraryStatus.textContent = error.message;
+            setRowMutationBusy(false);
+          }
         }
       }, { once: true });
       picker.click();
@@ -365,19 +552,23 @@ function renderMediaItem(item) {
 }
 
 async function loadLibrary() {
+  const generation = libraryRequestGeneration + 1;
+  libraryRequestGeneration = generation;
+  libraryRequestController?.abort();
+  const controller = new AbortController();
+  libraryRequestController = controller;
+  const timeout = window.setTimeout(() => controller.abort(), LIBRARY_TIMEOUT_MS);
   refreshButton.disabled = true;
   libraryStatus.textContent = "正在读取媒体库…";
 
   try {
-    const payload = await apiRequest("/api/admin/media");
+    const payload = await apiRequest("/api/admin/media", { signal: controller.signal });
+    if (generation !== libraryRequestGeneration) return null;
     identityLabel.textContent = payload.identity.email;
     mediaList.replaceChildren();
 
     if (payload.items.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "empty-library";
-      empty.textContent = "还没有媒体记录。选择一个本地文件，先保存第一条草稿。";
-      mediaList.append(empty);
+      appendEmptyLibrary();
       libraryStatus.textContent = "媒体库为空";
     } else {
       const fragment = document.createDocumentFragment();
@@ -385,11 +576,18 @@ async function loadLibrary() {
       mediaList.append(fragment);
       libraryStatus.textContent = `共 ${payload.items.length} 条记录`;
     }
+    return payload;
   } catch (error) {
-    libraryStatus.textContent = error.message;
-    identityLabel.textContent = "身份验证失败";
+    if (generation !== libraryRequestGeneration) return null;
+    libraryStatus.textContent = error.name === "AbortError" ? "读取媒体库超时，请点击“刷新列表”重试。" : error.message;
+    if (error.status === 401 || error.status === 403) identityLabel.textContent = "身份验证失败";
+    return null;
   } finally {
-    refreshButton.disabled = false;
+    window.clearTimeout(timeout);
+    if (generation === libraryRequestGeneration) {
+      libraryRequestController = null;
+      refreshButton.disabled = false;
+    }
   }
 }
 
@@ -399,6 +597,28 @@ fileInput.addEventListener("dragenter", () => {
 });
 fileInput.addEventListener("dragleave", updateFileState);
 refreshButton.addEventListener("click", loadLibrary);
+deleteConfirmButton.addEventListener("click", confirmPendingDeletion);
+deleteDialog.addEventListener("cancel", (event) => {
+  if (deletionInProgress) event.preventDefault();
+});
+deleteDialog.addEventListener("close", () => {
+  if (deletionInProgress) return;
+  const context = pendingDeletion;
+  const deleted = deleteDialog.returnValue === "deleted";
+  pendingDeletion = null;
+  deleteDialogBusy.hidden = true;
+  deleteDialogBusy.textContent = "";
+  deleteDialogError.hidden = true;
+  deleteDialogError.textContent = "";
+  if (!deleted) {
+    const fallback = context?.trigger?.isConnected
+      ? context.trigger
+      : [...mediaList.querySelectorAll(".media-row")]
+          .find((row) => row.dataset.mediaId === context?.item.id)
+          ?.querySelector("[data-delete]");
+    window.requestAnimationFrame(() => (fallback || refreshButton).focus());
+  }
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -464,7 +684,7 @@ form.addEventListener("submit", async (event) => {
 });
 
 window.addEventListener("beforeunload", (event) => {
-  if (!uploadInProgress) return;
+  if (!uploadInProgress && !deletionInProgress) return;
   event.preventDefault();
   event.returnValue = "";
 });
