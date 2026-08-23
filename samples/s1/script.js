@@ -18,34 +18,40 @@ function closeMenu({ restoreFocus = false } = {}) {
   if (restoreFocus && menuToggle) menuToggle.focus();
 }
 
-if (menuToggle && mobileNav) {
-  setMenuOpen(false);
+if (!menuToggle || !mobileNav) {
+  document.documentElement.classList.remove("js");
+} else {
+  try {
+    setMenuOpen(false);
 
-  menuToggle.addEventListener("click", () => {
-    const isOpen = menuToggle.getAttribute("aria-expanded") !== "true";
-    setMenuOpen(isOpen);
-  });
+    menuToggle.addEventListener("click", () => {
+      const isOpen = menuToggle.getAttribute("aria-expanded") !== "true";
+      setMenuOpen(isOpen);
+    });
 
-  mobileNav.addEventListener("click", (event) => {
-    if (event.target instanceof Element && event.target.closest("a")) closeMenu();
-  });
+    mobileNav.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.closest("a")) closeMenu();
+    });
 
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && menuToggle.getAttribute("aria-expanded") === "true") {
-      closeMenu({ restoreFocus: true });
-    }
-  });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && menuToggle.getAttribute("aria-expanded") === "true") {
+        closeMenu({ restoreFocus: true });
+      }
+    });
 
-  document.addEventListener("click", (event) => {
-    if (menuToggle.getAttribute("aria-expanded") !== "true") return;
-    if (!(event.target instanceof Node)) return;
-    if (menuToggle.contains(event.target) || mobileNav.contains(event.target)) return;
-    closeMenu();
-  });
+    document.addEventListener("click", (event) => {
+      if (menuToggle.getAttribute("aria-expanded") !== "true") return;
+      if (!(event.target instanceof Node)) return;
+      if (menuToggle.contains(event.target) || mobileNav.contains(event.target)) return;
+      closeMenu();
+    });
 
-  window.addEventListener("resize", () => {
-    if (window.innerWidth > 900) closeMenu();
-  });
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 900) closeMenu();
+    });
+  } catch {
+    document.documentElement.classList.remove("js");
+  }
 }
 
 const serviceButtons = document.querySelectorAll("[data-service-select]");
@@ -125,6 +131,7 @@ async function copyContactName() {
       copied = fallbackCopy(value);
     }
   } catch {
+    if (requestId !== copyRequestId) return;
     copied = fallbackCopy(value);
   }
 
@@ -154,11 +161,19 @@ try {
   reducedMotion = true;
 }
 
-if (reducedMotion || typeof window.IntersectionObserver !== "function") {
+let IntersectionObserverConstructor = null;
+try {
+  const candidate = window.IntersectionObserver;
+  if (typeof candidate === "function") IntersectionObserverConstructor = candidate;
+} catch {
+  IntersectionObserverConstructor = null;
+}
+
+if (reducedMotion || !IntersectionObserverConstructor) {
   revealAll();
 } else {
   try {
-    const observer = new IntersectionObserver((entries) => {
+    const observer = new IntersectionObserverConstructor((entries) => {
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
         reveal(entry.target);

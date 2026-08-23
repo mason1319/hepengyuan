@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { Script as VmScript, createContext } from "node:vm";
 
 const file = "samples/s1/index.html";
 const cssFile = "samples/s1/styles.css";
@@ -804,10 +805,527 @@ function stripJavaScriptComments(content) {
   return result;
 }
 
-function validateInteractions(content, options = {}) {
+function maskJavaScriptNonCode(content) {
+  let result = "";
+  let state = "code";
+  let escaped = false;
+
+  for (let index = 0; index < content.length; index += 1) {
+    const character = content[index];
+    const next = content[index + 1];
+
+    if (state === "line-comment") {
+      if (character === "\n" || character === "\r") {
+        result += character;
+        state = "code";
+      } else {
+        result += " ";
+      }
+      continue;
+    }
+
+    if (state === "block-comment") {
+      if (character === "*" && next === "/") {
+        result += "  ";
+        index += 1;
+        state = "code";
+      } else {
+        result += character === "\n" || character === "\r" ? character : " ";
+      }
+      continue;
+    }
+
+    if (state !== "code") {
+      const delimiter = state === "single-quote" ? "'" : state === "double-quote" ? '"' : "`";
+      result += character === "\n" || character === "\r" ? character : " ";
+      if (escaped) {
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (character === delimiter) {
+        state = "code";
+      }
+      continue;
+    }
+
+    if (character === "/" && next === "/") {
+      result += "  ";
+      index += 1;
+      state = "line-comment";
+    } else if (character === "/" && next === "*") {
+      result += "  ";
+      index += 1;
+      state = "block-comment";
+    } else if (character === "'" || character === '"' || character === "`") {
+      result += " ";
+      state = character === "'" ? "single-quote" : character === '"' ? "double-quote" : "template";
+    } else {
+      result += character;
+    }
+  }
+
+  return result;
+}
+
+class InteractionClassList {
+  constructor(initial = []) {
+    this.values = new Set(initial);
+  }
+
+  add(...tokens) {
+    tokens.forEach((token) => this.values.add(token));
+  }
+
+  remove(...tokens) {
+    tokens.forEach((token) => this.values.delete(token));
+  }
+
+  contains(token) {
+    return this.values.has(token);
+  }
+}
+
+class InteractionEventTarget {
+  constructor() {
+    this.listeners = new Map();
+  }
+
+  addEventListener(type, listener) {
+    const listeners = this.listeners.get(type) ?? [];
+    listeners.push(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  async dispatch(type, init = {}) {
+    const event = { ...init, target: init.target ?? this };
+    const results = (this.listeners.get(type) ?? []).map((listener) => listener(event));
+    await Promise.all(results.map((result) => Promise.resolve(result)));
+  }
+}
+
+class InteractionElement extends InteractionEventTarget {
+  constructor(tagName, ownerDocument) {
+    super();
+    this.tagName = tagName.toUpperCase();
+    this.ownerDocument = ownerDocument;
+    this.attributes = new Map();
+    this.children = [];
+    this.parentElement = null;
+    this.dataset = {};
+    this.classList = new InteractionClassList();
+    this.hidden = false;
+    this.style = {};
+    this.textContent = "";
+    this.value = "";
+    this.bounds = { top: 20, bottom: 120 };
+    this.queries = new Map();
+    this.queryLists = new Map();
+  }
+
+  setAttribute(name, value) {
+    this.attributes.set(name, String(value));
+  }
+
+  getAttribute(name) {
+    return this.attributes.has(name) ? this.attributes.get(name) : null;
+  }
+
+  setQuery(selector, element) {
+    this.queries.set(selector, element);
+  }
+
+  setQueryAll(selector, elements) {
+    this.queryLists.set(selector, elements);
+  }
+
+  querySelector(selector) {
+    return this.queries.get(selector) ?? null;
+  }
+
+  querySelectorAll(selector) {
+    return this.queryLists.get(selector) ?? [];
+  }
+
+  append(...elements) {
+    for (const element of elements) {
+      element.parentElement = this;
+      this.children.push(element);
+    }
+  }
+
+  remove() {
+    if (!this.parentElement) return;
+    this.parentElement.children = this.parentElement.children.filter((child) => child !== this);
+    this.parentElement = null;
+  }
+
+  contains(target) {
+    let current = target;
+    while (current) {
+      if (current === this) return true;
+      current = current.parentElement;
+    }
+    return false;
+  }
+
+  closest(selector) {
+    if (selector === "a" && this.tagName === "A") return this;
+    if (selector === "[data-service-card]" && this.dataset.serviceCard !== undefined) return this;
+    return this.parentElement?.closest(selector) ?? null;
+  }
+
+  focus() {
+    this.ownerDocument.activeElement = this;
+  }
+
+  select() {}
+
+  setSelectionRange() {}
+
+  getBoundingClientRect() {
+    return { ...this.bounds };
+  }
+}
+
+class InteractionDocument extends InteractionEventTarget {
+  constructor() {
+    super();
+    this.queries = new Map();
+    this.queryLists = new Map();
+    this.documentElement = new InteractionElement("html", this);
+    this.body = new InteractionElement("body", this);
+    this.activeElement = this.body;
+    this.execCommandCalls = 0;
+    this.execCommandResult = true;
+  }
+
+  setQuery(selector, element) {
+    this.queries.set(selector, element);
+  }
+
+  setQueryAll(selector, elements) {
+    this.queryLists.set(selector, elements);
+  }
+
+  querySelector(selector) {
+    return this.queries.get(selector) ?? null;
+  }
+
+  querySelectorAll(selector) {
+    return this.queryLists.get(selector) ?? [];
+  }
+
+  createElement(tagName) {
+    return new InteractionElement(tagName, this);
+  }
+
+  execCommand(command) {
+    if (command !== "copy") return false;
+    this.execCommandCalls += 1;
+    return this.execCommandResult;
+  }
+}
+
+function createInteractionFixture(options = {}) {
+  const document = new InteractionDocument();
+  const createElement = (tagName) => new InteractionElement(tagName, document);
+
+  const menuToggle = createElement("button");
+  menuToggle.setAttribute("aria-expanded", "false");
+  const menuLabel = createElement("span");
+  menuLabel.textContent = "打开导航";
+  menuToggle.append(menuLabel);
+  menuToggle.setQuery(".sr-only", menuLabel);
+
+  const mobileNav = createElement("nav");
+  mobileNav.hidden = true;
+  const mobileLink = createElement("a");
+  mobileNav.append(mobileLink);
+
+  const serviceCardNames = ["入门咨询", "环境协助", "工作流搭建"];
+  const serviceCardsFixture = serviceCardNames.map((name, index) => {
+    const card = createElement("article");
+    card.dataset.serviceCard = String(index + 1);
+    card.dataset.serviceName = name;
+    card.dataset.selected = "false";
+    const button = createElement("button");
+    button.setAttribute("aria-pressed", "false");
+    card.append(button);
+    card.setQuery("[data-service-select]", button);
+    return { card, button };
+  });
+  const serviceCardsElements = serviceCardsFixture.map(({ card }) => card);
+  const serviceButtons = serviceCardsFixture.map(({ button }) => button);
+  const selectedServiceStatus = createElement("p");
+  selectedServiceStatus.textContent = "当前未选择服务方案";
+
+  const copyButton = createElement("button");
+  const contactName = createElement("strong");
+  contactName.textContent = "TerraSol 明远";
+  const copyStatus = createElement("p");
+
+  const revealItems = [createElement("div"), createElement("section")];
+  revealItems[0].bounds = { top: 10, bottom: 90 };
+  revealItems[1].bounds = { top: 100, bottom: 220 };
+
+  document.setQuery("[data-menu-toggle]", options.missingMenuToggle ? null : menuToggle);
+  document.setQuery("[data-mobile-nav]", options.missingMobileNav ? null : mobileNav);
+  document.setQuery("[data-selected-service]", selectedServiceStatus);
+  document.setQuery("[data-copy-contact]", copyButton);
+  document.setQuery("[data-contact-name]", contactName);
+  document.setQuery("[data-copy-status]", copyStatus);
+  document.setQueryAll("[data-service-select]", serviceButtons);
+  document.setQueryAll("[data-service-card]", serviceCardsElements);
+  document.setQueryAll(".reveal", revealItems);
+
+  const clipboardCalls = [];
+  const navigator = {
+    clipboard: {
+      writeText(value) {
+        clipboardCalls.push(value);
+        if (options.clipboardWriteText) return options.clipboardWriteText(value, clipboardCalls.length);
+        return Promise.resolve();
+      },
+    },
+  };
+
+  const window = new InteractionEventTarget();
+  window.innerWidth = 390;
+  window.innerHeight = 844;
+  window.matchMedia = () => ({ matches: options.reducedMotion === true });
+  window.document = document;
+  window.navigator = navigator;
+
+  class FixtureIntersectionObserver {
+    constructor(callback) {
+      if (options.observerConstructThrows) throw new Error("observer construction failed");
+      this.callback = callback;
+      this.observed = new Set();
+    }
+
+    observe(element) {
+      this.observed.add(element);
+    }
+
+    unobserve(element) {
+      this.observed.delete(element);
+    }
+  }
+
+  let observerConstructor = FixtureIntersectionObserver;
+  if (Object.hasOwn(options, "observerValue")) observerConstructor = options.observerValue;
+  if (options.observerGetterThrows) {
+    Object.defineProperty(window, "IntersectionObserver", {
+      configurable: true,
+      get() {
+        throw new Error("observer getter failed");
+      },
+    });
+  } else {
+    window.IntersectionObserver = observerConstructor;
+  }
+
+  const sandbox = {
+    document,
+    window,
+    navigator,
+    Element: InteractionElement,
+    HTMLElement: InteractionElement,
+    Node: InteractionElement,
+    IntersectionObserver: observerConstructor,
+    console: { log() {}, warn() {}, error() {} },
+  };
+
+  return {
+    sandbox,
+    document,
+    window,
+    menuToggle,
+    menuLabel,
+    mobileNav,
+    mobileLink,
+    serviceCards: serviceCardsElements,
+    serviceButtons,
+    selectedServiceStatus,
+    copyButton,
+    contactName,
+    copyStatus,
+    revealItems,
+    clipboardCalls,
+  };
+}
+
+function describeInteractionError(error) {
+  const name = typeof error?.name === "string" ? error.name : "Error";
+  const message = typeof error?.message === "string" ? error.message : String(error);
+  return name + ": " + message;
+}
+
+function executeInteractionScript(content, options = {}) {
+  const fixture = createInteractionFixture(options);
+  const context = createContext(fixture.sandbox, {
+    name: "s1-interaction-validator",
+    codeGeneration: { strings: false, wasm: false },
+  });
+
+  try {
+    const compiled = new VmScript(content, { filename: scriptFile, displayErrors: false });
+    compiled.runInContext(context, { timeout: 200, displayErrors: false });
+    return { ...fixture, error: null };
+  } catch (error) {
+    return { ...fixture, error };
+  }
+}
+
+async function validateInteractionBehavior(content) {
+  const issues = [];
+  const baseline = executeInteractionScript(content);
+  if (baseline.error) {
+    return ["behavior execution failed: " + describeInteractionError(baseline.error)];
+  }
+
+  if (!baseline.document.documentElement.classList.contains("js")) {
+    issues.push("behavior: complete menu hooks must retain the js class");
+  }
+
+  try {
+    await baseline.menuToggle.dispatch("click");
+    if (baseline.menuToggle.getAttribute("aria-expanded") !== "true"
+      || baseline.mobileNav.hidden
+      || baseline.menuLabel.textContent !== "关闭导航") {
+      issues.push("behavior: menu click must synchronize expanded, hidden, and close-label state");
+    }
+
+    await baseline.document.dispatch("keydown", { key: "Escape", target: baseline.document.body });
+    if (baseline.menuToggle.getAttribute("aria-expanded") !== "false"
+      || !baseline.mobileNav.hidden
+      || baseline.menuLabel.textContent !== "打开导航"
+      || baseline.document.activeElement !== baseline.menuToggle) {
+      issues.push("behavior: Escape must close the menu and restore toggle focus");
+    }
+  } catch (error) {
+    issues.push("behavior: menu interaction threw " + describeInteractionError(error));
+  }
+
+  try {
+    await baseline.serviceButtons[1].dispatch("click");
+    const selectedCards = baseline.serviceCards.filter((card) => card.dataset.selected === "true");
+    const pressedButtons = baseline.serviceButtons.filter((button) => button.getAttribute("aria-pressed") === "true");
+    if (selectedCards.length !== 1
+      || selectedCards[0] !== baseline.serviceCards[1]
+      || pressedButtons.length !== 1
+      || pressedButtons[0] !== baseline.serviceButtons[1]
+      || baseline.selectedServiceStatus.textContent !== "当前关注：环境协助") {
+      issues.push("behavior: service button click must produce one synchronized selected service");
+    }
+  } catch (error) {
+    issues.push("behavior: service selection threw " + describeInteractionError(error));
+  }
+
+  let clipboardCorePassed = false;
+  try {
+    if (baseline.clipboardCalls.length !== 0) {
+      issues.push("behavior: clipboard access must not run during page initialization");
+    }
+    await baseline.copyButton.dispatch("click");
+    clipboardCorePassed = baseline.clipboardCalls.length === 1
+      && baseline.clipboardCalls[0] === "TerraSol 明远"
+      && baseline.copyStatus.textContent === "已复制：TerraSol 明远";
+    if (!clipboardCorePassed) {
+      issues.push("behavior: clipboard click must call writeText with the visible contact name and report success");
+    }
+  } catch (error) {
+    issues.push("behavior: clipboard interaction threw " + describeInteractionError(error));
+  }
+
+  const reducedMotion = executeInteractionScript(content, { reducedMotion: true });
+  if (reducedMotion.error) {
+    issues.push("behavior: reduced-motion setup threw " + describeInteractionError(reducedMotion.error));
+  } else if (reducedMotion.revealItems.some((item) => !item.classList.contains("is-visible"))) {
+    issues.push("behavior: reduced motion must reveal every item immediately");
+  }
+
+  for (const [label, options] of [
+    ["missing menu toggle", { missingMenuToggle: true }],
+    ["missing mobile navigation", { missingMobileNav: true }],
+  ]) {
+    const fallback = executeInteractionScript(content, options);
+    if (fallback.error) {
+      issues.push("behavior: " + label + " fallback threw " + describeInteractionError(fallback.error));
+      continue;
+    }
+    if (fallback.document.documentElement.classList.contains("js")) {
+      issues.push("behavior: " + label + " must remove the js class");
+    }
+    try {
+      await fallback.serviceButtons[0].dispatch("click");
+      await fallback.copyButton.dispatch("click");
+      if (fallback.serviceCards[0].dataset.selected !== "true"
+        || fallback.clipboardCalls[0] !== "TerraSol 明远") {
+        issues.push("behavior: " + label + " must not disable independent service and copy interactions");
+      }
+    } catch (error) {
+      issues.push("behavior: " + label + " independent interaction threw " + describeInteractionError(error));
+    }
+  }
+
+  for (const [label, options] of [
+    ["IntersectionObserver getter failure", { observerGetterThrows: true }],
+    ["missing IntersectionObserver", { observerValue: undefined }],
+    ["non-function IntersectionObserver", { observerValue: {} }],
+    ["IntersectionObserver construction failure", { observerConstructThrows: true }],
+  ]) {
+    const fallback = executeInteractionScript(content, options);
+    if (fallback.error) {
+      issues.push("behavior: " + label + " must not throw (" + describeInteractionError(fallback.error) + ")");
+    } else if (fallback.revealItems.some((item) => !item.classList.contains("is-visible"))) {
+      issues.push("behavior: " + label + " must reveal every item");
+    }
+  }
+
+  if (clipboardCorePassed) {
+    let rejectFirstCopy = null;
+    const race = executeInteractionScript(content, {
+      clipboardWriteText(_value, callNumber) {
+        if (callNumber !== 1) return Promise.resolve();
+        return new Promise((_resolve, reject) => {
+          rejectFirstCopy = reject;
+        });
+      },
+    });
+    if (race.error) {
+      issues.push("behavior: repeat-copy setup threw " + describeInteractionError(race.error));
+    } else {
+      try {
+        const firstCopy = race.copyButton.dispatch("click");
+        const secondCopy = race.copyButton.dispatch("click");
+        await secondCopy;
+        if (typeof rejectFirstCopy !== "function") {
+          issues.push("behavior: repeat-copy test did not reach the first clipboard request");
+        } else {
+          rejectFirstCopy(new Error("late clipboard rejection"));
+          await firstCopy;
+          if (race.document.execCommandCalls !== 0) {
+            issues.push("behavior: a stale rejected copy request must not run fallbackCopy");
+          }
+          if (race.copyStatus.textContent !== "已复制：TerraSol 明远") {
+            issues.push("behavior: a stale rejected copy request must not roll back the latest status");
+          }
+        }
+      } catch (error) {
+        issues.push("behavior: repeat-copy interaction threw " + describeInteractionError(error));
+      }
+    }
+  }
+
+  return issues;
+}
+
+async function validateInteractions(content, options = {}) {
   const { runRegressions = true } = options;
   const issues = [];
   const clean = stripJavaScriptComments(content);
+  const executable = maskJavaScriptNonCode(content);
   const source = clean.trim();
 
   if (!source) return ["empty"];
@@ -819,7 +1337,8 @@ function validateInteractions(content, options = {}) {
   const requiredPatterns = [
     [/document\s*\.\s*querySelector\(\s*["']\[data-menu-toggle\]["']\s*\)/u, "mobile menu toggle hook is missing"],
     [/document\s*\.\s*querySelector\(\s*["']\[data-mobile-nav\]["']\s*\)/u, "mobile navigation hook is missing"],
-    [/if\s*\(\s*menuToggle\s*&&\s*mobileNav\s*\)/u, "mobile navigation must tolerate missing hooks"],
+    [/(?:if\s*\(\s*menuToggle\s*&&\s*mobileNav\s*\)|if\s*\(\s*!menuToggle\s*\|\|\s*!mobileNav\s*\))/u, "mobile navigation must tolerate missing hooks"],
+    [/document\s*\.\s*documentElement\s*\.\s*classList\s*\.\s*remove\(\s*["']js["']\s*\)/u, "missing menu hooks must restore the no-JS fallback"],
     [/querySelector\(\s*["']\.sr-only["']\s*\)/u, "mobile menu accessible label hook is missing"],
     [/setAttribute\(\s*["']aria-expanded["']/u, "mobile menu aria-expanded synchronization is missing"],
     [/\.\s*hidden\s*=/u, "mobile navigation hidden synchronization is missing"],
@@ -858,7 +1377,7 @@ function validateInteractions(content, options = {}) {
     [/copyRequestId\s*\+=\s*1/u, "repeat-copy request ordering is missing"],
     [/matchMedia\(\s*["']\(prefers-reduced-motion:\s*reduce\)["']\s*\)/u, "reduced-motion JavaScript guard is missing"],
     [/IntersectionObserver/u, "IntersectionObserver reveal enhancement is missing"],
-    [/new\s+IntersectionObserver\s*\(/u, "IntersectionObserver construction is missing"],
+    [/new\s+(?:IntersectionObserver|IntersectionObserverConstructor)\s*\(/u, "IntersectionObserver construction is missing"],
     [/querySelectorAll\(\s*["']\.reveal["']\s*\)/u, "reveal hooks are missing"],
     [/classList\s*\.\s*add\(\s*["']is-visible["']\s*\)/u, "reveal visible state is missing"],
     [/\.\s*unobserve\s*\(/u, "revealed items must be unobserved"],
@@ -867,6 +1386,28 @@ function validateInteractions(content, options = {}) {
 
   for (const [pattern, message] of requiredPatterns) {
     if (!pattern.test(clean)) issues.push(message);
+  }
+
+  const executablePatterns = [
+    [/document\s*\.\s*documentElement\s*\.\s*classList\s*\.\s*add\s*\(/u, "js class initialization must appear in executable code"],
+    [/document\s*\.\s*documentElement\s*\.\s*classList\s*\.\s*remove\s*\(/u, "no-JS menu fallback must appear in executable code"],
+    [/setAttribute\s*\(/u, "ARIA synchronization must appear in executable code"],
+    [/\.\s*hidden\s*=/u, "mobile navigation visibility must be assigned in executable code"],
+    [/addEventListener\s*\(/u, "interaction listeners must appear in executable code"],
+    [/\.\s*dataset\s*\.\s*selected\s*=/u, "service selected state must be assigned in executable code"],
+    [/navigator\s*\.\s*clipboard\s*\.\s*writeText\s*\(/u, "Clipboard API action must appear in executable code"],
+    [/document\s*\.\s*createElement\s*\(/u, "clipboard fallback node creation must appear in executable code"],
+    [/document\s*\.\s*execCommand\s*\(/u, "clipboard fallback command must appear in executable code"],
+    [/fallbackCopy\s*\(\s*value\s*\)/u, "clipboard fallback invocation must appear in executable code"],
+    [/matchMedia\s*\(/u, "reduced-motion check must appear in executable code"],
+    [/window\s*\.\s*IntersectionObserver/u, "IntersectionObserver capability read must appear in executable code"],
+    [/new\s+(?:IntersectionObserver|IntersectionObserverConstructor)\s*\(/u, "IntersectionObserver construction must appear in executable code"],
+    [/classList\s*\.\s*add\s*\(/u, "reveal state mutation must appear in executable code"],
+    [/\.\s*unobserve\s*\(/u, "reveal cleanup must appear in executable code"],
+    [/getBoundingClientRect\s*\(/u, "first-viewport safeguard must appear in executable code"],
+  ];
+  for (const [pattern, message] of executablePatterns) {
+    if (!pattern.test(executable)) issues.push(message);
   }
 
   if (/\b(?:[A-Za-z_$][\w$]*Card|card|article)\s*\.\s*addEventListener\(\s*["'](?:click|keydown)["']/u.test(clean)) {
@@ -883,7 +1424,21 @@ function validateInteractions(content, options = {}) {
     issues.push("scripts must not lock page overflow");
   }
 
+  if (issues.length === 0) {
+    issues.push(...await validateInteractionBehavior(content));
+  }
+
   if (runRegressions && issues.length === 0) {
+    const lazyClipboardMutation = replaceFirst(
+      content,
+      /await\s+navigator\s*\.\s*clipboard\s*\.\s*writeText\s*\(\s*value\s*\)\s*;/u,
+      "await Promise.resolve();",
+    );
+    const deadClipboardMutation = replaceFirst(
+      content,
+      /await\s+navigator\s*\.\s*clipboard\s*\.\s*writeText\s*\(\s*value\s*\)\s*;/u,
+      "if (false) await navigator.clipboard.writeText(value);",
+    );
     const regressions = [
       [
         "comment-only spoof",
@@ -920,8 +1475,26 @@ function validateInteractions(content, options = {}) {
       ],
     ];
 
+    if (!lazyClipboardMutation.changed || !deadClipboardMutation.changed) {
+      issues.push("JavaScript regression could not locate the executable clipboard call");
+    } else {
+      regressions.push(
+        [
+          "lazy clipboard string spoof",
+          lazyClipboardMutation.content + '\n"navigator.clipboard.writeText(value)";',
+          "Clipboard API action must appear in executable code",
+        ],
+        [
+          "dead clipboard branch",
+          deadClipboardMutation.content,
+          "clipboard click must call writeText",
+        ],
+      );
+    }
+
     for (const [label, sample, expected] of regressions) {
-      if (!validateInteractions(sample, { runRegressions: false }).some((issue) => issue.includes(expected))) {
+      const mutationIssues = await validateInteractions(sample, { runRegressions: false });
+      if (!mutationIssues.some((issue) => issue.includes(expected))) {
         issues.push("JavaScript regression " + label + " was not rejected");
       }
     }
@@ -955,7 +1528,7 @@ if (css.trim()) {
 }
 
 if (script.trim()) {
-  for (const issue of validateInteractions(script)) failures.push(scriptFile + ": " + issue);
+  for (const issue of await validateInteractions(script)) failures.push(scriptFile + ": " + issue);
 }
 
 if (html) {
