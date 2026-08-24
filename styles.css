@@ -1276,11 +1276,34 @@ summary {
 }
 
 .contact-legal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding-top: 1.1rem;
   border-top: 1px solid #7f7f7f;
   color: #d8d5cc;
   font-size: 0.82rem;
 }
+
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem 1rem;
+}
+
+.legal-links a {
+  color: var(--paper);
+  font-weight: 850;
+  text-decoration: underline;
+  text-decoration-color: var(--orange);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.22em;
+}
+
+.legal-links a:hover,
+.legal-links a:focus-visible { color: var(--yellow); }
 
 .reveal {
   opacity: 1;
@@ -2202,8 +2225,12 @@ summary {
   }
 
   .contact-legal {
+    display: grid;
+    justify-content: start;
     font-size: 0.78rem;
   }
+
+  .legal-links { justify-content: flex-start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
