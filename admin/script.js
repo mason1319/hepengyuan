@@ -812,6 +812,25 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+const articleForm = document.querySelector("#article-form");
+const articleList = document.querySelector("[data-article-list]");
+const articleStatus = document.querySelector("[data-article-status]");
+const articlePreview = document.querySelector("[data-article-preview-box]");
+let articleItems = [];
+function articleValues(status = "draft") { const data = new FormData(articleForm); return { title: data.get("title"), slug: data.get("slug"), category: data.get("category"), excerpt: data.get("excerpt"), content: data.get("content"), pinned: data.get("pinned") === "on", status }; }
+function articleMessage(message, error = false) { articleStatus.textContent = message; articleStatus.dataset.error = error ? "true" : "false"; }
+function resetArticleForm() { articleForm.reset(); articleForm.elements.id.value = ""; articlePreview.hidden = true; articleMessage("已准备新文章。"); }
+function fillArticle(item) { articleForm.elements.id.value = item.id; ["title", "slug", "category", "excerpt", "content"].forEach((key) => { articleForm.elements[key].value = item[key] || ""; }); articleForm.elements.pinned.checked = item.pinned; articlePreview.hidden = true; articleMessage(`正在编辑：${item.title}`); articleForm.elements.title.focus(); }
+function renderArticles() { articleList.replaceChildren(); if (!articleItems.length) { articleList.textContent = "还没有文章。先写一篇草稿。"; return; } articleItems.forEach((item) => { const row = document.createElement("article"); row.className = "article-row"; row.innerHTML = `<div><h3></h3><small></small></div><div class="article-row-actions"><button class="quiet-action" type="button" data-edit>编辑</button><button class="publish-action" type="button" data-toggle></button><button class="delete-action" type="button" data-remove>删除</button></div>`; row.querySelector("h3").textContent = item.title; row.querySelector("small").textContent = `${item.status === "published" ? "已发布" : "草稿"} · ${item.category} · ${item.slug}`; row.querySelector("[data-edit]").onclick = () => fillArticle(item); row.querySelector("[data-toggle]").textContent = item.status === "published" ? "转草稿" : "发布"; row.querySelector("[data-toggle]").onclick = () => mutateArticle(item, item.status === "published" ? "draft" : "published"); row.querySelector("[data-remove]").onclick = async () => { if (!confirm(`确定删除“${item.title}”？`)) return; try { await apiRequest(`/api/admin/articles/${encodeURIComponent(item.id)}`, { method: "DELETE" }); await loadArticles(); articleMessage("文章已删除。"); } catch (error) { articleMessage(error.message, true); } }; articleList.append(row); }); }
+async function loadArticles() { try { const payload = await apiRequest("/api/admin/articles"); articleItems = payload.items || []; if (payload.identity?.email) identityLabel.textContent = payload.identity.email; renderArticles(); } catch (error) { articleMessage(error.message, true); } }
+async function mutateArticle(item, status) { try { await apiRequest(`/api/admin/articles/${encodeURIComponent(item.id)}`, { method: "PATCH", body: JSON.stringify({ title: item.title, slug: item.slug, category: item.category, excerpt: item.excerpt, content: item.content, pinned: item.pinned, status }) }); await loadArticles(); articleMessage(status === "published" ? "文章已发布。" : "已转为草稿。"); } catch (error) { articleMessage(error.message, true); } }
+if (articleForm) {
+  document.querySelector("[data-article-new]").onclick = resetArticleForm;
+  document.querySelector("[data-article-preview]").onclick = () => { const values = articleValues(); articlePreview.replaceChildren(); const title = document.createElement("h3"); title.textContent = values.title || "未填写标题"; const body = document.createElement("p"); body.textContent = values.content || "未填写正文"; articlePreview.append(title, body); articlePreview.hidden = false; };
+  for (const [selector, status] of [["[data-article-save]", "draft"], ["[data-article-publish]", "published"]]) document.querySelector(selector).onclick = async () => { if (!articleForm.reportValidity()) return; const id = articleForm.elements.id.value; try { const payload = articleValues(status); const result = await apiRequest(id ? `/api/admin/articles/${encodeURIComponent(id)}` : "/api/admin/articles", { method: id ? "PATCH" : "POST", body: JSON.stringify(payload) }); articleForm.elements.id.value = result.item.id; await loadArticles(); articleMessage(status === "published" ? "文章已发布，公开地址已生成。" : "草稿已保存。"); } catch (error) { articleMessage(error.message, true); } };
+  loadArticles();
+}
+
 window.addEventListener("beforeunload", (event) => {
   if (!uploadInProgress && !deletionInProgress) return;
   event.preventDefault();

@@ -42,8 +42,10 @@ function pageStyles() {
     h2{margin:0;font-size:clamp(1.35rem,2.2vw,2rem);line-height:1.12;letter-spacing:-.025em}.meta{margin:.8rem 0 0;color:var(--muted);font-size:.88rem}.desc{margin:.8rem 0 0;color:#33465d}.more{display:inline-flex;margin-top:1.15rem;color:var(--blue);font-weight:800;text-underline-offset:.25em}
     .empty{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:1.25rem;background:var(--white);padding:clamp(2rem,6vw,4.5rem);box-shadow:0 18px 55px rgba(8,22,43,.06)}.empty:after{content:"ARCHIVE / PENDING";position:absolute;right:-1.2rem;bottom:1rem;color:rgba(23,103,210,.08);font:900 clamp(2.2rem,7vw,6rem)/.8 ui-monospace,SFMono-Regular,monospace;transform:rotate(-4deg);pointer-events:none}.empty h2{max-width:700px}.empty p{position:relative;z-index:1;max-width:680px;color:var(--muted)}
     .story{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,.6fr);gap:clamp(1.5rem,4vw,4rem);align-items:start;padding:clamp(2rem,6vw,5rem) 0 6rem}.story-media{overflow:hidden;border-radius:1.2rem;background:#dce6f2;box-shadow:0 24px 70px rgba(8,22,43,.12)}.story-media img,.story-media video{display:block;width:100%;max-height:78vh;object-fit:contain;background:#dce6f2}.story-copy{position:sticky;top:6rem}.story-copy h1{font-size:clamp(2rem,4.8vw,4rem)}.story-copy .desc{font-size:1.05rem}.back{display:inline-block;margin-top:1.5rem;color:var(--blue);font-weight:800;text-underline-offset:.25em}
+    .article-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.article-card{border:1px solid var(--line);border-radius:1.1rem;background:var(--white);padding:1.5rem;box-shadow:0 18px 55px rgba(8,22,43,.06)}.article-card-top{display:flex;justify-content:space-between;color:var(--blue);font:800 .72rem/1.2 ui-monospace,SFMono-Regular,monospace;letter-spacing:.12em;text-transform:uppercase}.article-card-top b{color:#ad6500}.article-card h2{margin:1.4rem 0 .6rem}.article-card h2 a{text-decoration:none}.article-card h2 a:hover{color:var(--blue)}.article-card p{color:var(--muted);min-height:3.2em}.article-card time,.article-date{color:var(--muted);font-size:.85rem}.article-page{max-width:820px;padding:clamp(3rem,8vw,7rem) 0 6rem}.article-page h1{max-width:800px;font-size:clamp(2.4rem,6vw,5rem);margin-top:.8rem}.article-lead{color:var(--muted);font-size:1.2rem;max-width:700px}.article-content{margin-top:3rem;font-size:1.08rem}.article-content p{margin:0 0 1.4rem}.article-content a{color:var(--blue);text-underline-offset:.2em}
     footer{border-top:1px solid var(--line);padding:2rem 0;color:var(--muted);font-size:.88rem}.footer-inner{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
     :focus-visible{outline:3px solid #ffb000;outline-offset:3px}@media(max-width:900px){.card{grid-column:1/-1}.story{grid-template-columns:1fr}.story-copy{position:static}}@media(max-width:620px){.topbar-inner{height:auto;padding:.8rem 0;align-items:flex-start}.nav{justify-content:flex-end}.nav a{padding:.35rem .5rem}.hero{padding-top:3rem}.card{display:block}.media{min-height:220px}.story-media img,.story-media video{max-height:none}}
+    @media(max-width:620px){.article-grid{grid-template-columns:1fr}.article-page{padding-top:3rem}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
   </style>`;
 }
@@ -80,6 +82,40 @@ function documentShell({ title, description, canonical, jsonLd, body }) {
   <footer><div class="wrap footer-inner"><span>© ${new Date().getUTCFullYear()} ${PERSON_NAME}</span><a href="/">返回官方网站</a></div></footer>
 </body>
 </html>`;
+}
+
+function articleContent(value) {
+  return String(value || "").split(/\n\s*\n/).map((paragraph) => {
+    const safe = escapeHtml(paragraph).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" rel="nofollow noopener">$1</a>').replace(/\n/g, "<br>");
+    return `<p>${safe}</p>`;
+  }).join("");
+}
+
+const articleCategoryLabels = { ai: "AI 实践", product: "产品开发", learning: "学习笔记", life: "个人记录", notes: "随笔" };
+
+function articleCard(article) {
+  return `<article class="article-card"><div class="article-card-top"><span>${escapeHtml(articleCategoryLabels[article.category] || article.category)}</span>${article.pinned ? "<b>置顶</b>" : ""}</div><h2><a href="${escapeHtml(article.url)}">${escapeHtml(article.title)}</a></h2>${article.excerpt ? `<p>${escapeHtml(article.excerpt)}</p>` : ""}<time datetime="${escapeHtml(article.publishedAt || article.updatedAt)}">${escapeHtml((article.publishedAt || article.updatedAt || "").slice(0, 10))}</time></article>`;
+}
+
+export function renderBlogIndexPage(articles, baseUrl) {
+  const title = `个人微博与文章｜${PERSON_NAME}`;
+  const description = `${PERSON_NAME}的个人微博，记录 AI 工具、产品开发、学习与生活实践。`;
+  const canonical = `${baseUrl}/blog/`;
+  const jsonLd = { "@context": "https://schema.org", "@type": "Blog", name: title, url: canonical, description, author: { "@type": "Person", name: PERSON_NAME, url: `${baseUrl}/#person` } };
+  const list = articles.length ? `<div class="article-grid">${articles.map(articleCard).join("")}</div>` : `<div class="empty"><p class="kicker">PERSONAL LOG / FIRST POST</p><h2>这里会发布何鹏远的第一篇文章。</h2><p>AI 实践、产品开发、学习记录和个人观察，都会以公开文章的方式持续更新。</p></div>`;
+  return documentShell({ title, description, canonical, jsonLd, body: `<main id="content"><section class="hero"><div class="wrap"><p class="kicker">Personal blog / 个人微博</p><h1>把正在做的事，<span>写成可搜索的文章。</span></h1><p class="lead">这是何鹏远的公开写作空间：记录决策、方法、产品和长期实践。</p></div></section><section class="archive"><div class="wrap"><p class="count">${articles.length ? `已发布 ${articles.length} 篇` : "暂无已发布文章"}</p>${list}</div></section></main>` });
+}
+
+export function renderArticlePage(article, baseUrl) {
+  const canonical = `${baseUrl}/blog/${encodeURIComponent(article.slug)}/`;
+  const description = article.excerpt || `${PERSON_NAME}发布的文章：${article.title}。`;
+  const jsonLd = { "@context": "https://schema.org", "@type": "Article", headline: article.title, description, datePublished: article.publishedAt, dateModified: article.updatedAt, mainEntityOfPage: canonical, author: { "@type": "Person", name: PERSON_NAME, url: `${baseUrl}/#person` }, publisher: { "@type": "Person", name: PERSON_NAME } };
+  return documentShell({ title: `${article.title}｜${PERSON_NAME}`, description, canonical, jsonLd, body: `<main id="content"><article class="wrap article-page"><p class="kicker">${escapeHtml(articleCategoryLabels[article.category] || article.category)} / PERSONAL LOG</p><h1>${escapeHtml(article.title)}</h1><p class="article-date">${escapeHtml((article.publishedAt || article.updatedAt || "").slice(0, 10))}</p>${article.excerpt ? `<p class="article-lead">${escapeHtml(article.excerpt)}</p>` : ""}<div class="article-content">${articleContent(article.content)}</div><a class="back" href="/blog/">← 返回个人微博</a></article></main>` });
+}
+
+export function renderBlogSitemap(articles, baseUrl) {
+  const rows = [`<url><loc>${escapeXml(`${baseUrl}/blog/`)}</loc></url>`, ...articles.map((article) => `<url><loc>${escapeXml(`${baseUrl}/blog/${encodeURIComponent(article.slug)}/`)}</loc>${article.updatedAt ? `<lastmod>${escapeXml(article.updatedAt.slice(0, 10))}</lastmod>` : ""}</url>`)].join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${rows}</urlset>`;
 }
 
 function locationLabel(item) {

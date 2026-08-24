@@ -14,12 +14,16 @@ import {
   setMediaStatus,
   uploadMultipartPart,
 } from "./media-store.js";
+import { ArticleError, createArticle, deleteArticle, findPublishedArticle, listAdminArticles, listPublishedArticles, updateArticle } from "./article-store.js";
 import {
   renderAccessDeniedPage,
   renderArchivePage,
   renderMediaSitemap,
   renderNotFoundPage,
   renderStoryPage,
+  renderArticlePage,
+  renderBlogIndexPage,
+  renderBlogSitemap,
 } from "./render.js";
 
 const JSON_LIMIT_BYTES = 64 * 1024;
@@ -157,6 +161,18 @@ function decodeRouteValue(value) {
 async function handleAdminApi(request, env, identity, baseUrl) {
   const url = new URL(request.url);
   const path = url.pathname;
+
+  if (path === "/api/admin/articles") {
+    if (request.method === "GET") return jsonResponse({ identity: { email: identity.email }, items: await listAdminArticles(env) });
+    if (request.method === "POST") { assertSameOrigin(request, env); return jsonResponse({ item: await createArticle(env, await readJson(request), identity) }, 201); }
+    return methodNotAllowed(["GET", "POST"]);
+  }
+  const articleId = pathSegment(path, "/api/admin/articles/");
+  if (articleId) {
+    if (request.method === "PATCH") { assertSameOrigin(request, env); return jsonResponse({ item: await updateArticle(env, articleId, await readJson(request)) }); }
+    if (request.method === "DELETE") { assertSameOrigin(request, env); return jsonResponse(await deleteArticle(env, articleId)); }
+    return methodNotAllowed(["PATCH", "DELETE"]);
+  }
 
   if (path === "/api/admin/media") {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
@@ -358,6 +374,29 @@ async function handlePublicDynamic(request, env, baseUrl) {
   const path = url.pathname;
   const headOnly = request.method === "HEAD";
 
+  if (path === "/api/articles.json") {
+    if (request.method !== "GET" && !headOnly) return methodNotAllowed(["GET", "HEAD"]);
+    const items = await listPublishedArticles(env);
+    const response = jsonResponse({ version: 1, items }, 200, { "Cache-Control": REVOCABLE_PUBLIC_CACHE, "Access-Control-Allow-Origin": "*" });
+    return headOnly ? new Response(null, { status: response.status, headers: response.headers }) : response;
+  }
+  if (path === "/blog" || path === "/blog/") {
+    if (request.method !== "GET" && !headOnly) return methodNotAllowed(["GET", "HEAD"]);
+    return htmlResponse(renderBlogIndexPage(await listPublishedArticles(env), baseUrl), 200, { head: headOnly });
+  }
+  const articleMatch = path.match(/^\/blog\/([^/]+)\/?$/);
+  const articleSlug = articleMatch ? decodeRouteValue(articleMatch[1]) : null;
+  if (articleSlug) {
+    if (request.method !== "GET" && !headOnly) return methodNotAllowed(["GET", "HEAD"]);
+    const article = await findPublishedArticle(env, articleSlug);
+    return article ? htmlResponse(renderArticlePage(article, baseUrl), 200, { head: headOnly }) : htmlResponse(renderNotFoundPage(baseUrl), 404, { head: headOnly });
+  }
+  if (path === "/sitemap-blog.xml") {
+    if (request.method !== "GET" && !headOnly) return methodNotAllowed(["GET", "HEAD"]);
+    const xml = renderBlogSitemap(await listPublishedArticles(env, 50), baseUrl);
+    return new Response(headOnly ? null : xml, { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": REVOCABLE_PUBLIC_CACHE, ...securityHeaders } });
+  }
+
   if (path === "/api/media.json") {
     if (request.method !== "GET" && !headOnly) return methodNotAllowed(["GET", "HEAD"]);
     const rows = await listPublishedMedia(env, baseUrl);
@@ -442,11 +481,11 @@ async function routeRequest(request, env) {
 }
 
 function errorResponse(request, error) {
-  const status = error instanceof AuthError || error instanceof MediaError ? error.status : 500;
-  const message = error instanceof AuthError || error instanceof MediaError ? error.message : "服务器暂时无法处理请求。";
+  const status = error instanceof AuthError || error instanceof MediaError || error instanceof ArticleError ? error.status : 500;
+  const message = error instanceof AuthError || error instanceof MediaError || error instanceof ArticleError ? error.message : "服务器暂时无法处理请求。";
   const path = new URL(request.url).pathname;
 
-  if (!(error instanceof AuthError || error instanceof MediaError)) {
+  if (!(error instanceof AuthError || error instanceof MediaError || error instanceof ArticleError)) {
     console.error("Unhandled media worker error", error);
   }
 

@@ -64,6 +64,8 @@
     }
   ],
   "mainEntityOfPage": "https://hepengyuan.top/",
+  "blog": "https://hepengyuan.top/blog/",
+  "publishingTopics": ["AI 实践", "产品开发", "学习笔记", "个人记录"],
   "careerTimeline": [
     {"year": "2009", "title": "进入互联网金融"},
     {"year": "2014", "title": "比特币、以太坊早期布道者 · 矿工", "detail": "IPFS 分布式存储 10P 服务商"},

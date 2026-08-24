@@ -29,6 +29,9 @@
       "/learning/*",
       "/stories/*",
       "/sitemap-media.xml"
+      ,"/blog",
+      "/blog/*",
+      "/sitemap-blog.xml"
     ]
   },
   "d1_databases": [
