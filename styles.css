@@ -299,11 +299,11 @@ summary {
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(330px, 0.82fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(250px, 0.64fr) minmax(210px, 0.45fr);
   grid-template-areas:
-    "copy portrait"
-    "actions portrait";
-  column-gap: clamp(2rem, 4vw, 5rem);
+    "copy portrait profile"
+    "actions portrait profile";
+  column-gap: clamp(1.25rem, 2.6vw, 3rem);
   align-items: center;
   width: min(100%, 1440px);
   min-height: 650px;
@@ -347,23 +347,22 @@ summary {
 .comic-bubble {
   position: relative;
   isolation: isolate;
-  padding: clamp(2.7rem, 5.5vw, 5rem) clamp(2.3rem, 5vw, 4.5rem);
-  background: var(--ink);
-  clip-path: polygon(4% 8%, 21% 13%, 29% 1%, 41% 13%, 55% 4%, 65% 15%, 81% 5%, 84% 22%, 99% 29%, 89% 43%, 98% 57%, 84% 63%, 92% 86%, 70% 82%, 62% 99%, 49% 91%, 31% 99%, 24% 86%, 7% 91%, 12% 66%, 1% 53%, 11% 41%);
-  filter: drop-shadow(10px 10px 0 var(--orange));
+  padding: clamp(2rem, 4.5vw, 4rem) 0 clamp(2rem, 4vw, 3.5rem) clamp(1.4rem, 3vw, 3rem);
+  border-left: clamp(5px, 0.55vw, 9px) solid var(--orange);
 }
 
 .comic-bubble::before {
   position: absolute;
-  z-index: -1;
-  inset: 5px;
-  background: var(--paper);
-  clip-path: inherit;
+  top: 1.2rem;
+  left: -1px;
+  width: 4.5rem;
+  height: 3px;
+  background: var(--ink);
   content: "";
 }
 
 .hero h1 {
-  max-width: 11ch;
+  max-width: 12ch;
   margin-bottom: 1.25rem;
   font-size: clamp(2.75rem, 5.4vw, 5.8rem);
   font-weight: 950;
@@ -386,11 +385,9 @@ summary {
 }
 
 .hero-profile-card {
-  position: absolute;
-  z-index: 4;
-  right: -1.5rem;
-  bottom: 3.5rem;
-  width: min(15rem, 36vw);
+  grid-area: profile;
+  align-self: center;
+  min-width: 0;
   padding: 1rem 1.1rem 1.05rem;
   border: 3px solid var(--ink);
   background: var(--paper);
@@ -1654,6 +1651,7 @@ summary {
     grid-template-areas:
       "copy"
       "portrait"
+      "profile"
       "actions";
     gap: 0;
     min-height: 0;
@@ -1816,6 +1814,7 @@ summary {
     grid-template-areas:
       "copy"
       "portrait"
+      "profile"
       "actions";
     gap: 0;
     min-height: 0;
