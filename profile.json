@@ -90,8 +90,9 @@
     {"name": "GEO / GGE 终极系统", "focus": ["GEO / AEO", "AI 搜索可见性", "产品化"]},
     {"name": "Beiming Quantum Nexus / QuantDinger", "focus": ["量化交易", "策略与回测", "AI Agent / MCP"]},
     {"name": "Agent Ops 研发运营中枢", "focus": ["Agent 协作", "任务编排", "可视化运营"]},
-    {"name": "Edict 三省六部总控台", "focus": ["多 Agent 调度", "技能配置", "Docker 交付"]},
-    {"name": "OpenMontage / 教育 SaaS / 速记英语智能体", "focus": ["视频生产", "英语教育", "全栈产品"]}
+    {"name": "Aggie 速记英语经营系统", "focus": ["英语教培 SaaS", "经营管理", "Cloudflare / D1 / R2"]},
+    {"name": "AI 账号订阅平台", "focus": ["ChatGPT / Claude / Gemini / X", "订单与履约", "管理后台"]},
+    {"name": "OpenMontage / 速记英语智能体", "focus": ["视频生产", "英语教育", "全栈产品"]}
   ],
   "evidenceNote": "作品展柜中的截图来自本机已存在的项目素材；未展示的项目仍在持续开发或等待本人确认公开。",
   "dateModified": "2026-08-24",
