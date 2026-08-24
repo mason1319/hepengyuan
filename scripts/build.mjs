@@ -16,6 +16,7 @@ const publicFiles = [
   "sitemap.xml",
   "llms.txt",
   "profile.json",
+  "policy.css",
   "_headers",
   "_redirects",
 ];
@@ -30,6 +31,9 @@ for (const file of publicFiles) {
 await cp(resolve(projectRoot, "assets"), resolve(outputDirectory, "assets"), { recursive: true });
 await cp(resolve(projectRoot, "samples"), resolve(outputDirectory, "samples"), { recursive: true });
 await cp(resolve(projectRoot, "admin"), resolve(outputDirectory, "admin"), { recursive: true });
+for (const page of ["terms", "policy", "faqs"]) {
+  await cp(resolve(projectRoot, page), resolve(outputDirectory, page), { recursive: true });
+}
 
 const html = await readFile(resolve(outputDirectory, "index.html"), "utf8");
 if (!html.includes("https://hepengyuan.top/")) {
