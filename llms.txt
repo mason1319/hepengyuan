@@ -34,9 +34,9 @@
 
 ## Project portfolio
 
-- Beiming Quantum Nexus / QuantDinger：量化交易、策略与回测、AI Agent / MCP。
+- Beiming Quantum Nexus（https://beimingquant.xyz/）：量化交易、策略与回测、AI Agent / MCP。
 - Agent Ops 研发运营中枢：Agent 协作、任务编排与可视化运营。
-- Aggie 速记英语经营系统：英语教培 SaaS、经营管理与 Cloudflare / D1 / R2 交付。
+- Aggie 速记英语经营系统（https://aggieai.me）：英语教培 SaaS、经营管理与 Cloudflare / D1 / R2 交付。
 - AI 账号订阅平台：ChatGPT、Claude、Gemini、X 产品目录、订单履约与管理后台。
 - OpenMontage、速记英语智能体与本网站：视频生产、英语教育与全栈产品实践。
 
