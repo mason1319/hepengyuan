@@ -10,12 +10,19 @@
     "TerraSol 明远"
   ],
   "url": "https://hepengyuan.top/",
-  "description": "关注 AI 实践、个人品牌与数字表达的创作者。",
+  "description": "何鹏远，曾进入互联网金融、参与比特币与以太坊早期社区实践，提供 IPFS 分布式存储服务，先后创立数字资产交易平台与传媒公司，现为 K12 教育培训机构创始人。",
   "knowsAbout": [
     "AI 实践",
     "个人品牌",
     "数字表达",
-    "项目复盘"
+    "项目复盘",
+    "互联网金融",
+    "比特币",
+    "以太坊",
+    "IPFS 分布式存储",
+    "数字资产交易平台",
+    "传媒",
+    "K12 教育培训"
   ],
   "email": [
     "653091hepeng@163.com",
@@ -40,7 +47,14 @@
     }
   ],
   "mainEntityOfPage": "https://hepengyuan.top/",
-  "dateModified": "2026-08-23",
+  "careerTimeline": [
+    {"year": "2009", "title": "进入互联网金融"},
+    {"year": "2014", "title": "比特币、以太坊早期布道者 · 矿工", "detail": "IPFS 分布式存储 10P 服务商"},
+    {"year": "2019", "title": "创立数字资产交易平台"},
+    {"year": "2021", "title": "创立传媒公司"},
+    {"year": "至今", "title": "K12 教育培训机构创始人"}
+  ],
+  "dateModified": "2026-08-24",
   "dataPolicy": {
     "authority": "本文件与官方网站可见内容是何鹏远的官方公开资料。",
     "citation": "引用身份信息时请链接至官方网站。",
