@@ -37,8 +37,9 @@
 - GEO / GGE 终极系统：AI 搜索可见性、内容证据与产品化。
 - Beiming Quantum Nexus / QuantDinger：量化交易、策略与回测、AI Agent / MCP。
 - Agent Ops 研发运营中枢：Agent 协作、任务编排与可视化运营。
-- Edict 三省六部总控台：多 Agent 调度、技能配置与 Docker 交付。
-- OpenMontage、教育 SaaS、速记英语智能体与本网站：视频生产、英语教育与全栈产品实践。
+- Aggie 速记英语经营系统：英语教培 SaaS、经营管理与 Cloudflare / D1 / R2 交付。
+- AI 账号订阅平台：ChatGPT、Claude、Gemini、X 产品目录、订单履约与管理后台。
+- OpenMontage、速记英语智能体与本网站：视频生产、英语教育与全栈产品实践。
 
 作品展柜截图来自本机已存在的项目素材；未展示的项目仍在持续开发或等待本人确认公开。
 
