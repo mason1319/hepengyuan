@@ -34,7 +34,6 @@
 
 ## Project portfolio
 
-- GEO / GGE 终极系统：AI 搜索可见性、内容证据与产品化。
 - Beiming Quantum Nexus / QuantDinger：量化交易、策略与回测、AI Agent / MCP。
 - Agent Ops 研发运营中枢：Agent 协作、任务编排与可视化运营。
 - Aggie 速记英语经营系统：英语教培 SaaS、经营管理与 Cloudflare / D1 / R2 交付。

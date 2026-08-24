@@ -87,7 +87,6 @@
     "Cloudflare / Docker 独立部署"
   ],
   "projectPortfolio": [
-    {"name": "GEO / GGE 终极系统", "focus": ["GEO / AEO", "AI 搜索可见性", "产品化"]},
     {"name": "Beiming Quantum Nexus / QuantDinger", "focus": ["量化交易", "策略与回测", "AI Agent / MCP"]},
     {"name": "Agent Ops 研发运营中枢", "focus": ["Agent 协作", "任务编排", "可视化运营"]},
     {"name": "Aggie 速记英语经营系统", "focus": ["英语教培 SaaS", "经营管理", "Cloudflare / D1 / R2"]},
