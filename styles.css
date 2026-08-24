@@ -327,6 +327,7 @@ summary {
   height: clamp(280px, 38vw, 520px);
   border: 4px solid var(--ink);
   background-color: var(--orange);
+  opacity: 0.16;
   clip-path: polygon(50% 0%, 59% 27%, 79% 8%, 75% 34%, 100% 29%, 79% 50%, 100% 66%, 73% 65%, 79% 94%, 58% 72%, 48% 100%, 41% 72%, 17% 93%, 25% 64%, 0 64%, 22% 48%, 0 30%, 27% 33%);
 }
 
@@ -348,17 +349,13 @@ summary {
   position: relative;
   isolation: isolate;
   padding: clamp(2rem, 4.5vw, 4rem) 0 clamp(2rem, 4vw, 3.5rem) clamp(1.4rem, 3vw, 3rem);
-  border-left: clamp(5px, 0.55vw, 9px) solid var(--orange);
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+  border-top: 4px solid var(--orange);
 }
 
 .comic-bubble::before {
   position: absolute;
-  top: 1.2rem;
-  left: -1px;
-  width: 4.5rem;
-  height: 3px;
-  background: var(--ink);
-  content: "";
+  display: none;
 }
 
 .hero h1 {
@@ -388,11 +385,12 @@ summary {
   grid-area: profile;
   align-self: center;
   min-width: 0;
-  padding: 1rem 1.1rem 1.05rem;
-  border: 3px solid var(--ink);
-  background: var(--paper);
-  box-shadow: 7px 7px 0 var(--ink);
-  transform: rotate(2deg);
+  padding: 0.75rem 0 0.75rem 1rem;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  border-left: 3px solid var(--orange);
+  background: transparent;
+  transform: none;
 }
 
 .hero-profile-kicker {
@@ -407,13 +405,13 @@ summary {
 .hero-profile-card h2 {
   margin: 0 0 0.75rem;
   font-family: var(--display-font);
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   line-height: 1.05;
 }
 
 .hero-profile-card dl {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.4rem;
   margin: 0;
 }
 
@@ -433,17 +431,17 @@ summary {
 
 .hero-profile-card dd {
   margin: 0;
-  font-size: 0.77rem;
+  font-size: 0.72rem;
   font-weight: 850;
   line-height: 1.35;
 }
 
 .hero-profile-note {
-  margin: 0.8rem 0 0;
-  padding-top: 0.65rem;
-  border-top: 2px dashed var(--ink);
+  margin: 0.55rem 0 0;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--ink);
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 750;
   line-height: 1.4;
 }
@@ -511,14 +509,10 @@ summary {
 }
 
 .hero-portrait figcaption {
-  position: absolute;
-  right: 12%;
-  bottom: 1rem;
-  left: 12%;
-  padding: 0.35rem 0.75rem;
-  border: 3px solid var(--ink);
-  background: var(--paper);
-  box-shadow: 4px 4px 0 var(--ink);
+  margin: -0.25rem auto 0;
+  color: var(--ink);
+  font-family: var(--display-font);
+  font-size: 0.95rem;
   font-weight: 950;
   text-align: center;
 }
@@ -528,30 +522,21 @@ summary {
   z-index: 3;
   top: 22%;
   right: -1rem;
-  width: min(9.5rem, 40%);
-  padding: 0.55rem 0.7rem;
-  border: 3px solid var(--ink);
+  width: max-content;
+  padding: 0.45rem 0.65rem;
+  border: 2px solid var(--ink);
   background: var(--yellow);
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
   font-family: var(--display-font);
   font-size: clamp(0.88rem, 1.35vw, 1.1rem);
   font-weight: 950;
   line-height: 1.15;
   text-align: center;
-  transform: rotate(-3deg);
+  transform: none;
 }
 
 .portrait-sticker::after {
-  position: absolute;
-  bottom: -16px;
-  left: 18px;
-  width: 24px;
-  height: 18px;
-  border-right: 3px solid var(--ink);
-  border-bottom: 3px solid var(--ink);
-  background: var(--yellow);
-  clip-path: polygon(0 0, 100% 0, 0 100%);
-  content: "";
+  display: none;
 }
 
 .burst-lines {
@@ -1691,8 +1676,8 @@ summary {
     margin-bottom: clamp(16px, 3vw, 26px);
     padding: 0.75rem 0.75rem 1rem;
     border: 4px solid var(--ink);
-    background: var(--orange);
-    box-shadow: 8px 8px 0 var(--ink);
+    background: rgb(255 83 18 / 0.08);
+    box-shadow: none;
   }
 
   .hero-portrait img {
@@ -1710,7 +1695,7 @@ summary {
     bottom: auto;
     left: auto;
     width: min(100% - 1.6rem, 20rem);
-    margin: -2.2rem auto 0.9rem;
+    margin: 0.2rem auto 0.9rem;
     max-width: none;
   }
 
@@ -1866,8 +1851,8 @@ summary {
     margin-bottom: clamp(16px, 4vw, 22px);
     padding: 0.55rem 0.55rem 0.85rem;
     border: 4px solid var(--ink);
-    background: var(--orange);
-    box-shadow: 8px 8px 0 var(--ink);
+    background: rgb(255 83 18 / 0.08);
+    box-shadow: none;
   }
 
   .hero-portrait img {
@@ -1884,7 +1869,7 @@ summary {
     bottom: auto;
     left: auto;
     width: calc(100% - 1.1rem);
-    margin: -1.9rem auto 0.75rem;
+    margin: 0.4rem auto 0.75rem;
     max-width: none;
     padding: 0.2rem 0.45rem;
     font-size: 0.68rem;
