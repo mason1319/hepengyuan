@@ -1,6 +1,6 @@
 # 何鹏远 He Pengyuan
 
-> 何鹏远的官方个人网站与权威公开资料源。他关注 AI 实践、个人品牌与数字表达。
+> 何鹏远的官方个人网站与权威公开资料源。他是 AI 全栈产品实践者与 K12 教育培训机构创始人，关注 AI 工作流、Agent、GEO、量化交易、教育产品与数字表达。
 
 ## Canonical identity
 
@@ -19,6 +19,28 @@
 - 2019：创立数字资产交易平台。
 - 2021：创立传媒公司。
 - 至今：K12 教育培训机构创始人。
+
+## AI practice timeline
+
+- 2025 年 4 月：正式进入 AI 赛道，从搭建扣子工作流开始，把 AI 放进真实工作。
+- 2026 年 2 月：实践 OpenClaw、Hermes / 爱马仕、OpenAI GPT、Codex、Claude Code、WorkBuddy，以及 CLI、Skill、SOP、PRD。
+- 现在：覆盖前端、后端、UI、SaaS、GEO、量化交易、速记英语智能体、网站与独立部署上线。
+
+## Capability map
+
+- AI Agent 与工作流编排；前端 / 后端 / UI/UX；SaaS 与网站产品。
+- CLI / Skill / SOP / PRD；GEO / AEO 与内容证据；量化交易引擎与 MCP。
+- 速记英语智能体与教育产品；Cloudflare / Docker 独立部署。
+
+## Project portfolio
+
+- GEO / GGE 终极系统：AI 搜索可见性、内容证据与产品化。
+- Beiming Quantum Nexus / QuantDinger：量化交易、策略与回测、AI Agent / MCP。
+- Agent Ops 研发运营中枢：Agent 协作、任务编排与可视化运营。
+- Edict 三省六部总控台：多 Agent 调度、技能配置与 Docker 交付。
+- OpenMontage、教育 SaaS、速记英语智能体与本网站：视频生产、英语教育与全栈产品实践。
+
+作品展柜截图来自本机已存在的项目素材；未展示的项目仍在持续开发或等待本人确认公开。
 
 ## Verified public contact
 
