@@ -82,7 +82,7 @@ function jsonResponse(payload, status = 200, extraHeaders = {}) {
 function htmlResponse(html, status = 200, { admin = false, head = false } = {}) {
   const csp = admin
     ? "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
-    : "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+    : "default-src 'none'; img-src 'self' data:; media-src 'self' https://d8j0ntlcm91z4.cloudfront.net; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
   return new Response(head ? null : html, {
     status,
     headers: {
