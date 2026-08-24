@@ -10,9 +10,26 @@
     "TerraSol 明远"
   ],
   "url": "https://hepengyuan.top/",
-  "description": "何鹏远，曾进入互联网金融、参与比特币与以太坊早期社区实践，提供 IPFS 分布式存储服务，先后创立数字资产交易平台与传媒公司，现为 K12 教育培训机构创始人。",
+  "description": "何鹏远，AI 全栈产品实践者与 K12 教育培训机构创始人，持续把工作流、Agent、GEO、量化交易和教育产品做成可运行、可部署的系统。",
   "knowsAbout": [
     "AI 实践",
+    "AI 工作流",
+    "AI Agent",
+    "OpenClaw",
+    "OpenAI GPT",
+    "Codex",
+    "Claude Code",
+    "Hermes / 爱马仕",
+    "WorkBuddy",
+    "CLI / Skill / SOP / PRD",
+    "前端开发",
+    "后端开发",
+    "UI/UX",
+    "SaaS 产品",
+    "独立部署上线",
+    "GEO / AEO",
+    "量化交易引擎",
+    "速记英语智能体",
     "个人品牌",
     "数字表达",
     "项目复盘",
@@ -54,6 +71,29 @@
     {"year": "2021", "title": "创立传媒公司"},
     {"year": "至今", "title": "K12 教育培训机构创始人"}
   ],
+  "aiPracticeTimeline": [
+    {"date": "2025-04", "title": "正式进入 AI 赛道", "detail": "从搭建扣子工作流开始，把 AI 放进真实工作。"},
+    {"date": "2026-02", "title": "Agent 与开发工具链实践", "detail": "实践 OpenClaw、Hermes / 爱马仕、OpenAI GPT、Codex、Claude Code、WorkBuddy，以及 CLI、Skill、SOP、PRD。"},
+    {"date": "2026-08", "title": "独立做成可交付系统", "detail": "覆盖前端、后端、UI、SaaS、GEO、量化交易、英语智能体、网站与上线部署。"}
+  ],
+  "capabilityMap": [
+    "AI Agent 与工作流编排",
+    "前端 / 后端 / UI/UX",
+    "SaaS 与网站产品",
+    "CLI / Skill / SOP / PRD",
+    "GEO / AEO 与内容证据",
+    "量化交易引擎与 MCP",
+    "速记英语智能体与教育产品",
+    "Cloudflare / Docker 独立部署"
+  ],
+  "projectPortfolio": [
+    {"name": "GEO / GGE 终极系统", "focus": ["GEO / AEO", "AI 搜索可见性", "产品化"]},
+    {"name": "Beiming Quantum Nexus / QuantDinger", "focus": ["量化交易", "策略与回测", "AI Agent / MCP"]},
+    {"name": "Agent Ops 研发运营中枢", "focus": ["Agent 协作", "任务编排", "可视化运营"]},
+    {"name": "Edict 三省六部总控台", "focus": ["多 Agent 调度", "技能配置", "Docker 交付"]},
+    {"name": "OpenMontage / 教育 SaaS / 速记英语智能体", "focus": ["视频生产", "英语教育", "全栈产品"]}
+  ],
+  "evidenceNote": "作品展柜中的截图来自本机已存在的项目素材；未展示的项目仍在持续开发或等待本人确认公开。",
   "dateModified": "2026-08-24",
   "dataPolicy": {
     "authority": "本文件与官方网站可见内容是何鹏远的官方公开资料。",
