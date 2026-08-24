@@ -46,8 +46,11 @@
 ## On-site and private deployment
 
 - 上门技术服务：远程预检、现场安装配置、系统联调、验收交付与售后陪跑。
+- 远程部署：需求与环境清单、临时权限、备份回滚、SSH / SFTP、Docker Compose、Git、Cloudflare / Wrangler、联调验收与文档交接。
 - 私有化部署：面向企业、教培机构和个人团队，将 AI 工具、Agent、SaaS 或业务系统部署到自有服务器、内网或指定云环境。
 - 安全边界：服务器、域名、账号和密钥原则上归客户所有；现场前确认最小权限，未授权的数据不复制、不外传。
+- 远程工具按环境选择：SSH / SFTP、Docker Compose、Git / GitHub、Cloudflare / Wrangler、视频会议与屏幕共享、浏览器开发工具和日志系统。
+- 远程交付验收：服务可启动、域名可访问、HTTPS 正常、核心流程可用、日志可查看、备份与回滚点已说明。
 - 城市、差旅、实施周期、费用和具体交付物，需要根据环境与目标单独确认。
 
 ## Verified public contact

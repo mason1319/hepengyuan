@@ -96,6 +96,7 @@
   ],
   "serviceOfferings": [
     {"name": "上门技术服务", "focus": ["现场实施", "环境迁移", "交付培训"]},
+    {"name": "远程部署", "focus": ["SSH / Docker", "Cloudflare / Wrangler", "远程联调与验收"]},
     {"name": "私有化部署", "focus": ["本地服务器", "内网部署", "权限与数据边界"]}
   ],
   "evidenceNote": "作品展柜中的截图来自本机已存在的项目素材；未展示的项目仍在持续开发或等待本人确认公开。",
