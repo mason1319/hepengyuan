@@ -46,6 +46,7 @@
             ],
             "makesOffer": [
               {"@type": "Offer", "name": "上门技术服务", "description": "现场实施、环境迁移、系统联调与交付培训。"},
+              {"@type": "Offer", "name": "远程部署", "description": "通过 SSH、Docker、Git、Cloudflare 等工具完成远程安装、联调、验收与交接。"},
               {"@type": "Offer", "name": "私有化部署", "description": "将 AI 工具、Agent、SaaS 或业务系统部署到自有服务器、内网或指定云环境。"}
             ],
             "email": ["653091hepeng@163.com", "653091hepeng@gmail.com"],
@@ -262,9 +263,9 @@
       <section class="onsite section" id="onsite" aria-labelledby="onsite-title">
         <div class="onsite-wrap">
           <div class="section-heading reveal">
-            <p class="section-kicker">ON-SITE / PRIVATE DEPLOYMENT</p>
-            <h2 id="onsite-title">上门把系统装进你的 <span>真实环境。</span></h2>
-            <p>面向企业、教培机构和个人团队，提供现场技术服务、私有化部署、环境迁移与交付培训。</p>
+            <p class="section-kicker">ON-SITE / REMOTE / PRIVATE DEPLOYMENT</p>
+            <h2 id="onsite-title">上门或远程，把系统装进你的 <span>真实环境。</span></h2>
+            <p>面向企业、教培机构和个人团队，提供现场技术服务、远程部署、私有化部署、环境迁移与交付培训。</p>
           </div>
 
           <div class="onsite-layout">
@@ -285,6 +286,36 @@
               <li><span>03</span><div><h3>验收交付</h3><p>按清单演示核心流程，交付操作文档、管理员说明与回滚建议。</p></div></li>
               <li><span>04</span><div><h3>售后陪跑</h3><p>按确认范围提供远程答疑、问题排查与后续优化建议。</p></div></li>
             </ol>
+          </div>
+
+          <div class="remote-detail reveal">
+            <div class="remote-detail-heading"><p class="section-kicker">REMOTE DELIVERY / 远程部署</p><h3>不必等上门，线上也能完成一套可验收的部署。</h3><p>适合服务器在云端、团队分布在不同城市，或希望先低成本验证方案的项目。</p></div>
+            <div class="remote-detail-grid">
+              <div>
+                <h4>远程实施流程</h4>
+                <ol class="remote-steps">
+                  <li><b>01</b><span><strong>需求与环境清单</strong><small>确认系统目标、操作系统、CPU / 内存 / 磁盘、网络、域名、端口和现有服务。</small></span></li>
+                  <li><b>02</b><span><strong>授权与安全预检</strong><small>由客户创建临时账号或最小权限入口，先做连通性、磁盘、端口、备份与权限检查。</small></span></li>
+                  <li><b>03</b><span><strong>备份与回滚点</strong><small>部署前记录配置、数据库和文件备份位置，约定失败时的停止条件与回滚方案。</small></span></li>
+                  <li><b>04</b><span><strong>安装与配置</strong><small>通过 SSH、远程终端或屏幕共享完成依赖安装、环境变量、容器、域名和 HTTPS 配置。</small></span></li>
+                  <li><b>05</b><span><strong>联调与数据迁移</strong><small>逐项验证登录、核心业务、文件上传、任务队列、回调、日志和权限，不直接跳过测试。</small></span></li>
+                  <li><b>06</b><span><strong>验收与交接</strong><small>按验收清单演示，交付地址、账号归属、部署记录、操作手册和日常维护建议。</small></span></li>
+                </ol>
+              </div>
+              <div class="remote-tools">
+                <h4>可选远程工具</h4>
+                <ul>
+                  <li><strong>SSH / SFTP</strong><span>服务器登录、文件传输与命令执行。</span></li>
+                  <li><strong>Docker Compose</strong><span>统一启动服务、数据库、队列与依赖。</span></li>
+                  <li><strong>Git / GitHub</strong><span>版本同步、变更记录与可回退交付。</span></li>
+                  <li><strong>Cloudflare / Wrangler</strong><span>域名、DNS、Pages、Workers、D1、R2 与发布检查。</span></li>
+                  <li><strong>屏幕共享 / 视频会议</strong><span>边操作边讲解，客户可实时确认每一步。</span></li>
+                  <li><strong>日志与浏览器开发工具</strong><span>定位接口、跨域、证书、缓存和前端交互问题。</span></li>
+                </ul>
+                <p class="remote-security"><strong>远程安全规则：</strong>优先使用临时账号、最小权限和客户自己的设备；密码、Token、私钥不通过聊天明文传递，项目结束后及时回收临时权限。</p>
+              </div>
+            </div>
+            <div class="remote-acceptance"><strong>远程交付验收清单</strong><span>服务可启动</span><span>域名可访问</span><span>HTTPS 正常</span><span>核心流程可用</span><span>日志可查看</span><span>备份与回滚点已说明</span></div>
           </div>
 
           <div class="onsite-boundary reveal"><strong>安全边界</strong><span>服务器、域名、账号和密钥原则上归你所有；现场前确认最小权限，未授权的数据不复制、不外传。</span><em>城市、差旅、周期与费用需单独确认</em></div>
