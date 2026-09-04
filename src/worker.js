@@ -27,7 +27,7 @@ import {
 } from "./render.js";
 
 const JSON_LIMIT_BYTES = 64 * 1024;
-const CANONICAL_SITE = "https://hepengyuan.top";
+const CANONICAL_SITE = "https://hepengyuan.com";
 const REVOCABLE_PUBLIC_CACHE = "public, no-cache, max-age=0, must-revalidate";
 
 const PUBLIC_STATIC_FILES = new Set([

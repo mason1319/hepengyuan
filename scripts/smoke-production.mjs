@@ -1,10 +1,10 @@
-const configuredOrigin = process.env.SMOKE_ORIGIN || "https://hepengyuan.top";
+const configuredOrigin = process.env.SMOKE_ORIGIN || "https://hepengyuan.com";
 const origin = new URL(configuredOrigin).origin;
 
 const checks = [
   { path: "/", type: "text/html", includes: "何鹏远" },
   { path: "/robots.txt", type: "text/plain", includes: "OAI-SearchBot" },
-  { path: "/sitemap.xml", type: "application/xml", includes: "hepengyuan.top" },
+  { path: "/sitemap.xml", type: "application/xml", includes: "hepengyuan.com" },
   { path: "/profile.json", type: "application/json", includes: "何鹏远" },
   { path: "/llms.txt", type: "text/plain", includes: "Canonical identity" },
   { path: "/api/media.json", type: "application/json", json: true },

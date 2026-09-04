@@ -7,7 +7,7 @@
   "preview_urls": false,
   "routes": [
     {
-      "pattern": "hepengyuan.top",
+      "pattern": "hepengyuan.com",
       "custom_domain": true
     }
   ],
@@ -49,7 +49,7 @@
     }
   ],
   "vars": {
-    "PUBLIC_SITE_URL": "https://hepengyuan.top",
+    "PUBLIC_SITE_URL": "https://hepengyuan.com",
     "CF_ACCESS_ISSUER": "https://green-wave-2b0b.cloudflareaccess.com",
     "CF_ACCESS_AUD": "6c472d5dca6caba01813c252e51ef8ddadb600b77f8686d4094c0f5e9cb99675",
     "ADMIN_EMAILS": "653091hepeng@gmail.com"

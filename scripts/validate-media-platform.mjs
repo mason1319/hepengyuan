@@ -90,7 +90,7 @@ for (const expected of [
   '"directory": "./dist"',
   '"binding": "MEDIA_DB"',
   '"binding": "MEDIA_BUCKET"',
-  '"pattern": "hepengyuan.top"',
+  '"pattern": "hepengyuan.com"',
   '"/api/*"',
   '"/admin/*"',
 ]) {
@@ -224,9 +224,9 @@ const publicItem = mapPublicRow(
     object_key: "private/video.mp4",
     created_by_email: "must-not-leak@example.com",
   },
-  "https://hepengyuan.top",
+  "https://hepengyuan.com",
 );
-assert(publicItem.thumbnailUrl === "https://hepengyuan.top/media/poster/verified-video", "public poster URL is incorrect");
+assert(publicItem.thumbnailUrl === "https://hepengyuan.com/media/poster/verified-video", "public poster URL is incorrect");
 assert(publicItem.durationSeconds === 62.5, "public feed lost video duration");
 assert(!("objectKey" in publicItem) && !JSON.stringify(publicItem).includes("must-not-leak"), "public media row leaked private metadata");
 
@@ -623,7 +623,7 @@ await expectMediaError(
     saveVideoThumbnail(
       posterRaceCleanup.env,
       "poster-race-media-id",
-      new Request("https://hepengyuan.top/api/admin/media/poster-race-media-id/poster", {
+      new Request("https://hepengyuan.com/api/admin/media/poster-race-media-id/poster", {
         method: "PUT",
         headers: { "Content-Type": "image/webp" },
         body: webpHeader,
@@ -662,37 +662,37 @@ const story = renderStoryPage(
     published_at: "2026-08-23T00:00:00.000Z",
     thumbnail_key: "private/poster.webp",
   },
-  "https://hepengyuan.top",
+  "https://hepengyuan.com",
 );
 assert(!story.includes(`${malicious}</h1>`), "story renderer injected unescaped HTML");
 assert(story.includes('"duration":"PT1M2.5S"'), "VideoObject is missing ISO 8601 duration");
-assert(story.includes('"thumbnailUrl":"https://hepengyuan.top/media/poster/verified-video"'), "VideoObject is missing its real poster URL");
+assert(story.includes('"thumbnailUrl":"https://hepengyuan.com/media/poster/verified-video"'), "VideoObject is missing its real poster URL");
 
-const emptyArchive = renderArchivePage("travel", [], "https://hepengyuan.top");
+const emptyArchive = renderArchivePage("travel", [], "https://hepengyuan.com");
 assert(emptyArchive.includes("当前没有已公开的旅行照片或视频"), "empty archive is missing the factual empty state");
-const mediaSitemap = renderMediaSitemap([{ ...publicItem, updatedAt: "2026-08-23T01:00:00.000Z" }], "https://hepengyuan.top");
+const mediaSitemap = renderMediaSitemap([{ ...publicItem, updatedAt: "2026-08-23T01:00:00.000Z" }], "https://hepengyuan.com");
 assert(mediaSitemap.includes("xmlns:video="), "media sitemap is missing the video namespace");
 assert(mediaSitemap.includes("<video:duration>63</video:duration>"), "media sitemap is missing video duration");
-assert(mediaSitemap.includes("<loc>https://hepengyuan.top/learning/</loc><lastmod>2026-08-23</lastmod>"), "media sitemap directory is missing its latest publication date");
+assert(mediaSitemap.includes("<loc>https://hepengyuan.com/learning/</loc><lastmod>2026-08-23</lastmod>"), "media sitemap directory is missing its latest publication date");
 
 const localIdentity = await verifyAccessIdentity(new Request("http://localhost:8787/api/admin/media"), {
   ADMIN_DEV_BYPASS: "true",
 });
 assert(localIdentity.source === "local-bypass", "explicit localhost development bypass failed");
-const routedLocalIdentity = await verifyAccessIdentity(new Request("https://hepengyuan.top/api/admin/media"), {
+const routedLocalIdentity = await verifyAccessIdentity(new Request("https://hepengyuan.com/api/admin/media"), {
   ADMIN_DEV_BYPASS: "true",
   PUBLIC_SITE_URL: "http://127.0.0.1:8787",
 });
 assert(routedLocalIdentity.source === "local-bypass", "Wrangler local route development bypass failed");
 await expectMediaError(
-  () => verifyAccessIdentity(new Request("https://hepengyuan.top/api/admin/media"), { ADMIN_DEV_BYPASS: "true" }),
+  () => verifyAccessIdentity(new Request("https://hepengyuan.com/api/admin/media"), { ADMIN_DEV_BYPASS: "true" }),
   500,
   "production development bypass",
 );
 await expectMediaError(
   () =>
     verifyAccessIdentity(
-      new Request("https://hepengyuan.top/api/admin/media", { headers: { "CF-Connecting-IP": "127.0.0.1" } }),
+      new Request("https://hepengyuan.com/api/admin/media", { headers: { "CF-Connecting-IP": "127.0.0.1" } }),
       { ADMIN_DEV_BYPASS: "true" },
     ),
   500,
@@ -734,7 +734,7 @@ globalThis.fetch = async (target) => {
 
 try {
   const verified = await verifyAccessIdentity(
-    new Request("https://hepengyuan.top/api/admin/media", { headers: { "Cf-Access-Jwt-Assertion": token } }),
+    new Request("https://hepengyuan.com/api/admin/media", { headers: { "Cf-Access-Jwt-Assertion": token } }),
     { CF_ACCESS_ISSUER: issuer, CF_ACCESS_AUD: audience, ADMIN_EMAILS: email },
   );
   assert(verified.email === email && verified.source === "cloudflare-access", "valid Access JWT was not accepted");
@@ -743,7 +743,7 @@ try {
   const tampered = `${signingInput}.${tamperedSignature.toString("base64url")}`;
   await expectMediaError(
     () => verifyAccessIdentity(
-      new Request("https://hepengyuan.top/api/admin/media", { headers: { "Cf-Access-Jwt-Assertion": tampered } }),
+      new Request("https://hepengyuan.com/api/admin/media", { headers: { "Cf-Access-Jwt-Assertion": tampered } }),
       { CF_ACCESS_ISSUER: issuer, CF_ACCESS_AUD: audience, ADMIN_EMAILS: email },
     ),
     401,

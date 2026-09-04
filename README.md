@@ -35,7 +35,7 @@ npm run dev:worker
 
 ## S1 漫画服务页样板
 
-本地启动后访问 `http://127.0.0.1:4173/samples/s1/`。该页面仅用于视觉与交互确认，不会自动替换 `https://hepengyuan.top/` 根主页，本任务未部署。
+本地启动后访问 `http://127.0.0.1:4173/samples/s1/`。该页面仅用于视觉与交互确认，不会自动替换 `https://hepengyuan.com/` 根主页，本任务未部署。
 
 ## 验收
 
@@ -46,7 +46,7 @@ npm run build
 
 ## 上线前继续完善
 
-1. 真实域名：已确认为 `https://hepengyuan.top/`。
+1. 真实域名：已确认为 `https://hepengyuan.com/`。
 2. 公开联系方式：微信、抖音、邮箱、电话、Telegram、X 与 YouTube 已确认并同步。
 3. Cloudflare：仍需填入真实 D1 ID、Access 团队域名、AUD 和管理员登录邮箱后才能生产启用上传后台。
 4. 影像素材：首批国家、照片和视频尚未提供，因此公开页保持中性的发布规则与空目录，不虚构地点或内容。

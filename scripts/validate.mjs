@@ -197,7 +197,7 @@ if (placeholderCount > 0) {
   process.exit(1);
 }
 
-if (![html, robots, sitemap, JSON.stringify(profile)].every((content) => content.includes("hepengyuan.top"))) {
+if (![html, robots, sitemap, JSON.stringify(profile)].every((content) => content.includes("hepengyuan.com"))) {
   console.error("Validation failed: production domain is inconsistent across public metadata.");
   process.exit(1);
 }

@@ -11,7 +11,7 @@ const wranglerConfig = await readFile("wrangler.jsonc", "utf8");
 for (const file of publicFiles) {
   const content = await readFile(file, "utf8");
   if (content.includes(".example")) throw new Error(`${file} still contains a placeholder domain.`);
-  if (!content.includes("hepengyuan.top")) throw new Error(`${file} does not reference hepengyuan.top.`);
+  if (!content.includes("hepengyuan.com")) throw new Error(`${file} does not reference hepengyuan.com.`);
 }
 
 if (
@@ -40,8 +40,8 @@ for (const requiredConfig of [
   '"preview_urls": false',
   '"binding": "MEDIA_DB"',
   '"binding": "MEDIA_BUCKET"',
-  '"pattern": "hepengyuan.top"',
-  '"PUBLIC_SITE_URL": "https://hepengyuan.top"',
+  '"pattern": "hepengyuan.com"',
+  '"PUBLIC_SITE_URL": "https://hepengyuan.com"',
 ]) {
   if (!wranglerConfig.includes(requiredConfig)) {
     throw new Error(`wrangler.jsonc is missing release requirement: ${requiredConfig}`);
@@ -102,7 +102,7 @@ if (currentProductionPlatform === "pages") {
     throw new Error(`Pages rollback snapshot is unavailable: ${rollbackUrl.href} returned ${rollbackResponse.status}.`);
   }
   const rollbackBody = await rollbackResponse.text();
-  if (!rollbackBody.includes("何鹏远") || !rollbackBody.includes("hepengyuan.top")) {
+  if (!rollbackBody.includes("何鹏远") || !rollbackBody.includes("hepengyuan.com")) {
     throw new Error("Pages rollback snapshot does not contain the expected 何鹏远 site identity and canonical domain.");
   }
   console.log(`Cutover guard: verified Pages rollback snapshot ${rollbackUrl.href}.`);
@@ -122,4 +122,4 @@ if (productionCommit) {
   throw new Error("PRODUCTION_COMMIT_SHA is required so HEAD can be checked against the currently deployed version.");
 }
 
-console.log(`Release preflight passed at ${head.slice(0, 12)} for https://hepengyuan.top/.`);
+console.log(`Release preflight passed at ${head.slice(0, 12)} for https://hepengyuan.com/.`);
