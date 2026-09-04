@@ -36,7 +36,7 @@ for (const page of ["terms", "policy", "faqs"]) {
 }
 
 const html = await readFile(resolve(outputDirectory, "index.html"), "utf8");
-if (!html.includes("https://hepengyuan.top/")) {
+if (!html.includes("https://hepengyuan.com/")) {
   throw new Error("Production canonical URL is missing from built HTML.");
 }
 

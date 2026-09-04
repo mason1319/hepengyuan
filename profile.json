@@ -1,7 +1,7 @@
 {
   "@context": "https://schema.org",
   "@type": "Person",
-  "@id": "https://hepengyuan.top/#person",
+  "@id": "https://hepengyuan.com/#person",
   "name": "何鹏远",
   "alternateName": [
     "He Pengyuan",
@@ -9,7 +9,7 @@
     "HPY",
     "TerraSol 明远"
   ],
-  "url": "https://hepengyuan.top/",
+  "url": "https://hepengyuan.com/",
   "description": "何鹏远，AI 全栈产品实践者与 K12 教育培训机构创始人，持续把工作流、Agent、GEO、量化交易和教育产品做成可运行、可部署的系统。",
   "knowsAbout": [
     "AI 实践",
@@ -63,7 +63,9 @@
       "value": "HPY131419"
     }
   ],
-  "mainEntityOfPage": "https://hepengyuan.top/",
+  "mainEntityOfPage": "https://hepengyuan.com/",
+  "blog": "https://hepengyuan.com/blog/",
+  "publishingTopics": ["AI 实践", "产品开发", "学习笔记", "个人记录"],
   "careerTimeline": [
     {"year": "2009", "title": "进入互联网金融"},
     {"year": "2014", "title": "比特币、以太坊早期布道者 · 矿工", "detail": "IPFS 分布式存储 10P 服务商"},

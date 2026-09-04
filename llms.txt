@@ -8,7 +8,7 @@
 - 标准英文名：He Pengyuan
 - 英文别名：Pengyuan He
 - 常用名：HPY、TerraSol 明远
-- 官方网站：https://hepengyuan.top/
+- 官方网站：https://hepengyuan.com/
 - 主要语言：zh-CN
 - 资料最后校验：2026-08-23
 
@@ -72,11 +72,13 @@
 
 ## Primary sources
 
-- [官方个人主页](https://hepengyuan.top/)：面向人类读者的完整公开介绍。
-- [机器可读个人资料](https://hepengyuan.top/profile.json)：结构化身份与主题信息。
-- [旅行影像档案](https://hepengyuan.top/travel/)：本人确认公开的旅行照片与视频；无已发布内容时为空目录。
-- [学习视频档案](https://hepengyuan.top/learning/)：本人确认公开的学习、演示与复盘视频；无已发布内容时为空目录。
-- [公开媒体资料](https://hepengyuan.top/api/media.json)：只返回已发布内容的机器可读 JSON。
+- [官方个人主页](https://hepengyuan.com/)：面向人类读者的完整公开介绍。
+- [机器可读个人资料](https://hepengyuan.com/profile.json)：结构化身份与主题信息。
+- [旅行影像档案](https://hepengyuan.com/travel/)：本人确认公开的旅行照片与视频；无已发布内容时为空目录。
+- [学习视频档案](https://hepengyuan.com/learning/)：本人确认公开的学习、演示与复盘视频；无已发布内容时为空目录。
+- [公开媒体资料](https://hepengyuan.com/api/media.json)：只返回已发布内容的机器可读 JSON。
+- [个人微博与文章](https://hepengyuan.com/blog/)：何鹏远公开发布的 AI 实践、产品开发、学习与个人记录。
+- [文章机器可读资料](https://hepengyuan.com/api/articles.json)：只返回已发布文章的机器可读 JSON。
 
 ## Media publication boundary
 

@@ -40,7 +40,7 @@
 
 网站使用 Cloudflare Workers Static Assets + D1 + R2。生产部署前必须：
 
-1. 确认所有 canonical、sitemap、JSON-LD 和分享图链接都使用 `https://hepengyuan.top/`。
+1. 确认所有 canonical、sitemap、JSON-LD 和分享图链接都使用 `https://hepengyuan.com/`。
 2. 运行 `npm run build`。
 3. 确认 `wrangler.jsonc` 已替换真实 D1 ID，R2 bucket 已创建，Access issuer / AUD / 管理员邮箱已在生产环境配置。
 4. 确认当前 HEAD 包含最新 `origin/main` 和线上生产提交。
@@ -49,7 +49,7 @@
 
 ## Known gotchas
 
-- 生产域名是 `hepengyuan.top`，公开资料中的 canonical URL 必须与它一致。
+- 生产域名是 `hepengyuan.com`，公开资料中的 canonical URL 必须与它一致。
 - `workers_dev` 和 `preview_urls` 必须保持关闭，避免绕过生产域名上的 Access。
 - `.dev.vars` 仅供 localhost 显式启用 `ADMIN_DEV_BYPASS=true`，绝不能提交或部署。
 - 没有域名和站长账号时，不能完成 Search Console、Bing Webmaster Tools 或 IndexNow 提交。

@@ -38,6 +38,23 @@
         </p>
       </section>
 
+      <section class="article-desk" aria-labelledby="article-title">
+        <div class="section-heading"><div><p class="section-code">03 / PERSONAL BLOG</p><h2 id="article-title">文章发布台</h2></div><span class="draft-stamp">先保存草稿，再公开</span></div>
+        <form id="article-form" class="article-form" novalidate>
+          <input type="hidden" name="id" />
+          <div class="form-grid">
+            <label class="field field-wide"><span>标题</span><input name="title" required maxlength="120" placeholder="例如：我如何把一个 AI 工具部署上线" /></label>
+            <label class="field"><span>slug</span><input name="slug" required maxlength="100" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="ai-deploy-notes" /></label>
+            <label class="field"><span>分类</span><select name="category"><option value="ai">AI 实践</option><option value="product">产品开发</option><option value="learning">学习笔记</option><option value="life">个人记录</option><option value="notes">随笔</option></select></label>
+            <label class="field field-wide"><span>摘要</span><textarea name="excerpt" maxlength="300" rows="2" placeholder="文章列表中显示的一句话摘要"></textarea></label>
+            <label class="field field-wide"><span>正文</span><textarea name="content" required maxlength="100000" rows="14" placeholder="直接写文章。空一行分段，支持换行和 https:// 链接；正文会安全转义后发布。"></textarea></label>
+          </div>
+          <div class="article-actions"><label class="privacy-check"><input name="pinned" type="checkbox" /><span>置顶文章</span></label><button class="quiet-action" type="button" data-article-new>新建</button><button class="quiet-action" type="button" data-article-preview>预览</button><button class="publish-action" type="button" data-article-save>保存草稿</button><button class="primary-action" type="button" data-article-publish>发布文章</button></div>
+          <p class="form-status" role="status" aria-live="polite" data-article-status></p><div class="article-preview" data-article-preview-box hidden></div>
+        </form>
+        <div class="article-list" data-article-list></div>
+      </section>
+
       <div class="workspace">
         <section class="upload-panel" aria-labelledby="upload-title">
           <div class="section-heading">

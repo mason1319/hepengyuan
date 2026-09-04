@@ -705,7 +705,7 @@ Append to `README.md`:
 ```markdown
 ## S1 漫画服务页样板
 
-本地启动后访问 `http://127.0.0.1:4173/samples/s1/`。该样板用于视觉与交互确认，不会自动替换 `https://hepengyuan.top/` 根主页。
+本地启动后访问 `http://127.0.0.1:4173/samples/s1/`。该样板用于视觉与交互确认，不会自动替换 `https://hepengyuan.com/` 根主页。
 ```
 
 - [ ] **Step 5: Run build and verify green**
@@ -843,4 +843,4 @@ Root homepage: unchanged
 
 - [ ] **Step 3: Request explicit approval before any production replacement or deployment**
 
-Do not run `npm run release` and do not change `https://hepengyuan.top/` unless the user separately approves the reviewed S1 sample for production.
+Do not run `npm run release` and do not change `https://hepengyuan.com/` unless the user separately approves the reviewed S1 sample for production.

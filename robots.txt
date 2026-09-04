@@ -16,5 +16,5 @@ Allow: /
 Disallow: /admin
 Disallow: /api/admin
 
-Sitemap: https://hepengyuan.top/sitemap.xml
-Sitemap: https://hepengyuan.top/sitemap-media.xml
+Sitemap: https://hepengyuan.com/sitemap.xml
+Sitemap: https://hepengyuan.com/sitemap-media.xml

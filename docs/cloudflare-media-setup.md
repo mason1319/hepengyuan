@@ -31,10 +31,10 @@ npx --yes wrangler@4.125.0 d1 create hepengyuan-media
 在 Cloudflare 控制台进入 **Zero Trust → Access → Applications → Add an application → Self-hosted**，为以下父路径和通配路径建立保护：
 
 ```text
-hepengyuan.top/admin
-hepengyuan.top/admin/*
-hepengyuan.top/api/admin
-hepengyuan.top/api/admin/*
+hepengyuan.com/admin
+hepengyuan.com/admin/*
+hepengyuan.com/api/admin
+hepengyuan.com/api/admin/*
 ```
 
 策略使用：
@@ -74,7 +74,7 @@ npm run dev:worker
 
 ## 4. 发布与验收
 
-生产发布会应用 D1 migration、切换 `hepengyuan.top` 的 Worker 版本并运行在线冒烟检查。发布前必须先配置 Git `origin`，确保当前 `HEAD` 包含最新 `origin/main` 和线上提交。
+生产发布会应用 D1 migration、切换 `hepengyuan.com` 的 Worker 版本并运行在线冒烟检查。发布前必须先配置 Git `origin`，确保当前 `HEAD` 包含最新 `origin/main` 和线上提交。
 
 截至 2026-08-23，生产域名仍由 Cloudflare Pages 项目 `hepengyuan-personal-site` 提供：
 
@@ -115,8 +115,8 @@ npm run release
 首次 Pages → Worker 切换失败时：
 
 1. 先确认回滚快照 `https://b762e7a3.hepengyuan-personal-site.pages.dev/` 仍返回正确网站。
-2. 在 Cloudflare **Workers & Pages → hepengyuan-personal-site Worker → Settings → Domains & Routes** 移除 `hepengyuan.top` 的 Worker 自定义域绑定。
-3. 在 **Workers & Pages → hepengyuan-personal-site Pages → Custom domains** 重新绑定并验证 `hepengyuan.top`。
+2. 在 Cloudflare **Workers & Pages → hepengyuan-personal-site Worker → Settings → Domains & Routes** 移除 `hepengyuan.com` 的 Worker 自定义域绑定。
+3. 在 **Workers & Pages → hepengyuan-personal-site Pages → Custom domains** 重新绑定并验证 `hepengyuan.com`。
 4. 实际请求 `/`、`/robots.txt`、`/sitemap.xml`、`/profile.json` 和 `/llms.txt`；全部正常后才算回滚完成。
 
 切换成功后的普通 Worker 版本回滚，在 Cloudflare Workers 的 **Deployments / Versions** 恢复上一个已验证版本。D1 migration 不随 Worker 版本自动回滚，因此 migration 只做向前兼容变更，不在紧急回滚时删除表或字段。
