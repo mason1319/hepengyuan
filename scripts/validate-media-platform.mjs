@@ -90,7 +90,9 @@ for (const expected of [
   '"directory": "./dist"',
   '"binding": "MEDIA_DB"',
   '"binding": "MEDIA_BUCKET"',
-  '"pattern": "hepengyuan.com"',
+  '"pattern": "hepengyuan.com/*"',
+  '"pattern": "www.hepengyuan.com/*"',
+  '"zone_name": "hepengyuan.com"',
   '"/api/*"',
   '"/admin/*"',
 ]) {

@@ -7,8 +7,12 @@
   "preview_urls": false,
   "routes": [
     {
-      "pattern": "hepengyuan.com",
-      "custom_domain": true
+      "pattern": "hepengyuan.com/*",
+      "zone_name": "hepengyuan.com"
+    },
+    {
+      "pattern": "www.hepengyuan.com/*",
+      "zone_name": "hepengyuan.com"
     }
   ],
   "triggers": {
