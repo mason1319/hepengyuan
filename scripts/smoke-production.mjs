@@ -11,11 +11,12 @@ const checks = [
   { path: "/travel/", type: "text/html", includes: "旅行影像" },
   { path: "/learning/", type: "text/html", includes: "学习视频" },
   { path: "/sitemap-media.xml", type: "application/xml", includes: "urlset" },
+  { path: "/media/promo/pengyuan-personal-promo.mp4", type: "video/mp4", method: "HEAD" },
 ];
 
 for (const check of checks) {
   const target = new URL(check.path, origin);
-  const response = await fetch(target, { signal: AbortSignal.timeout(20_000) });
+  const response = await fetch(target, { method: check.method || "GET", signal: AbortSignal.timeout(20_000) });
   const contentType = response.headers.get("content-type") || "";
 
   if (!response.ok) {
@@ -25,7 +26,12 @@ for (const check of checks) {
     throw new Error(`${target.href} returned unexpected Content-Type: ${contentType || "missing"}.`);
   }
 
-  if (check.json) {
+  if (check.method === "HEAD") {
+    const length = Number(response.headers.get("content-length") || "0");
+    if (!Number.isFinite(length) || length <= 0) {
+      throw new Error(`${target.href} returned an empty or missing Content-Length.`);
+    }
+  } else if (check.json) {
     const payload = await response.json();
     if (payload?.version !== 1 || !Array.isArray(payload.items)) {
       throw new Error(`${target.href} does not expose the expected public media feed.`);

@@ -137,6 +137,8 @@ assert(mediaStoreSource.includes("m.upload_state = 'aborted'"), "scheduled clean
 assert(!mediaStoreSource.includes("const publishable"), "publish status checks retain a deletion-race second lookup");
 assert(workerSource.includes("Accept-Ranges"), "public video response is missing Range support");
 assert(workerSource.includes("findPublishedMedia"), "public file routes must verify the published D1 record");
+assert(workerSource.includes('PROMO_VIDEO_ROUTE = "/media/promo/pengyuan-personal-promo.mp4"'), "personal promo video route is missing");
+assert(workerSource.includes('PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4"'), "personal promo video R2 key is missing");
 assert(!workerSource.includes("max-age=31536000, immutable"), "revocable media must not use immutable browser caching");
 assert(workerSource.includes("REVOCABLE_PUBLIC_CACHE"), "revocable public responses must share one revalidation policy");
 assert(workerSource.includes("deleteMedia"), "admin media route is missing permanent deletion");

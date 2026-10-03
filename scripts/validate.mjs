@@ -14,6 +14,7 @@ const requiredFiles = [
   "profile.json",
   "assets/favicon.svg",
   "assets/og-card.png",
+  "assets/hpy-promo-poster.jpg",
   "assets/wechat-terrasol-ai-qr.jpg",
   "assets/douyin-hpy131419-code.jpg",
 ];
@@ -103,6 +104,9 @@ const htmlChecks = [
   [/<h1[^>]*>/, "visible H1 is missing"],
   [/何鹏远/, "canonical Chinese name is missing"],
   [/He Pengyuan/, "canonical English name is missing"],
+  [/id="personal-film"/, "personal promo film section is missing"],
+  [/\/media\/promo\/pengyuan-personal-promo\.mp4/, "personal promo film media route is missing"],
+  [/\/assets\/hpy-promo-poster\.jpg/, "personal promo film poster is missing"],
 ];
 
 for (const [pattern, message] of htmlChecks) {
@@ -179,6 +183,21 @@ for (const asset of ["assets/wechat-terrasol-ai-qr.jpg", "assets/douyin-hpy13141
   } catch {
     // The required-file check above reports the missing asset.
   }
+}
+
+try {
+  const info = await stat("assets/hpy-promo-poster.jpg");
+  if (info.size >= 1_000_000) failures.push("assets/hpy-promo-poster.jpg: promo poster must stay below 1 MB");
+} catch {
+  // The required-file check above reports the missing asset.
+}
+
+if (profile.video?.contentUrl !== "https://hepengyuan.com/media/promo/pengyuan-personal-promo.mp4") {
+  failures.push("profile.json: personal promo video contentUrl is missing or inconsistent");
+}
+
+if (!llms.includes("https://hepengyuan.com/#personal-film")) {
+  failures.push("llms.txt: personal promo film source is missing");
 }
 
 if (failures.length > 0) {

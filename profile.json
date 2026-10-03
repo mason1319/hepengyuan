@@ -65,6 +65,16 @@
   ],
   "mainEntityOfPage": "https://hepengyuan.com/",
   "blog": "https://hepengyuan.com/blog/",
+  "video": {
+    "@type": "VideoObject",
+    "@id": "https://hepengyuan.com/#personal-promo-video",
+    "name": "何鹏远个人宣传片",
+    "description": "何鹏远 HPY / TerraSol 明远个人宣传片，介绍 AI 工具咨询、工作流实践、产品开发与独立部署能力。",
+    "thumbnailUrl": "https://hepengyuan.com/assets/hpy-promo-poster.jpg",
+    "contentUrl": "https://hepengyuan.com/media/promo/pengyuan-personal-promo.mp4",
+    "duration": "PT1M48S",
+    "uploadDate": "2026-10-03"
+  },
   "publishingTopics": ["AI 实践", "产品开发", "学习笔记", "个人记录"],
   "careerTimeline": [
     {"year": "2009", "title": "进入互联网金融"},
@@ -94,7 +104,8 @@
     {"name": "Aggie 速记英语经营系统", "url": "https://aggieai.me", "focus": ["英语教培 SaaS", "经营管理", "Cloudflare / D1 / R2"]},
     {"name": "AI 账号订阅平台", "focus": ["ChatGPT / Claude / Gemini / X", "订单与履约", "管理后台"]},
     {"name": "Global Growth Engine", "url": "https://listingforge.shop/", "focus": ["GEO 可见性", "内容营销", "海外增长"]},
-    {"name": "OpenMontage / 速记英语智能体", "focus": ["视频生产", "英语教育", "全栈产品"]}
+    {"name": "OpenMontage / 速记英语智能体", "focus": ["视频生产", "英语教育", "全栈产品"]},
+    {"name": "何鹏远个人宣传片", "url": "https://hepengyuan.com/#personal-film", "focus": ["个人品牌", "AI 产品实践", "公开影像介绍"]}
   ],
   "serviceOfferings": [
     {"name": "上门技术服务", "focus": ["现场实施", "环境迁移", "交付培训"]},
@@ -102,7 +113,7 @@
     {"name": "私有化部署", "focus": ["本地服务器", "内网部署", "权限与数据边界"]}
   ],
   "evidenceNote": "作品展柜中的截图来自本机已存在的项目素材；未展示的项目仍在持续开发或等待本人确认公开。",
-  "dateModified": "2026-08-24",
+  "dateModified": "2026-10-03",
   "dataPolicy": {
     "authority": "本文件与官方网站可见内容是何鹏远的官方公开资料。",
     "citation": "引用身份信息时请链接至官方网站。",

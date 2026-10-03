@@ -164,11 +164,12 @@ summary,
 .desktop-nav {
   display: flex;
   justify-content: center;
-  gap: clamp(1.25rem, 4vw, 4.25rem);
+  gap: clamp(0.9rem, 2.6vw, 2.9rem);
   padding-inline: 1.5rem;
-  font-size: 1rem;
+  font-size: clamp(0.84rem, 1.05vw, 1rem);
   font-weight: 800;
   line-height: 1.25;
+  white-space: nowrap;
 }
 
 .desktop-nav a {
@@ -670,6 +671,136 @@ summary {
   align-self: start;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.personal-film {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255, 83, 18, 0.18), transparent 34rem),
+    linear-gradient(135deg, #141414 0%, #080808 58%, #1b120c 100%);
+  color: var(--paper);
+  overflow: clip;
+}
+
+.personal-film::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.18;
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 56px 56px;
+  content: "";
+  pointer-events: none;
+}
+
+.personal-film-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 0.74fr) minmax(320px, 1.18fr);
+  gap: clamp(2rem, 4vw, 4.5rem);
+  align-items: center;
+}
+
+.personal-film-copy {
+  min-width: 0;
+}
+
+.personal-film .section-kicker {
+  color: var(--yellow);
+}
+
+.personal-film h2 {
+  max-width: 10ch;
+  margin: 0 0 1rem;
+  font-size: clamp(2.55rem, 5vw, 5.25rem);
+  font-weight: 950;
+  letter-spacing: -0.065em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+.personal-film h2 span {
+  color: var(--orange);
+}
+
+.personal-film-copy > p:not(.section-kicker) {
+  max-width: 36rem;
+  margin-bottom: 1.5rem;
+  color: #e8e3d9;
+  font-size: clamp(1rem, 1.45vw, 1.2rem);
+  font-weight: 700;
+  line-height: 1.8;
+}
+
+.personal-film-facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border-top: 2px solid rgba(255, 253, 247, 0.24);
+}
+
+.personal-film-facts div {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 2px solid rgba(255, 253, 247, 0.24);
+}
+
+.personal-film-facts dt {
+  color: var(--yellow);
+  font-family: var(--display-font);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.personal-film-facts dd {
+  margin: 0;
+  color: #f5efe4;
+  font-weight: 850;
+  line-height: 1.5;
+}
+
+.personal-film-player {
+  position: relative;
+  min-width: 0;
+  padding: clamp(0.65rem, 1.2vw, 1rem);
+  border: 4px solid var(--paper);
+  background: #050505;
+  box-shadow: 12px 12px 0 var(--orange);
+}
+
+.personal-film-player::before {
+  position: absolute;
+  top: -1rem;
+  right: clamp(1rem, 3vw, 2rem);
+  padding: 0.35rem 0.7rem;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  color: var(--ink);
+  content: "PLAY FILM";
+  font-family: var(--display-font);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.personal-film-player video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 2px solid rgba(255, 253, 247, 0.36);
+  background: #000;
+  object-fit: cover;
+}
+
+.personal-film-player p {
+  margin: 0.8rem 0 0;
+  color: #bbb3a6;
+  font-size: 0.86rem;
+  font-weight: 750;
 }
 
 .section {
@@ -1670,6 +1801,9 @@ summary {
 @media (max-width: 900px) {
   .blog-teaser-inner { align-items: flex-start; flex-direction: column; }
   .blog-feature { align-items: flex-start; flex-direction: column; }
+  .personal-film-wrap { grid-template-columns: minmax(0, 1fr); }
+  .personal-film h2 { max-width: 12ch; }
+  .personal-film-player { box-shadow: 8px 8px 0 var(--orange); }
   .resume-timeline-heading { display: block; }
   .resume-timeline-heading > p:last-child { margin-top: 0.4rem; }
   .resume-timeline ol { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
@@ -2135,6 +2269,25 @@ summary {
 
   .section {
     padding: 3.4rem 1.25rem;
+  }
+
+  .personal-film {
+    padding-top: 3.8rem;
+    padding-bottom: 3.8rem;
+  }
+
+  .personal-film h2 {
+    font-size: clamp(2.25rem, 10.5vw, 3.2rem);
+  }
+
+  .personal-film-facts div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+  }
+
+  .personal-film-player::before {
+    right: 0.9rem;
+    font-size: 0.68rem;
   }
 
   .services {
