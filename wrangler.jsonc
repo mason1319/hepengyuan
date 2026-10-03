@@ -27,6 +27,7 @@
       "/api/*",
       "/media/file/*",
       "/media/poster/*",
+      "/media/promo/*",
       "/travel",
       "/travel/*",
       "/learning",

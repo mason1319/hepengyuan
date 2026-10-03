@@ -22,6 +22,10 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="何鹏远 HPY TerraSol 明远橙黑漫画风服务主页">
+    <meta property="og:video" content="https://hepengyuan.com/media/promo/pengyuan-personal-promo.mp4">
+    <meta property="og:video:type" content="video/mp4">
+    <meta property="og:video:width" content="1920">
+    <meta property="og:video:height" content="1080">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="何鹏远 HPY · TerraSol 明远｜AI 工具服务">
     <meta name="twitter:description" content="AI 工具咨询、安装协助、工作流搭建建议与售后支持。">
@@ -59,6 +63,7 @@
             "hasPart": [
               {"@type": "CreativeWork", "name": "Aggie 速记英语经营系统", "url": "https://aggieai.me"},
               {"@type": "CreativeWork", "name": "Beiming Quantum Nexus", "url": "https://beimingquant.xyz/"},
+              {"@type": "VideoObject", "@id": "https://hepengyuan.com/#personal-promo-video"},
               {"@type": "CreativeWork", "name": "Agent Ops 研发运营中枢", "url": "https://hepengyuan.com/#capabilities"},
               {"@type": "CreativeWork", "name": "AI 账号订阅平台", "url": "https://hepengyuan.com/#capabilities"},
               {"@type": "CreativeWork", "name": "Global Growth Engine", "url": "https://listingforge.shop/"}
@@ -81,6 +86,19 @@
             "isPartOf": {"@id": "https://hepengyuan.com/#website"},
             "mainEntity": {"@id": "https://hepengyuan.com/#person"},
             "inLanguage": "zh-CN"
+          },
+          {
+            "@type": "VideoObject",
+            "@id": "https://hepengyuan.com/#personal-promo-video",
+            "name": "何鹏远个人宣传片",
+            "description": "何鹏远 HPY / TerraSol 明远个人宣传片，介绍 AI 工具咨询、工作流实践、产品开发与独立部署能力。",
+            "thumbnailUrl": "https://hepengyuan.com/assets/hpy-promo-poster.jpg",
+            "contentUrl": "https://hepengyuan.com/media/promo/pengyuan-personal-promo.mp4",
+            "embedUrl": "https://hepengyuan.com/#personal-film",
+            "duration": "PT1M48S",
+            "uploadDate": "2026-10-03",
+            "inLanguage": "zh-CN",
+            "publisher": {"@id": "https://hepengyuan.com/#person"}
           }
         ]
       }
@@ -100,6 +118,7 @@
 
       <nav class="desktop-nav" aria-label="主导航">
         <a href="#about">关于何鹏远</a>
+        <a href="#personal-film">个人宣传片</a>
         <a href="#capabilities">AI能力与作品</a>
         <a href="#onsite">上门部署</a>
         <a href="#services">服务方案</a>
@@ -125,6 +144,7 @@
 
       <nav id="mobile-nav" data-mobile-nav hidden aria-label="移动导航">
         <a href="#about">关于何鹏远</a>
+        <a href="#personal-film">个人宣传片</a>
         <a href="#capabilities">AI能力与作品</a>
         <a href="#onsite">上门部署</a>
         <a href="#services">服务方案</a>
@@ -181,6 +201,34 @@
           <li><strong>分步协助</strong><span>按确认步骤推进</span></li>
           <li><strong>售后跟进</strong><span>交付后继续答疑</span></li>
         </ul>
+      </section>
+
+      <section class="personal-film section" id="personal-film" aria-labelledby="personal-film-title">
+        <div class="personal-film-wrap">
+          <div class="personal-film-copy reveal">
+            <p class="section-kicker">OFFICIAL FILM / 个人宣传片</p>
+            <h2 id="personal-film-title">用一支短片，看见何鹏远的 <span>AI 产品实践。</span></h2>
+            <p>这支 108 秒个人宣传片，集中呈现何鹏远 HPY / TerraSol 明远的公开身份、AI 工具咨询、工作流搭建、产品开发与独立部署方向。</p>
+            <dl class="personal-film-facts" aria-label="宣传片信息">
+              <div><dt>片名</dt><dd>何鹏远个人宣传片</dd></div>
+              <div><dt>时长</dt><dd>1 分 48 秒</dd></div>
+              <div><dt>主题</dt><dd>AI 工具咨询、工作流、全栈产品、独立部署</dd></div>
+            </dl>
+          </div>
+          <div class="personal-film-player reveal">
+            <video
+              controls
+              playsinline
+              preload="metadata"
+              poster="/assets/hpy-promo-poster.jpg"
+              aria-label="何鹏远个人宣传片"
+            >
+              <source src="/media/promo/pengyuan-personal-promo.mp4" type="video/mp4">
+              当前浏览器不支持直接播放视频，请稍后访问公开媒体链接。
+            </video>
+            <p>视频文件使用 Cloudflare R2 存储，通过本站同源媒体路由播放。</p>
+          </div>
+        </div>
       </section>
 
       <section class="about section" id="about" aria-labelledby="about-title">
