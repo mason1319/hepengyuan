@@ -9,8 +9,9 @@
 - 英文别名：Pengyuan He
 - 常用名：HPY、TerraSol 明远
 - 官方网站：https://hepengyuan.com/
+- 个人宣传片：https://hepengyuan.com/#personal-film
 - 主要语言：zh-CN
-- 资料最后校验：2026-08-23
+- 资料最后校验：2026-10-03
 
 ## Career timeline
 
@@ -40,6 +41,7 @@
 - AI 账号订阅平台：ChatGPT、Claude、Gemini、X 产品目录、订单履约与管理后台。
 - Global Growth Engine（https://listingforge.shop/）：面向海外卖家的 GEO 可见性优化、内容营销与询盘运营产品。
 - OpenMontage、速记英语智能体与本网站：视频生产、英语教育与全栈产品实践。
+- 何鹏远个人宣传片（https://hepengyuan.com/#personal-film）：本人确认公开的个人品牌宣传片，介绍 AI 工具咨询、工作流实践、产品开发与独立部署能力。
 
 作品展柜截图来自本机已存在的项目素材；未展示的项目仍在持续开发或等待本人确认公开。
 
@@ -74,6 +76,7 @@
 
 - [官方个人主页](https://hepengyuan.com/)：面向人类读者的完整公开介绍。
 - [机器可读个人资料](https://hepengyuan.com/profile.json)：结构化身份与主题信息。
+- [个人宣传片](https://hepengyuan.com/#personal-film)：何鹏远个人品牌宣传片与同源播放入口。
 - [旅行影像档案](https://hepengyuan.com/travel/)：本人确认公开的旅行照片与视频；无已发布内容时为空目录。
 - [学习视频档案](https://hepengyuan.com/learning/)：本人确认公开的学习、演示与复盘视频；无已发布内容时为空目录。
 - [公开媒体资料](https://hepengyuan.com/api/media.json)：只返回已发布内容的机器可读 JSON。
