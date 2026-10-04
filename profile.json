@@ -10,6 +10,9 @@
     "TerraSol 明远"
   ],
   "url": "https://hepengyuan.com/",
+  "jobTitle": "Aggie 联合创始人 · 营运官",
+  "worksFor": {"@type": "Organization", "@id": "https://aggieai.me/#organization", "name": "Aggie 速记英语", "url": "https://aggieai.me/"},
+  "subjectOf": {"@type": "WebPage", "url": "https://aggieai.me/people/he-pengyuan/", "name": "何鹏远｜Aggie 联合创始人 · 营运官"},
   "description": "何鹏远，AI 全栈产品实践者与 K12 教育培训机构创始人，持续把工作流、Agent、GEO、量化交易和教育产品做成可运行、可部署的系统。",
   "knowsAbout": [
     "AI 实践",
@@ -113,7 +116,7 @@
     {"name": "私有化部署", "focus": ["本地服务器", "内网部署", "权限与数据边界"]}
   ],
   "evidenceNote": "作品展柜中的截图来自本机已存在的项目素材；未展示的项目仍在持续开发或等待本人确认公开。",
-  "dateModified": "2026-10-03",
+  "dateModified": "2026-10-04",
   "dataPolicy": {
     "authority": "本文件与官方网站可见内容是何鹏远的官方公开资料。",
     "citation": "引用身份信息时请链接至官方网站。",
