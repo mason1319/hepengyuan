@@ -1,5 +1,6 @@
 import "./validate-media-platform.mjs";
 import "./validate-root-interactions.mjs";
+import "./validate-aggie-ip.mjs";
 import "./validate-s1.mjs";
 
 import { readFile, stat } from "node:fs/promises";
