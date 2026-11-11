@@ -144,6 +144,8 @@ assert(workerSource.includes('PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-
 assert(workerSource.includes('AGGIE_3A_ROUTE = "/aggie-3a/"'), "Aggie 3A public route is missing");
 assert(workerSource.includes('AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v5.html"'), "Aggie 3A R2 object key is missing");
 assert(workerSource.includes("handleAggie3AExperience"), "Aggie 3A R2 handler is missing");
+assert(workerSource.includes("https://static.cloudflareinsights.com"), "Aggie 3A CSP does not allow the Cloudflare Web Analytics script");
+assert(workerSource.includes("connect-src https://cloudflareinsights.com"), "Aggie 3A CSP does not allow the Cloudflare Web Analytics endpoint");
 assert(!workerSource.includes("max-age=31536000, immutable"), "revocable media must not use immutable browser caching");
 assert(workerSource.includes("REVOCABLE_PUBLIC_CACHE"), "revocable public responses must share one revalidation policy");
 assert(workerSource.includes("deleteMedia"), "admin media route is missing permanent deletion");

@@ -387,7 +387,7 @@ async function handleAggie3AExperience(request, env) {
     "Content-Length": String(object.size),
     "Cache-Control": REVOCABLE_PUBLIC_CACHE,
     "Content-Disposition": 'inline; filename="aggie-3a-v5.html"',
-    "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; connect-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; connect-src https://cloudflareinsights.com; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     "Cross-Origin-Resource-Policy": "same-origin",
     "Link": '<https://hepengyuan.com/aggie-3a/>; rel="canonical"',
     "X-Robots-Tag": "index, follow",
