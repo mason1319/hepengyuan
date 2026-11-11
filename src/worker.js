@@ -32,7 +32,7 @@ const REVOCABLE_PUBLIC_CACHE = "public, no-cache, max-age=0, must-revalidate";
 const PROMO_VIDEO_ROUTE = "/media/promo/pengyuan-personal-promo.mp4";
 const PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4";
 const AGGIE_3A_ROUTE = "/aggie-3a/";
-const AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v5.html";
+const AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v6.html";
 
 const PUBLIC_STATIC_FILES = new Set([
   "/",
@@ -386,7 +386,8 @@ async function handleAggie3AExperience(request, env) {
     "Content-Type": "text/html; charset=utf-8",
     "Content-Length": String(object.size),
     "Cache-Control": REVOCABLE_PUBLIC_CACHE,
-    "Content-Disposition": 'inline; filename="aggie-3a-v5.html"',
+    "Content-Disposition": 'inline; filename="aggie-3a-v6.html"',
+    "X-Aggie-Version": "V6",
     "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; connect-src 'self' https://cloudflareinsights.com; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     "Cross-Origin-Resource-Policy": "same-origin",
     "Link": '<https://hepengyuan.com/aggie-3a/>; rel="canonical"',

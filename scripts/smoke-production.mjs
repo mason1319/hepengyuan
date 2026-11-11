@@ -11,7 +11,7 @@ const checks = [
   { path: "/travel/", type: "text/html", includes: "旅行影像" },
   { path: "/learning/", type: "text/html", includes: "学习视频" },
   { path: "/sitemap-media.xml", type: "application/xml", includes: "urlset" },
-  { path: "/aggie-3a/", type: "text/html", includes: "Aggie速记英语3A大作" },
+  { path: "/aggie-3a/", type: "text/html", includes: "Aggie速记英语3A大作 · V6" },
   { path: "/media/promo/pengyuan-personal-promo.mp4", type: "video/mp4", method: "HEAD" },
 ];
 
