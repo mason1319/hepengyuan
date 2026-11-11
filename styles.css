@@ -196,6 +196,15 @@ summary,
   transform: scaleX(1);
 }
 
+.desktop-nav .nav-game-entry {
+  color: var(--blue);
+  font-weight: 950;
+}
+
+.desktop-nav .nav-game-entry::after {
+  background: var(--blue);
+}
+
 .header-cta,
 .button,
 .menu-toggle,
@@ -489,6 +498,27 @@ summary {
 .button-secondary {
   background: var(--yellow);
   color: var(--ink);
+}
+
+.button-game {
+  display: grid;
+  min-width: 14.5rem;
+  gap: 0.05rem;
+  background: var(--blue);
+  color: #ffffff;
+}
+
+.button-game-label {
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+}
+
+.button-game strong {
+  font-family: var(--display-font);
+  font-size: 1rem;
+  line-height: 1.15;
 }
 
 .hero-portrait {
@@ -1927,13 +1957,20 @@ summary {
     border-bottom: 0;
   }
 
+  #mobile-nav .nav-game-entry,
+  .js #mobile-nav .nav-game-entry {
+    background: var(--blue);
+    color: #ffffff;
+    font-weight: 950;
+  }
+
   .hero {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "copy"
+      "actions"
       "portrait"
-      "profile"
-      "actions";
+      "profile";
     gap: 0;
     min-height: 0;
     padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 2.25rem);
@@ -2011,12 +2048,18 @@ summary {
   .hero-actions {
     justify-content: center;
     gap: 1rem;
-    padding: 0 0.5rem 0.5rem 0;
+    padding: 1.15rem 0.5rem 1.5rem 0;
   }
 
   .button {
     min-width: 10.75rem;
     padding-inline: 1.1rem;
+  }
+
+  .button-game {
+    order: -1;
+    width: min(100%, 23rem);
+    min-height: 58px;
   }
 
   .service-grid {

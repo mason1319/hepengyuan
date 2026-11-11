@@ -57,6 +57,7 @@ for (const file of requiredFiles) {
 }
 
 const [
+  siteHtml,
   adminHtml,
   adminStyles,
   adminScript,
@@ -70,6 +71,7 @@ const [
   releasePreflight,
   productionSmoke,
 ] = await Promise.all([
+  readFile("index.html", "utf8"),
   readFile("admin/index.html", "utf8"),
   readFile("admin/styles.css", "utf8"),
   readFile("admin/script.js", "utf8"),
@@ -83,6 +85,9 @@ const [
   readFile("scripts/release-preflight.mjs", "utf8"),
   readFile("scripts/smoke-production.mjs", "utf8"),
 ]);
+
+assert(siteHtml.includes('class="button button-game" href="/aggie-3a/"'), "homepage hero is missing the Aggie game entry");
+assert(siteHtml.includes('class="nav-game-entry" href="/aggie-3a/"'), "site navigation is missing the Aggie game entry");
 
 for (const expected of [
   '"workers_dev": false',
@@ -142,7 +147,8 @@ assert(workerSource.includes("findPublishedMedia"), "public file routes must ver
 assert(workerSource.includes('PROMO_VIDEO_ROUTE = "/media/promo/pengyuan-personal-promo.mp4"'), "personal promo video route is missing");
 assert(workerSource.includes('PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4"'), "personal promo video R2 key is missing");
 assert(workerSource.includes('AGGIE_3A_ROUTE = "/aggie-3a/"'), "Aggie 3A public route is missing");
-assert(workerSource.includes('AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v5.html"'), "Aggie 3A R2 object key is missing");
+assert(workerSource.includes('AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v6.html"'), "Aggie 3A V6 R2 object key is missing");
+assert(workerSource.includes('"X-Aggie-Version": "V6"'), "Aggie 3A response does not expose the V6 version header");
 assert(workerSource.includes("handleAggie3AExperience"), "Aggie 3A R2 handler is missing");
 assert(workerSource.includes("https://static.cloudflareinsights.com"), "Aggie 3A CSP does not allow the Cloudflare Web Analytics script");
 assert(workerSource.includes("connect-src 'self' https://cloudflareinsights.com"), "Aggie 3A CSP does not allow Cloudflare Web Analytics reporting");
