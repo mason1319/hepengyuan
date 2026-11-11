@@ -31,6 +31,8 @@ const CANONICAL_SITE = "https://hepengyuan.com";
 const REVOCABLE_PUBLIC_CACHE = "public, no-cache, max-age=0, must-revalidate";
 const PROMO_VIDEO_ROUTE = "/media/promo/pengyuan-personal-promo.mp4";
 const PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4";
+const AGGIE_3A_ROUTE = "/aggie-3a/";
+const AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v5.html";
 
 const PUBLIC_STATIC_FILES = new Set([
   "/",
@@ -371,10 +373,41 @@ async function handleMediaPoster(request, env, row) {
   return new Response(request.method === "HEAD" ? null : object.body, { headers });
 }
 
+async function handleAggie3AExperience(request, env) {
+  if (request.method !== "GET" && request.method !== "HEAD") return methodNotAllowed(["GET", "HEAD"]);
+
+  const object = request.method === "HEAD"
+    ? await env.MEDIA_BUCKET.head(AGGIE_3A_OBJECT_KEY)
+    : await env.MEDIA_BUCKET.get(AGGIE_3A_OBJECT_KEY);
+  if (!object) return textResponse("Aggie 3A experience not found", 404);
+
+  const etag = object.httpEtag || object.etag;
+  const headers = new Headers({
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": String(object.size),
+    "Cache-Control": REVOCABLE_PUBLIC_CACHE,
+    "Content-Disposition": 'inline; filename="aggie-3a-v5.html"',
+    "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; connect-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Link": '<https://hepengyuan.com/aggie-3a/>; rel="canonical"',
+    "X-Robots-Tag": "index, follow",
+    ...securityHeaders,
+  });
+  if (etag) headers.set("ETag", etag);
+  if (etag && request.headers.get("If-None-Match") === etag) return new Response(null, { status: 304, headers });
+
+  return new Response(request.method === "HEAD" ? null : object.body, { headers });
+}
+
 async function handlePublicDynamic(request, env, baseUrl) {
   const url = new URL(request.url);
   const path = url.pathname;
   const headOnly = request.method === "HEAD";
+
+  if (path === "/aggie-3a" || path === "/aggie-3a/index.html") {
+    return new Response(null, { status: 308, headers: { Location: AGGIE_3A_ROUTE, ...securityHeaders } });
+  }
+  if (path === AGGIE_3A_ROUTE) return handleAggie3AExperience(request, env);
 
   if (path === "/api/articles.json") {
     if (request.method !== "GET" && !headOnly) return methodNotAllowed(["GET", "HEAD"]);
