@@ -108,6 +108,7 @@ const htmlChecks = [
   [/id="personal-film"/, "personal promo film section is missing"],
   [/\/media\/promo\/pengyuan-personal-promo\.mp4/, "personal promo film media route is missing"],
   [/\/assets\/hpy-promo-poster\.jpg/, "personal promo film poster is missing"],
+  [/href="\/aggie-3a\/"/, "Aggie 3A experience link is missing"],
 ];
 
 for (const [pattern, message] of htmlChecks) {
@@ -119,6 +120,7 @@ for (const bot of ["OAI-SearchBot", "GPTBot", "Claude-SearchBot", "PerplexityBot
 }
 
 if (!sitemap.includes("<urlset")) failures.push("sitemap.xml: urlset is missing");
+if (!sitemap.includes("https://hepengyuan.com/aggie-3a/")) failures.push("sitemap.xml: Aggie 3A experience URL is missing");
 if (profile.name !== "何鹏远") failures.push("profile.json: canonical name is incorrect");
 
 const expectedPublicProfile = {
@@ -199,6 +201,14 @@ if (profile.video?.contentUrl !== "https://hepengyuan.com/media/promo/pengyuan-p
 
 if (!llms.includes("https://hepengyuan.com/#personal-film")) {
   failures.push("llms.txt: personal promo film source is missing");
+}
+
+if (!llms.includes("https://hepengyuan.com/aggie-3a/")) {
+  failures.push("llms.txt: Aggie 3A experience source is missing");
+}
+
+if (!profile.projectPortfolio?.some((item) => item.url === "https://hepengyuan.com/aggie-3a/")) {
+  failures.push("profile.json: Aggie 3A experience portfolio entry is missing");
 }
 
 if (failures.length > 0) {

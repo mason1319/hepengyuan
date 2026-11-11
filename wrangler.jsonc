@@ -25,6 +25,8 @@
       "/admin",
       "/admin/*",
       "/api/*",
+      "/aggie-3a",
+      "/aggie-3a/*",
       "/media/file/*",
       "/media/poster/*",
       "/media/promo/*",

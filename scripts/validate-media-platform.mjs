@@ -96,6 +96,7 @@ for (const expected of [
   '"/api/*"',
   '"/admin/*"',
   '"/media/promo/*"',
+  '"/aggie-3a/*"',
 ]) {
   assert(wrangler.includes(expected), `wrangler.jsonc is missing ${expected}`);
 }
@@ -140,6 +141,9 @@ assert(workerSource.includes("Accept-Ranges"), "public video response is missing
 assert(workerSource.includes("findPublishedMedia"), "public file routes must verify the published D1 record");
 assert(workerSource.includes('PROMO_VIDEO_ROUTE = "/media/promo/pengyuan-personal-promo.mp4"'), "personal promo video route is missing");
 assert(workerSource.includes('PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4"'), "personal promo video R2 key is missing");
+assert(workerSource.includes('AGGIE_3A_ROUTE = "/aggie-3a/"'), "Aggie 3A public route is missing");
+assert(workerSource.includes('AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v5.html"'), "Aggie 3A R2 object key is missing");
+assert(workerSource.includes("handleAggie3AExperience"), "Aggie 3A R2 handler is missing");
 assert(!workerSource.includes("max-age=31536000, immutable"), "revocable media must not use immutable browser caching");
 assert(workerSource.includes("REVOCABLE_PUBLIC_CACHE"), "revocable public responses must share one revalidation policy");
 assert(workerSource.includes("deleteMedia"), "admin media route is missing permanent deletion");
