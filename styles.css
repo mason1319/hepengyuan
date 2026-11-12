@@ -161,6 +161,7 @@ main h2{font-family:var(--body);font-weight:700;font-size:22px;line-height:1.25;
 main h2 .h2z{font-family:var(--mono);font-size:11.5px;font-weight:400;letter-spacing:.1em;color:var(--muted);margin-left:.9em;text-transform:uppercase}
 .pb-lbl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:400;margin:0}
 .pb-grp{margin:22px 0 2px}
+.pb-gap{margin-top:22px}
 .pb-note{margin:12px 0 0;font-family:var(--body);font-size:13.5px;line-height:1.6;color:var(--muted)}
 
 /* 条目：标题左、年份右，下面一句说明 */
@@ -184,6 +185,7 @@ section.pb-item{margin-top:0}
 .pb-idx .t{font-family:var(--serif);font-size:17px;line-height:1.45;color:var(--ink)}
 .pb-idx .d{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .pb-more-link{padding:14px 0 0 calc(6ch + 18px);font-family:var(--mono);font-size:12.5px}
+.pb-more-link.pb-flush{padding-left:0}
 .pb-more-link a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--rule)}
 @media (max-width:640px){
   .pb-yr{grid-template-columns:minmax(0,1fr)}
