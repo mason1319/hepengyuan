@@ -22,7 +22,7 @@
 - `policy.css`：`policy/`、`terms/`、`faqs/` 三页的版式，依赖 `styles.css` 的 token。
 - `robots.txt` / `sitemap.xml` / `llms.txt`：抓取、发现与 GEO 补充入口。
 - `assets/`：小型网站资产。大于 1MB 的二进制素材不能进 Git。
-- `assets/vendor/`：自托管的 three.js（MIT，固定版本并在 `scripts/validate-room.mjs` 里校验 sha256）。CSP 是 `script-src 'self'`，不能换成 CDN。
+- `assets/vendor/`：自托管的 three.js（MIT，固定版本并在 `scripts/validate-room.mjs` 里校验 sha256）。静态页 CSP 的 `script-src` 只信任本站（外加 Cloudflare Web Analytics 的 beacon），不能换成 CDN。
 - `assets/fonts/`：自托管的 latin 子集 woff2（OFL）。CSP 是 `font-src 'self'`，不能改成外链 Google Fonts；中文由系统字体栈承接。
 - `services/`：服务方案、上门与远程部署、能力与作品、FAQ。首页只保留身份、履历、作品、文章与联系方式。
 - `admin/`：Cloudflare Access 保护的影像上传与发布后台静态界面。
