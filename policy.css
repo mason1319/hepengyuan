@@ -1,31 +1,55 @@
-:root { --orange:#ff5312; --ink:#111; --paper:#fffdf7; --yellow:#ffce19; --muted:#686157; --line:#dad3c6; }
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin:0; min-width:320px; color:var(--ink); background:var(--paper); font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; line-height:1.75; }
-a { color:inherit; }
-.policy-shell { width:min(100% - 2rem, 1040px); margin:0 auto; }
-.policy-header { border-bottom:3px solid var(--ink); background:var(--paper); }
-.policy-header-inner { display:flex; align-items:center; justify-content:space-between; gap:1rem; min-height:84px; }
-.policy-brand { display:flex; align-items:center; gap:.8rem; font-weight:900; text-decoration:none; }
-.policy-brand-mark { font-size:2rem; letter-spacing:-.08em; line-height:1; }
-.policy-brand-name { display:grid; line-height:1.1; }
-.policy-brand-name small { margin-top:.25rem; color:var(--muted); font-size:.62rem; letter-spacing:.16em; }
-.policy-back { padding:.45rem .75rem; border:2px solid var(--ink); background:var(--yellow); box-shadow:3px 3px 0 var(--ink); font-weight:900; text-decoration:none; }
-.policy-main { padding:clamp(3rem,8vw,6rem) 0; }
-.policy-kicker { margin:0 0 .75rem; color:var(--orange); font-size:.78rem; font-weight:950; letter-spacing:.14em; }
-.policy-title { max-width:760px; margin:0; font-size:clamp(2.4rem,7vw,5.5rem); line-height:1.02; letter-spacing:-.06em; }
-.policy-lead { max-width:700px; margin:1.25rem 0 0; color:var(--muted); font-size:clamp(1rem,2vw,1.2rem); }
-.policy-grid { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:clamp(2rem,7vw,5rem); margin-top:clamp(3rem,7vw,5rem); }
-.policy-content { min-width:0; }
-.policy-content h2 { margin:2.4rem 0 .7rem; padding-top:1.2rem; border-top:2px solid var(--ink); font-size:1.45rem; line-height:1.3; }
-.policy-content h2:first-child { margin-top:0; }
-.policy-content p { margin:.65rem 0; }
-.policy-content ul { padding-left:1.3rem; }
-.policy-note { padding:1rem; border-left:5px solid var(--orange); background:#f5eee2; color:var(--muted); }
-.policy-index { align-self:start; position:sticky; top:1.5rem; padding:1rem; border:2px solid var(--ink); background:var(--paper); box-shadow:5px 5px 0 var(--ink); }
-.policy-index strong { display:block; margin-bottom:.5rem; font-size:.8rem; letter-spacing:.1em; }
-.policy-index a { display:block; padding:.25rem 0; color:var(--muted); font-size:.86rem; text-decoration:none; }
-.policy-index a:hover,.policy-index a:focus-visible { color:var(--orange); }
-.policy-footer { padding:1.5rem 0 2.5rem; border-top:3px solid var(--ink); color:var(--muted); font-size:.82rem; }
-@media (max-width:760px) { .policy-header-inner { min-height:72px; } .policy-grid { grid-template-columns:1fr; } .policy-index { position:static; order:-1; } .policy-title { font-size:clamp(2.5rem,13vw,4rem); } }
-@media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } * { transition:none!important; } }
+/* 条款 / 隐私 / 常见问题页：沿用首页的设计 token（由 /styles.css 提供），
+   只补这三页自己的版式。类名保持不变，HTML 结构无需改动。 */
+
+.policy-shell{width:min(100% - 2rem,var(--wrap));margin:0 auto}
+
+/* 页眉：与首页同一套 —— 名字在左，返回入口在右 */
+.policy-header{border-bottom:1px solid var(--rule)}
+.policy-header-inner{display:flex;align-items:center;justify-content:space-between;gap:10px 18px;flex-wrap:wrap;padding-block:16px 12px;min-height:0}
+.policy-brand{display:flex;flex-direction:column;gap:0;text-decoration:none;color:var(--ink)}
+.policy-brand-mark{font-family:var(--display);font-weight:850;font-stretch:125%;font-size:17px;letter-spacing:.12em;line-height:1.2;text-transform:uppercase}
+.policy-brand-name{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--muted);line-height:1.3;font-weight:400}
+.policy-brand-name small{font-size:inherit;letter-spacing:inherit;color:inherit}
+.policy-back{font-family:var(--osd);font-size:19px;letter-spacing:.07em;color:var(--muted);text-decoration:none;
+  padding:2px 8px 1px;border:1px solid var(--rule);border-radius:3px;background:none;box-shadow:none;font-weight:400}
+.policy-back:hover{color:var(--ink);border-color:var(--ink)}
+
+/* 正文：660px 单栏 + 右侧目录轨 */
+.policy-main{padding:clamp(28px,6vw,76px) 0 0}
+.policy-kicker{margin:0 0 .75em;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:400}
+.policy-title{max-width:660px;margin:0;font-family:var(--serif);font-weight:700;font-size:clamp(30px,4.2vw,46px);line-height:1.15;letter-spacing:-.012em;text-wrap:balance}
+.policy-title span{color:var(--soft)}
+.policy-lead{max-width:660px;margin:.55em 0 0;font-family:var(--serif);font-size:clamp(18px,2vw,21px);line-height:1.5;color:var(--soft);text-wrap:pretty}
+.policy-grid{display:grid;grid-template-columns:minmax(0,660px) 240px;gap:clamp(28px,5vw,64px);margin-top:clamp(32px,6vw,56px);align-items:start}
+.policy-content{min-width:0;max-width:660px}
+.policy-content h2{margin:clamp(32px,5vw,48px) 0 0;padding-top:14px;border-top:1px solid var(--rule);
+  font-family:var(--body);font-weight:700;font-size:20px;line-height:1.3;color:var(--ink);scroll-margin-top:24px}
+.policy-content h2:first-child{margin-top:0;border-top:0;padding-top:0}
+.policy-content p{margin:.7em 0 0;font-family:var(--body);font-size:15.5px;line-height:1.75;color:var(--soft)}
+.policy-content ul{margin:.7em 0 0;padding-left:1.3em;font-family:var(--body);font-size:15.5px;line-height:1.75;color:var(--soft)}
+.policy-content li{margin:.3em 0}
+.policy-content a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--rule)}
+.policy-content a:hover{text-decoration-color:currentColor}
+.policy-note{margin:18px 0 0;padding:14px 16px;border:1px solid var(--rule);border-left:2px solid var(--accent);border-radius:3px;
+  background:var(--sheet);font-family:var(--body);font-size:14px;line-height:1.65;color:var(--soft)}
+
+/* 右侧目录 */
+.policy-index{align-self:start;position:sticky;top:24px;padding:0 0 0 18px;border:0;border-left:1px solid var(--rule);background:none;box-shadow:none}
+.policy-index strong{display:block;margin-bottom:8px;font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.policy-index a{display:block;padding:4px 0;font-family:var(--body);font-size:14px;line-height:1.45;color:var(--muted);text-decoration:none}
+.policy-index a:hover,.policy-index a:focus-visible{color:var(--ink)}
+
+/* 页脚 */
+.policy-footer{margin-top:clamp(48px,7vw,80px);border-top:1px solid var(--rule);padding:16px 0 22px;
+  font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.policy-footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--rule)}
+.policy-footer a:hover{color:var(--ink)}
+
+@media (max-width:979px){
+  .policy-grid{grid-template-columns:minmax(0,1fr)}
+  .policy-index{position:static;order:-1;padding:0 0 0 14px}
+}
+@media print{
+  .policy-back,.policy-index{display:none}
+  .policy-header,.policy-footer{border-color:#000}
+}

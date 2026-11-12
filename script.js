@@ -1,84 +1,61 @@
-document.documentElement?.classList?.add?.("js");
+/* 何鹏远个人网站 —— 首页轻交互
+   每块功能都独立 try/catch：任何一块出错都不影响服务器直出的内容与链接。 */
 
-const menuToggle = document.querySelector("[data-menu-toggle]");
-const mobileNav = document.querySelector("[data-mobile-nav]");
+const root = document.documentElement;
 
-function setMenuOpen(isOpen) {
-  if (!menuToggle || !mobileNav) return;
+/* ------------------------------------------------------------------ 主题
+   三态：跟随系统 → 浅色 → 深色。未选择时不写 data-theme，交给 CSS 的
+   prefers-color-scheme 决定；选择后写入 localStorage。 */
+const THEME_KEY = "hpy-theme";
+const THEME_STATES = ["auto", "light", "dark"];
+const THEME_LABELS = { auto: "跟随系统", light: "浅色", dark: "深色" };
 
-  menuToggle.setAttribute("aria-expanded", String(isOpen));
-  mobileNav.hidden = !isOpen;
-
-  const label = menuToggle.querySelector(".sr-only");
-  if (label) label.textContent = isOpen ? "关闭导航" : "打开导航";
-}
-
-function closeMenu({ restoreFocus = false } = {}) {
-  setMenuOpen(false);
-  if (restoreFocus && menuToggle) menuToggle.focus();
-}
-
-if (!menuToggle || !mobileNav) {
-  document.documentElement?.classList?.remove?.("js");
-} else {
+function readStoredTheme() {
   try {
-    setMenuOpen(false);
-
-    menuToggle.addEventListener("click", () => {
-      const isOpen = menuToggle.getAttribute("aria-expanded") !== "true";
-      setMenuOpen(isOpen);
-    });
-
-    mobileNav.addEventListener("click", (event) => {
-      if (event.target instanceof Element && event.target.closest("a")) closeMenu();
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && menuToggle.getAttribute("aria-expanded") === "true") {
-        closeMenu({ restoreFocus: true });
-      }
-    });
-
-    document.addEventListener("click", (event) => {
-      if (menuToggle.getAttribute("aria-expanded") !== "true") return;
-      if (!(event.target instanceof Node)) return;
-      if (menuToggle.contains(event.target) || mobileNav.contains(event.target)) return;
-      closeMenu();
-    });
-
-    window.addEventListener("resize", () => {
-      if (window.innerWidth > 900) closeMenu();
-    });
+    const saved = window.localStorage?.getItem(THEME_KEY);
+    return saved === "light" || saved === "dark" ? saved : "auto";
   } catch {
-    document.documentElement?.classList?.remove?.("js");
+    return "auto";
   }
 }
 
-const serviceButtons = document.querySelectorAll("[data-service-select]");
-const serviceCards = document.querySelectorAll("[data-service-card]");
-const selectedServiceStatus = document.querySelector("[data-selected-service]");
+function writeStoredTheme(theme) {
+  try {
+    if (theme === "auto") window.localStorage?.removeItem(THEME_KEY);
+    else window.localStorage?.setItem(THEME_KEY, theme);
+  } catch {
+    /* 隐私模式下写不进去，本次访问内仍然生效。 */
+  }
+}
 
-serviceButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const selectedCard = button.closest("[data-service-card]");
-    if (!selectedCard) return;
+function applyTheme(theme, button) {
+  if (theme === "auto") root?.removeAttribute?.("data-theme");
+  else root?.setAttribute?.("data-theme", theme);
 
-    serviceCards.forEach((serviceCard) => {
-      const isSelected = serviceCard === selectedCard;
-      serviceCard.dataset.selected = String(isSelected);
+  if (!button) return;
+  button.textContent = theme.toUpperCase();
+  button.setAttribute("aria-label", `配色：${THEME_LABELS[theme]}（点击切换）`);
+}
 
-      const selectButton = serviceCard.querySelector("[data-service-select]");
-      if (selectButton) selectButton.setAttribute("aria-pressed", String(isSelected));
+try {
+  const themeButton = document.querySelector("#theme");
+  if (themeButton) {
+    let theme = readStoredTheme();
+    applyTheme(theme, themeButton);
+    themeButton.hidden = false;
+
+    themeButton.addEventListener("click", () => {
+      theme = THEME_STATES[(THEME_STATES.indexOf(theme) + 1) % THEME_STATES.length];
+      writeStoredTheme(theme);
+      applyTheme(theme, themeButton);
     });
+  }
+} catch {
+  /* 没有按钮就保持跟随系统。 */
+}
 
-    const serviceName = selectedCard.dataset.serviceName;
-    if (selectedServiceStatus && serviceName) {
-      selectedServiceStatus.textContent = `当前关注：${serviceName}`;
-    }
-  });
-});
-
-const copyButton = document.querySelector("[data-copy-contact]");
+/* --------------------------------------------------- 公开联系方式一键复制
+   两个按钮各自独立：晚到的失败不能覆盖后一次成功的提示。 */
 const copyButtons = document.querySelectorAll("[data-copy-public]");
 const contactName = document.querySelector("[data-contact-name]");
 const copyStatus = document.querySelector("[data-contact-note]");
@@ -114,7 +91,7 @@ function fallbackCopy(value) {
   }
 }
 
-async function copyContactName(trigger = copyButton) {
+async function copyContactName(trigger) {
   if (!copyStatus) return;
 
   const value = trigger?.dataset.copyValue?.trim() || contactName?.textContent.trim();
@@ -149,6 +126,8 @@ if (copyStatus && copyButtons.length > 0) {
   });
 }
 
+/* ----------------------------------------------------------- 滚动渐显
+   尊重 prefers-reduced-motion；没有 IntersectionObserver 时直接全部显示。 */
 const revealItems = document.querySelectorAll(".reveal");
 
 function reveal(item) {
@@ -199,94 +178,3 @@ if (reducedMotion || !IntersectionObserverConstructor) {
     revealAll();
   }
 }
-
-const mediaBoard = document.querySelector("[data-media-feed]");
-
-function safeSitePath(value, fallback = "#media") {
-  if (typeof value !== "string" || !value.trim()) return fallback;
-  try {
-    const resolved = new URL(value, window.location.origin);
-    return resolved.origin === window.location.origin ? resolved.href : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function createMediaCard(item) {
-  const article = document.createElement("article");
-  article.className = "media-entry-card";
-  const storyUrl = safeSitePath(item.storyUrl);
-  const contentUrl = safeSitePath(item.contentUrl, "");
-  const thumbnailUrl = safeSitePath(item.thumbnailUrl, "");
-  const visual = document.createElement("a");
-  visual.className = "media-entry-visual";
-  visual.href = storyUrl;
-  visual.setAttribute("aria-label", `查看影像档案：${item.title || "未命名内容"}`);
-
-  if (item.mediaType === "image" && contentUrl) {
-    const image = document.createElement("img");
-    image.src = contentUrl;
-    image.alt = item.alt || item.title || "何鹏远公开旅行照片";
-    image.loading = "lazy";
-    visual.append(image);
-  } else {
-    visual.classList.add("is-video");
-    if (thumbnailUrl) {
-      const image = document.createElement("img");
-      image.src = thumbnailUrl;
-      image.alt = "";
-      image.loading = "lazy";
-      visual.append(image);
-    }
-    const playMark = document.createElement("span");
-    playMark.className = "media-entry-play";
-    playMark.setAttribute("aria-hidden", "true");
-    playMark.textContent = "▶";
-    visual.append(playMark);
-  }
-
-  const body = document.createElement("div");
-  body.className = "media-entry-body";
-  const label = document.createElement("p");
-  label.className = "media-entry-label";
-  label.textContent = `${item.category === "learning" ? "LEARNING" : "TRAVEL"} / ${item.mediaType === "video" ? "VIDEO" : "PHOTO"}`;
-  const title = document.createElement("h3");
-  const titleLink = document.createElement("a");
-  titleLink.href = storyUrl;
-  titleLink.textContent = item.title || "未命名影像";
-  title.append(titleLink);
-  const description = document.createElement("p");
-  description.className = "media-entry-description";
-  description.textContent = item.description || "查看这条公开影像的完整说明。";
-  const meta = document.createElement("p");
-  meta.className = "media-entry-meta";
-  meta.textContent = [item.country, item.city, item.capturedOn].filter(Boolean).join(" · ") || "地点与时间以详情页公开信息为准";
-  body.append(label, title, description, meta);
-  article.append(visual, body);
-  return article;
-}
-
-async function loadPublishedMedia() {
-  if (!mediaBoard) return;
-  const itemsElement = mediaBoard.querySelector("[data-media-items]");
-  if (!itemsElement) return;
-  try {
-    const response = await fetch(safeSitePath(mediaBoard.dataset.mediaFeed, "/api/media.json"), {
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) return;
-    const payload = await response.json();
-    const items = Array.isArray(payload?.items) ? payload.items : [];
-    if (!items.length) return;
-    itemsElement.replaceChildren(...items.map(createMediaCard));
-    mediaBoard.dataset.mediaStatus = "published";
-    const status = mediaBoard.querySelector("[data-media-feed-status]");
-    const title = mediaBoard.querySelector("[data-media-feed-title]");
-    if (status) status.textContent = `STATUS / ${items.length} PUBLISHED`;
-    if (title) title.textContent = `${items.length} 条本人确认的公开影像。`;
-  } catch {
-    // 静态空状态仍然完整可读。
-  }
-}
-
-loadPublishedMedia();

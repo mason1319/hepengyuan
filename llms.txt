@@ -48,6 +48,8 @@
 
 ## On-site and private deployment
 
+完整说明见 https://hepengyuan.com/services/ 。
+
 - 上门技术服务：远程预检、现场安装配置、系统联调、验收交付与售后陪跑。
 - 远程部署：需求与环境清单、临时权限、备份回滚、SSH / SFTP、Docker Compose、Git、Cloudflare / Wrangler、联调验收与文档交接。
 - 私有化部署：面向企业、教培机构和个人团队，将 AI 工具、Agent、SaaS 或业务系统部署到自有服务器、内网或指定云环境。
@@ -78,6 +80,7 @@
 - [官方个人主页](https://hepengyuan.com/)：面向人类读者的完整公开介绍。
 - [机器可读个人资料](https://hepengyuan.com/profile.json)：结构化身份与主题信息。
 - [个人宣传片](https://hepengyuan.com/#personal-film)：何鹏远个人品牌宣传片与同源播放入口。
+- [服务与交付方式](https://hepengyuan.com/services/)：服务方案、上门与远程部署流程、验收清单、能力与作品说明。
 - [旅行影像档案](https://hepengyuan.com/travel/)：本人确认公开的旅行照片与视频；无已发布内容时为空目录。
 - [学习视频档案](https://hepengyuan.com/learning/)：本人确认公开的学习、演示与复盘视频；无已发布内容时为空目录。
 - [公开媒体资料](https://hepengyuan.com/api/media.json)：只返回已发布内容的机器可读 JSON。

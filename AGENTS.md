@@ -15,11 +15,16 @@
 ## Structure
 
 - `index.html`：主页可见内容、meta 和 JSON-LD。
-- `styles.css`：所有视觉与响应式样式。
-- `script.js`：导航、滚动显示与轻交互。
+- `styles.css`：设计 token、自托管字体与全站版式（首页、`services/`、`policy.css` 都依赖它）。
+- `script.js`：三态配色切换、公开联系方式复制与滚动渐显。
+- `room/`：首页的 hi-fi 版——可交互的 3D 夜间工作台，盖在静态首页之上。`boot.js` 判断设备能力、负责降级提示与进出切换；`scene.js` 是按需加载的 three.js 场景（纯程序化建模，无外部模型）。样式在 `styles.css` 的「hi-fi 房间」一节。
 - `profile.json`：机器可读权威个人资料。
+- `policy.css`：`policy/`、`terms/`、`faqs/` 三页的版式，依赖 `styles.css` 的 token。
 - `robots.txt` / `sitemap.xml` / `llms.txt`：抓取、发现与 GEO 补充入口。
 - `assets/`：小型网站资产。大于 1MB 的二进制素材不能进 Git。
+- `assets/vendor/`：自托管的 three.js（MIT，固定版本并在 `scripts/validate-room.mjs` 里校验 sha256）。CSP 是 `script-src 'self'`，不能换成 CDN。
+- `assets/fonts/`：自托管的 latin 子集 woff2（OFL）。CSP 是 `font-src 'self'`，不能改成外链 Google Fonts；中文由系统字体栈承接。
+- `services/`：服务方案、上门与远程部署、能力与作品、FAQ。首页只保留身份、履历、作品、文章与联系方式。
 - `admin/`：Cloudflare Access 保护的影像上传与发布后台静态界面。
 - `src/`：Cloudflare Worker、Access JWT 校验、D1/R2 媒体 API 与公开 SSR 页面。
 - `migrations/`：D1 媒体资料 schema；生产发布前必须先应用 migration。
@@ -32,6 +37,9 @@
 - 更新网址或日期时，同步检查 `robots.txt` 和 `sitemap.xml`。
 - 保持核心内容为服务器直出 HTML，不要把身份与事实仅放入 JavaScript 渲染。
 - 保留键盘焦点、语义标签、手机端布局和 `prefers-reduced-motion` 支持。
+- 3D 房间只是增强层：没有 JS、没有 WebGL 2、软件渲染、省流量、`prefers-reduced-motion`、帧率过低或加载失败时都必须自动回到静态首页并说明原因；不得把任何内容只放在房间里。
+- 房间里出现的履历（墙上的年份卡片 `TIMELINE`）必须与首页 Work 区逐字一致，热点 `HOTSPOTS` 必须指向真实存在的栏目；改首页履历或锚点时同步改 `room/scene.js`，校验脚本会拦住不一致。
+- 改 `room/` 下任何文件后，同步更新 `index.html` 里 `boot.js?v=` 与 `room/boot.js` 里 `SCENE_URL` 的版本号（两处必须一致）。
 - 旅行国家、城市、日期、标题与媒体内容只能来自何鹏远本人确认；草稿不得进入公开 HTML、JSON、sitemap 或链接。
 - 图片公开上传前必须生成去除 EXIF/GPS 的 WebP 公开版；视频必须有真实 poster 才能发布。
 - 后台与 `/api/admin/*` 必须同时受 Cloudflare Access 和 Worker 端 JWT 签名、issuer、AUD、管理员邮箱校验保护。
@@ -45,7 +53,8 @@
 3. 确认 `wrangler.jsonc` 已替换真实 D1 ID，R2 bucket 已创建，Access issuer / AUD / 管理员邮箱已在生产环境配置。
 4. 确认当前 HEAD 包含最新 `origin/main` 和线上生产提交。
 5. 只运行 `npm run release`；不得直接绕过门禁调用 `wrangler deploy`。
-6. 发布后实际请求 `/`、`/robots.txt`、`/sitemap.xml`、`/profile.json`、`/llms.txt`、`/api/media.json`、`/travel/`、`/learning/` 与 `/sitemap-media.xml`。
+6. 发布后实际请求 `/`、`/robots.txt`、`/sitemap.xml`、`/profile.json`、`/llms.txt`、`/api/media.json`、`/travel/`、`/learning/`、`/sitemap-media.xml`，以及 `/room/boot.js`、`/room/scene.js` 和 `/assets/vendor/` 下的 three.js。
+7. 在真实浏览器里打开 `/` 确认 3D 房间能进入、能点物件跳到对应栏目；再打开 `/?room=0` 确认静态版，`/?room=1` 确认可以强制回到房间。
 
 ## Known gotchas
 
@@ -53,3 +62,5 @@
 - `workers_dev` 和 `preview_urls` 必须保持关闭，避免绕过生产域名上的 Access。
 - `.dev.vars` 仅供 localhost 显式启用 `ADMIN_DEV_BYPASS=true`，绝不能提交或部署。
 - 没有域名和站长账号时，不能完成 Search Console、Bing Webmaster Tools 或 IndexNow 提交。
+- 房间的降级判断不要用 `navigator.connection.effectiveType === "3g"`：它按往返延迟估算，跨境访问时很多带宽正常的访客都会被报成 3g。
+- 房间的帧率看门狗阈值必须低于 30fps：省电模式和部分移动浏览器会把刷新率锁在 30。

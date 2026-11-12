@@ -31,13 +31,24 @@ for (const file of publicFiles) {
 await cp(resolve(projectRoot, "assets"), resolve(outputDirectory, "assets"), { recursive: true });
 await cp(resolve(projectRoot, "samples"), resolve(outputDirectory, "samples"), { recursive: true });
 await cp(resolve(projectRoot, "admin"), resolve(outputDirectory, "admin"), { recursive: true });
-for (const page of ["terms", "policy", "faqs"]) {
+for (const page of ["terms", "policy", "faqs", "services", "room"]) {
   await cp(resolve(projectRoot, page), resolve(outputDirectory, page), { recursive: true });
 }
 
 const html = await readFile(resolve(outputDirectory, "index.html"), "utf8");
 if (!html.includes("https://hepengyuan.com/")) {
   throw new Error("Production canonical URL is missing from built HTML.");
+}
+
+/* hi-fi 房间：scene.js 里的 import 路径必须能在 dist 里找到，否则线上只会静默降级。 */
+const roomScene = await readFile(resolve(outputDirectory, "room/scene.js"), "utf8");
+const roomImport = roomScene.match(/from "(\/assets\/vendor\/[^"]+)"/)?.[1];
+if (!roomImport) {
+  throw new Error("Room scene does not import the self-hosted three.js build.");
+}
+await readFile(resolve(outputDirectory, `.${roomImport}`));
+if (!html.includes('src="/room/boot.js')) {
+  throw new Error("Room boot script is missing from built HTML.");
 }
 
 const s1Html = await readFile(resolve(outputDirectory, "samples/s1/index.html"), "utf8");
