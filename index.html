@@ -4,33 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
-    <meta name="theme-color" content="#ff5312">
-    <title>何鹏远 HPY · TerraSol 明远｜AI 工具咨询与工作流服务</title>
-    <meta name="description" content="何鹏远（HPY / TerraSol 明远）的官方个人主页：AI 工作流、Agent、全栈产品、GEO、量化交易与教育产品实践。">
+    <meta name="theme-color" content="#e8e7e3" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#12110e" media="(prefers-color-scheme: dark)">
+    <title>何鹏远 He Pengyuan · HPY｜Aggie 联合创始人 · AI 工作流与全栈产品</title>
+    <meta name="description" content="何鹏远（He Pengyuan / HPY / TerraSol 明远）的官方个人主页：Aggie 速记英语联合创始人 · 营运官，K12 教育培训机构创始人，把 AI 工作流、Agent、全栈产品、GEO 与量化交易做成能运行的系统。">
     <meta name="author" content="何鹏远, He Pengyuan">
-    <meta name="keywords" content="何鹏远,He Pengyuan,HPY,TerraSol 明远,AI工作流,AI Agent,全栈开发,GEO,量化交易,速记英语智能体">
+    <meta name="keywords" content="何鹏远,He Pengyuan,HPY,TerraSol 明远,Aggie 速记英语,AI工作流,AI Agent,全栈开发,GEO,量化交易">
     <link rel="canonical" href="https://hepengyuan.com/">
     <link rel="alternate" type="application/json" href="/profile.json" title="何鹏远公开资料">
+    <link rel="alternate" type="application/rss+xml" href="/sitemap-blog.xml" title="何鹏远的文章">
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
     <meta property="og:type" content="profile">
     <meta property="og:locale" content="zh_CN">
     <meta property="og:site_name" content="何鹏远官方网站">
-    <meta property="og:title" content="何鹏远 HPY · TerraSol 明远｜AI 工具服务">
-    <meta property="og:description" content="AI 工具咨询、安装协助、工作流搭建建议与售后支持。">
+    <meta property="og:title" content="何鹏远 He Pengyuan · HPY｜Aggie 联合创始人 · AI 工作流与全栈产品">
+    <meta property="og:description" content="Aggie 速记英语联合创始人 · 营运官，K12 教育培训机构创始人。把 AI 工作流、Agent 和全栈产品做成真正能上线的系统。">
     <meta property="og:url" content="https://hepengyuan.com/">
     <meta property="og:image" content="https://hepengyuan.com/assets/og-card.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="何鹏远 HPY TerraSol 明远橙黑漫画风服务主页">
+    <meta property="og:image:alt" content="何鹏远 He Pengyuan 官方个人主页">
     <meta property="og:video" content="https://hepengyuan.com/media/promo/pengyuan-personal-promo.mp4">
     <meta property="og:video:type" content="video/mp4">
     <meta property="og:video:width" content="1920">
     <meta property="og:video:height" content="1080">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="何鹏远 HPY · TerraSol 明远｜AI 工具服务">
-    <meta name="twitter:description" content="AI 工具咨询、安装协助、工作流搭建建议与售后支持。">
+    <meta name="twitter:title" content="何鹏远 He Pengyuan · HPY｜AI 工作流与全栈产品">
+    <meta name="twitter:description" content="Aggie 速记英语联合创始人 · 营运官，K12 教育培训机构创始人。">
     <meta name="twitter:image" content="https://hepengyuan.com/assets/og-card.png">
     <meta name="twitter:creator" content="@X_mason13">
+
+    <script>
+      /* 在样式表到达之前确定主题，避免深色模式下的白屏闪烁。 */
+      (function () {
+        var root = document.documentElement;
+        try {
+          var saved = localStorage.getItem("hpy-theme");
+          if (saved === "light" || saved === "dark") root.setAttribute("data-theme", saved);
+        } catch (error) {
+          /* 隐私模式下读不到 localStorage，跟随系统即可。 */
+        }
+
+        /* 预判这位访客是否会进 hi-fi 房间：会的话先盖上遮罩，免得静态页闪一下再被盖住。
+           这里只做便宜的判断，真正的能力检测和降级在 /room/boot.js。
+           boot.js 没能接手时，6 秒后自动撤掉遮罩，静态页照常可用。 */
+        try {
+          var query = new URLSearchParams(location.search);
+          var forced = query.get("room") === "1";
+          var declined = query.get("room") === "0" || query.has("static");
+          var preference = localStorage.getItem("hpy-room");
+          var candidate = forced || (
+            !declined && preference !== "off" && preference !== "auto-off"
+            && sessionStorage.getItem("hpy-room-seen") !== "1"
+            && location.hash.length <= 1
+            && "WebGL2RenderingContext" in window
+            && navigator.webdriver !== true
+            && !/bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|chatgpt-user|claude-user|anthropic-ai|perplexity|bytespider/i.test(navigator.userAgent)
+            && !matchMedia("(prefers-reduced-motion: reduce)").matches
+          );
+          if (candidate) {
+            root.setAttribute("data-room", "boot");
+            setTimeout(function () {
+              if (root.getAttribute("data-room") === "boot") root.removeAttribute("data-room");
+            }, 6000);
+          }
+        } catch (error) {
+          /* 判断不了就看静态版。 */
+        }
+      })();
+    </script>
+
+    <link rel="preload" href="/assets/fonts/literata-400-700-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/fira-sans-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/styles.css?v=20261112-room">
+    <script src="/script.js?v=20261112-room" defer></script>
+    <script src="/room/boot.js?v=20261112-room" defer></script>
+
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -68,8 +117,8 @@
               {"@type": "VideoGame", "name": "Aggie 速记英语 3A 互动演示 V6", "url": "https://hepengyuan.com/aggie-3a/", "gamePlatform": "Web Browser", "inLanguage": "zh-CN"},
               {"@type": "CreativeWork", "name": "Beiming Quantum Nexus", "url": "https://beimingquant.xyz/"},
               {"@type": "VideoObject", "@id": "https://hepengyuan.com/#personal-promo-video"},
-              {"@type": "CreativeWork", "name": "Agent Ops 研发运营中枢", "url": "https://hepengyuan.com/#capabilities"},
-              {"@type": "CreativeWork", "name": "AI 账号订阅平台", "url": "https://hepengyuan.com/#capabilities"},
+              {"@type": "CreativeWork", "name": "Agent Ops 研发运营中枢", "url": "https://hepengyuan.com/services/#works"},
+              {"@type": "CreativeWork", "name": "AI 账号订阅平台", "url": "https://hepengyuan.com/services/#works"},
               {"@type": "CreativeWork", "name": "Global Growth Engine", "url": "https://listingforge.shop/"}
             ],
             "mainEntityOfPage": {"@id": "https://hepengyuan.com/#webpage"}
@@ -86,7 +135,7 @@
             "@type": "ProfilePage",
             "@id": "https://hepengyuan.com/#webpage",
             "url": "https://hepengyuan.com/",
-            "name": "何鹏远 HPY · TerraSol 明远｜AI 工具服务",
+            "name": "何鹏远 He Pengyuan · HPY｜Aggie 联合创始人 · AI 工作流与全栈产品",
             "isPartOf": {"@id": "https://hepengyuan.com/#website"},
             "mainEntity": {"@id": "https://hepengyuan.com/#person"},
             "inLanguage": "zh-CN"
@@ -107,551 +156,241 @@
         ]
       }
     </script>
-    <link rel="stylesheet" href="/styles.css?v=20260824-s1">
-    <script src="/script.js?v=20260824-s1" defer></script>
   </head>
-  <body>
-    <a class="skip-link" href="#main-content">跳到主要内容</a>
 
-    <header class="site-header">
-      <a class="brand" href="#top" aria-label="返回页面顶部">
-        <span class="brand-mark">HPY</span>
-        <span class="brand-name">TerraSol 明远</span>
-        <small>AI TOOL SERVICE</small>
+  <body data-index="log">
+    <a class="skip" href="#top">跳到主要内容</a>
+
+    <header class="site">
+      <a class="name" href="/" aria-label="何鹏远 He Pengyuan，返回首页">
+        <span class="cn">何鹏远</span>
+        <span class="en">HE PENGYUAN</span>
       </a>
-
-      <nav class="desktop-nav" aria-label="主导航">
-        <a href="#about">关于何鹏远</a>
-        <a href="#personal-film">个人宣传片</a>
-        <a href="#capabilities">AI能力与作品</a>
-        <a href="#onsite">上门部署</a>
-        <a href="#services">服务方案</a>
-        <a href="#process">交付流程</a>
-        <a href="#media">影像档案</a>
-        <a href="/blog/">个人微博</a>
-        <a class="nav-game-entry" href="/aggie-3a/">游戏入口</a>
+      <nav aria-label="站点导航">
+        <a href="#work">WORK</a>
+        <a href="#posts">POSTS</a>
+        <a href="/services/">SERVICES</a>
+        <a href="#contact">ONLINE</a>
+        <a class="nav-game-entry" href="/aggie-3a/">GAME</a>
       </nav>
-
-      <a class="header-cta" href="#contact">咨询方案</a>
-
-      <button
-        class="menu-toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="mobile-nav"
-        data-menu-toggle
-      >
-        <span class="sr-only">打开导航</span>
-        <span aria-hidden="true"></span>
-        <span aria-hidden="true"></span>
-      </button>
-
-      <nav id="mobile-nav" data-mobile-nav hidden aria-label="移动导航">
-        <a href="#about">关于何鹏远</a>
-        <a href="#personal-film">个人宣传片</a>
-        <a href="#capabilities">AI能力与作品</a>
-        <a href="#onsite">上门部署</a>
-        <a href="#services">服务方案</a>
-        <a href="#process">交付流程</a>
-        <a href="#media">影像档案</a>
-        <a href="/blog/">个人微博</a>
-        <a class="nav-game-entry" href="/aggie-3a/">游戏入口</a>
-        <a href="#faq">常见问题</a>
-        <a href="#contact">咨询方案</a>
-      </nav>
+      <span class="ctl">
+        <a class="ph-room" href="/?room=1" data-room title="回到 hi-fi 版：可交互的 3D 房间" hidden>HI-FI</a>
+        <button type="button" class="themeb" id="theme" title="浅色、深色，或跟随系统" aria-label="配色：跟随系统" hidden>AUTO</button>
+      </span>
     </header>
 
-    <main id="main-content">
-      <section class="hero" id="top" aria-labelledby="hero-title">
-        <div class="burst-lines" aria-hidden="true">
-          <span></span><span></span><span></span><span></span><span></span><span></span>
+    <div class="pb-grid">
+      <main id="top">
+        <h1 class="pb-h1">你好，我是何鹏远。</h1>
+        <p class="pb-dek">Aggie 速记英语联合创始人 · 营运官，K12 教育培训机构创始人。把 AI 工作流、Agent 和全栈产品做成真正能上线的系统。</p>
+        <p class="pb-more">
+          <a href="/services/">我提供的服务与交付方式</a>
+          <span class="sep">·</span>
+          <a href="/profile.json">机器可读公开资料</a>
+        </p>
+
+        <div class="ph-warn" id="bm-warn" data-nosnippet role="note" aria-label="静态版本" hidden>
+          <button type="button" class="ph-warn-x" id="bm-warn-x" aria-label="关闭提示" title="关闭提示" hidden>×</button>
+          <p class="ph-warn-k">
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 3 22.5 21h-21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v5.2M12 18v.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            静态版本
+          </p>
+          <p class="ph-warn-t">个人网站是互联网上少数还能好玩的地方，所以这里还有一个可交互的版本。你的设备或浏览器被识别为可能跑不动它，于是被送到了这个静态版本。</p>
+          <p class="ph-warn-a" id="bm-try" hidden><a href="/?room=1">仍然想试试可交互版本</a></p>
         </div>
 
-        <div class="hero-copy comic-bubble reveal">
-          <h1 id="hero-title">把 AI 工具真正装进你的 <span>工作流！</span></h1>
-          <p>从工具咨询、环境协助，到工作流搭建和售后支持，复杂问题一次讲清。</p>
-        </div>
-
-        <figure class="hero-portrait reveal">
-          <img
-            src="/assets/hpy-comic.webp"
-            width="960"
-            height="1200"
-            alt="身穿白色国风长衫、佩戴金属框眼镜的何鹏远漫画形象"
-          >
-          <figcaption>何鹏远 · HPY</figcaption>
-          <span class="portrait-sticker" aria-hidden="true">AI × 工作流</span>
-        </figure>
-
-        <aside class="hero-profile-card reveal" aria-label="何鹏远公开身份占位信息">
-          <p class="hero-profile-kicker">PUBLIC PROFILE / 公开资料</p>
-          <h2>何鹏远 · HPY</h2>
-          <dl>
-            <div><dt>职业称谓</dt><dd>AI 工具咨询与工作流实践者</dd></div>
-            <div><dt>个人标签</dt><dd>TerraSol 明远 · 产品与教育实践</dd></div>
-            <div><dt>社会影响力</dt><dd>资料持续补充中</dd></div>
-          </dl>
-          <p class="hero-profile-note">后续可替换为已确认的履历、媒体报道与公开成果。</p>
-        </aside>
-
-        <div class="hero-actions reveal">
-          <a class="button button-primary" href="#services">查看服务方案</a>
-          <a class="button button-secondary" href="#about">认识何鹏远</a>
-          <a class="button button-game" href="/aggie-3a/" aria-label="进入 Aggie 速记英语 3A 游戏 V6">
-            <span class="button-game-label">PLAY / V6</span>
-            <strong>进入 Aggie 游戏</strong>
-          </a>
-        </div>
-      </section>
-
-      <section class="trust-strip" aria-label="服务原则">
-        <ul>
-          <li><strong>清晰说明</strong><span>先讲范围与边界</span></li>
-          <li><strong>分步协助</strong><span>按确认步骤推进</span></li>
-          <li><strong>售后跟进</strong><span>交付后继续答疑</span></li>
-        </ul>
-      </section>
-
-      <section class="personal-film section" id="personal-film" aria-labelledby="personal-film-title">
-        <div class="personal-film-wrap">
-          <div class="personal-film-copy reveal">
-            <p class="section-kicker">OFFICIAL FILM / 个人宣传片</p>
-            <h2 id="personal-film-title">用一支短片，看见何鹏远的 <span>AI 产品实践。</span></h2>
-            <p>这支 108 秒个人宣传片，集中呈现何鹏远 HPY / TerraSol 明远的公开身份、AI 工具咨询、工作流搭建、产品开发与独立部署方向。</p>
-            <dl class="personal-film-facts" aria-label="宣传片信息">
-              <div><dt>片名</dt><dd>何鹏远个人宣传片</dd></div>
-              <div><dt>时长</dt><dd>1 分 48 秒</dd></div>
-              <div><dt>主题</dt><dd>AI 工具咨询、工作流、全栈产品、独立部署</dd></div>
-            </dl>
-          </div>
-          <div class="personal-film-player reveal">
-            <video
-              controls
-              playsinline
-              preload="metadata"
+        <section id="personal-film" aria-labelledby="personal-film-title">
+          <h2 id="personal-film-title" class="sr-only">个人宣传片</h2>
+          <figure class="ph-hero">
+            <video class="frame" controls preload="none" playsinline
               poster="/assets/hpy-promo-poster.jpg"
-              aria-label="何鹏远个人宣传片"
-            >
+              aria-label="何鹏远个人宣传片，时长 1 分 48 秒">
               <source src="/media/promo/pengyuan-personal-promo.mp4" type="video/mp4">
-              当前浏览器不支持直接播放视频，请稍后访问公开媒体链接。
+              当前浏览器不支持直接播放视频，可以稍后访问公开媒体链接。
             </video>
-            <p>视频文件使用 Cloudflare R2 存储，通过本站同源媒体路由播放。</p>
+            <figcaption>
+              <span><b>片名</b> 何鹏远个人宣传片</span>
+              <span><b>时长</b> 1 分 48 秒</span>
+              <span><b>主题</b> AI 工具咨询 · 工作流 · 全栈产品 · 独立部署</span>
+            </figcaption>
+          </figure>
+          <p class="pb-cta">
+            <a class="button button-game" href="/aggie-3a/">进入 Aggie 3A 互动演示</a>
+            <a class="button" href="#contact">找到我</a>
+          </p>
+        </section>
+
+
+        <section id="work" aria-labelledby="work-title">
+          <h2 id="work-title">Work <span class="h2z">公开履历</span></h2>
+
+          <section class="pb-item" id="aggie-role" aria-labelledby="aggie-role-title">
+            <div class="pb-hd">
+              <span class="t" id="aggie-role-title">Aggie 速记英语</span>
+              <span class="y">现在</span>
+            </div>
+            <p>
+              联合创始人 · 营运官。负责 Aggie 官网与在线英语学习平台的设计开发、系统建设及 AI 智能体搭建，同时统筹招生推广、广告策划、品牌运营与 GEO（生成式 AI 搜索优化）。平台服务于机构自身教学和运营；作业 AI 初评作为草稿，由老师审核后再给学生反馈。
+            </p>
+            <p class="pb-tags">
+              <a href="https://aggieai.me/people/he-pengyuan/">人物介绍</a>
+              <a href="https://aggieai.me/stories/platform/">平台建设案例</a>
+              <a href="https://aggieai.me/people/hu/">教学伙伴胡老师</a>
+              <a href="https://aggieai.me/">aggieai.me</a>
+            </p>
+          </section>
+
+          <div class="pb-item">
+            <div class="pb-hd"><span class="t">K12 教育培训机构</span><span class="y">至今</span></div>
+            <p>创始人。持续投入教育培训机构的产品与经营。</p>
           </div>
-        </div>
-      </section>
-
-      <section class="about section" id="about" aria-labelledby="about-title">
-        <div class="section-heading reveal">
-          <p class="section-kicker">HPY / TERRASOL 明远</p>
-          <h2 id="about-title">何鹏远，把 AI 经验整理成 <span>可执行的工作流。</span></h2>
-          <p>这是何鹏远（He Pengyuan / HPY / TerraSol 明远）的官方服务主页。公开身份与联系方式以本站资料源为准。</p>
-        </div>
-        <div class="resume-timeline reveal" aria-label="何鹏远公开履历时间线">
-          <div class="resume-timeline-heading">
-            <p class="section-kicker">CAREER TIMELINE / 公开履历</p>
-            <p>以下经历由本人提供，按时间顺序整理。</p>
+          <div class="pb-item">
+            <div class="pb-hd"><span class="t">传媒公司</span><span class="y">2021</span></div>
+            <p>创立传媒公司，拓展内容与传媒业务。</p>
           </div>
-          <ol>
-            <li><time datetime="2009">2009</time><div><h3>进入互联网金融</h3><p>开始进入互联网金融领域。</p></div></li>
-            <li><time datetime="2014">2014</time><div><h3>比特币、以太坊早期布道者 · 矿工</h3><p>同时提供 IPFS 分布式存储 10P 服务。</p></div></li>
-            <li><time datetime="2019">2019</time><div><h3>创立数字资产交易平台</h3><p>进入数字资产平台创业实践。</p></div></li>
-            <li><time datetime="2021">2021</time><div><h3>创立传媒公司</h3><p>拓展内容与传媒业务。</p></div></li>
-            <li><time datetime="2021">至今</time><div><h3>K12 教育培训机构创始人</h3><p>持续投入教育培训机构的产品与经营。</p></div></li>
-          </ol>
-        </div>
-      </section>
-
-      <section class="section" id="aggie-role" aria-labelledby="aggie-role-title">
-        <div class="section-heading reveal">
-          <p class="section-kicker">AGGIE / 教育与 AI 实践</p>
-          <h2 id="aggie-role-title">Aggie 联合创始人 · 营运官</h2>
-          <p>何鹏远负责 Aggie 官网与在线英语学习平台的设计开发、系统建设及 AI 智能体搭建，同时统筹招生推广、广告策划、品牌运营与 GEO（生成式 AI 搜索优化）。</p>
-          <p>平台服务于机构自身教学和运营；作业 AI 初评作为草稿，由老师审核后再给学生反馈。</p>
-          <p><a href="/aggie-3a/" target="_blank" rel="noopener">体验 Aggie 3A 互动演示 ↗</a> · <a href="https://aggieai.me/people/he-pengyuan/" target="_blank" rel="noopener noreferrer">查看 Aggie 官方人物介绍 ↗</a> · <a href="https://aggieai.me/stories/platform/" target="_blank" rel="noopener noreferrer">查看平台建设案例 ↗</a> · <a href="https://aggieai.me/people/hu/" target="_blank" rel="noopener noreferrer">认识教学伙伴胡老师 ↗</a></p>
-        </div>
-      </section>
-
-      <section class="capabilities section" id="capabilities" aria-labelledby="capabilities-title">
-        <div class="capabilities-wrap">
-          <div class="section-heading reveal">
-            <p class="section-kicker">AI PRACTICE / 能力与作品</p>
-            <h2 id="capabilities-title">从一句想法，到一个 <span>能运行的产品。</span></h2>
-            <p>以下内容来自本机已存在的开发项目与本人补充的经历说明。能力覆盖 AI 工具、Agent、前端、后端、UI、SaaS、GEO、量化与独立部署。</p>
+          <div class="pb-item">
+            <div class="pb-hd"><span class="t">数字资产交易平台</span><span class="y">2019</span></div>
+            <p>创立数字资产交易平台，进入数字资产平台创业实践。</p>
+          </div>
+          <div class="pb-item">
+            <div class="pb-hd"><span class="t">比特币 · 以太坊</span><span class="y">2014</span></div>
+            <p>早期布道者与矿工，同时提供 IPFS 分布式存储 10P 服务。</p>
+          </div>
+          <div class="pb-item">
+            <div class="pb-hd"><span class="t">互联网金融</span><span class="y">2009</span></div>
+            <p>开始进入互联网金融领域。</p>
           </div>
 
-          <div class="ai-track reveal" aria-label="AI 实践时间线">
-            <div class="ai-track-label"><span>AI TRACK</span><strong>从工作流到全栈产品</strong></div>
-            <ol>
-              <li><time datetime="2025-04">2025.04</time><h3>正式进入 AI 赛道</h3><p>从搭建扣子工作流开始，把 AI 放进真实工作。</p></li>
-              <li><time datetime="2026-02">2026.02</time><h3>Agent 与开发工具链</h3><p>实践 OpenClaw、Hermes / 爱马仕、OpenAI GPT、Codex、Claude Code、WorkBuddy，以及 CLI、Skill、SOP、PRD。</p></li>
-              <li><time datetime="2026-08">现在</time><h3>独立做成可交付系统</h3><p>前端、后端、UI、SaaS、GEO、量化交易、英语智能体、网站与上线部署一体推进。</p></li>
+          <p class="pb-lbl pb-grp">Projects</p>
+
+          <div class="pb-item">
+            <div class="pb-hd"><a class="t" href="https://aggieai.me/">Aggie 速记英语经营系统</a><span class="y">React · Cloudflare</span></div>
+            <p>面向英语教培机构的 Web / H5 / PWA 经营系统，覆盖学生、课程、收费、线索与运营管理。 <a href="https://aggieai.me/">aggieai.me</a></p>
+          </div>
+          <div class="pb-item">
+            <div class="pb-hd"><a class="t" href="/aggie-3a/">Aggie 3A 互动演示 V6</a><span class="y">Web Browser</span></div>
+            <p>浏览器里直接打开的 3A 风格互动演示，用游戏的方式讲清楚速记英语是怎么运转的。 <a href="/aggie-3a/">hepengyuan.com/aggie-3a</a></p>
+          </div>
+          <div class="pb-item">
+            <div class="pb-hd"><a class="t" href="https://beimingquant.xyz/">Beiming Quantum Nexus</a><span class="y">Vue · Python · Docker</span></div>
+            <p>量化交易引擎与策略管理平台，覆盖回测、绩效曲线、交易运维与 AI Agent / MCP 接入。 <a href="https://beimingquant.xyz/">beimingquant.xyz</a></p>
+          </div>
+          <div class="pb-item">
+            <div class="pb-hd"><span class="t">Agent Ops 研发运营中枢</span><span class="y">Agent 编排</span></div>
+            <p>把任务、岗位、分支与模型运行状态放进一个可视化工作台，体现 Agent 协作、任务编排与交付管理。 <a href="/services/#works">查看说明</a></p>
+          </div>
+          <div class="pb-item">
+            <div class="pb-hd"><span class="t">AI 账号订阅平台</span><span class="y">React + Vite · Hono</span></div>
+            <p>完整的 ChatGPT、Claude、Gemini、X 账号订阅产品，包含前端、后端、管理后台、订单、履约与订阅状态。 <a href="/services/#works">查看说明</a></p>
+          </div>
+          <div class="pb-item">
+            <div class="pb-hd"><a class="t" href="https://listingforge.shop/">Global Growth Engine</a><span class="y">GEO · 内容增长</span></div>
+            <p>面向海外卖家的 GEO 可见性优化与内容增长产品，提供英文独立站、内容营销与询盘运营能力。 <a href="https://listingforge.shop/">listingforge.shop</a></p>
+          </div>
+
+          <p class="pb-note">
+            2025 年 4 月从搭建扣子工作流开始正式进入 AI 赛道；2026 年 2 月起实践 OpenClaw、Hermes、OpenAI GPT、Codex、Claude Code、WorkBuddy，以及 CLI、Skill、SOP、PRD。
+            OpenClaw、速记英语智能体、OpenMontage 视频生产、教育 SaaS、账号订阅平台与本网站，都来自持续开发中的真实项目。
+          </p>
+        </section>
+
+        <section id="posts" aria-labelledby="posts-title">
+          <h2 id="posts-title">Posts <span class="h2z">个人微博</span></h2>
+          <div class="pb-yr">
+            <span class="y">2026</span>
+            <ol class="pb-idx">
+              <li>
+                <a href="/blog/my-ai-learning-and-product-building-journey/">
+                  <span class="t">我如何一步一步学习 AI，并把 AI 工具手搓成真正能上线的产品</span>
+                  <span class="d">24 Aug</span>
+                </a>
+              </li>
             </ol>
           </div>
+          <p class="pb-more-link"><a href="/blog/">全部文章 →</a></p>
 
-          <div class="capability-pills reveal" aria-label="能力标签">
-            <span>AI Agent</span><span>工作流编排</span><span>前端 / 后端</span><span>UI / UX</span><span>SaaS 产品</span><span>CLI / Skill</span><span>SOP / PRD</span><span>GEO / AEO</span><span>量化交易</span><span>Cloudflare / Docker</span>
+          <p class="pb-lbl pb-grp">Archive</p>
+          <div class="pb-item">
+            <div class="pb-hd"><a class="t" href="/travel/">旅行档案</a><span class="y">本人确认后公开</span></div>
+            <p>走过的地方和拍下的画面。地点、时间与说明都以已公开的档案为准，未确认的内容不会显示。</p>
           </div>
-
-          <div class="project-grid" aria-label="项目作品截图">
-            <article class="project-card project-card-wide reveal">
-              <a class="project-shot" href="/assets/works/agent-ops.png" target="_blank" rel="noopener" aria-label="查看 Agent Ops 作品截图">
-                <img src="/assets/works/agent-ops.png" alt="Agent Ops AI 研发运营中枢界面截图" loading="lazy" width="1200" height="866">
-              </a>
-              <div class="project-card-body"><p class="project-index">01 / AGENT OPS</p><h3>AI 研发运营中枢</h3><p>把任务、岗位、分支与模型运行状态放进一个可视化工作台，体现 Agent 协作、任务编排与交付管理能力。</p><div class="project-meta"><span>Agent Ops</span><span>运营工作台</span><span>可视化交付</span></div></div>
-            </article>
-            <article class="project-card reveal">
-              <a class="project-shot" href="https://beimingquant.xyz/" target="_blank" rel="noopener noreferrer" aria-label="打开 Beiming Quantum Nexus 官网">
-                <img src="/assets/works/quantdinger.png" alt="QuantDinger 量化交易策略与绩效界面截图" loading="lazy" width="3827" height="1930">
-              </a>
-              <div class="project-card-body"><p class="project-index">02 / BEIMING QUANTUM NEXUS</p><h3>Beiming Quantum Nexus</h3><p>量化交易引擎与策略管理平台，覆盖回测、绩效曲线、交易运维与 AI Agent / MCP 接入。</p><div class="project-meta"><span>Vue</span><span>Python API</span><span>Docker</span><a class="project-link" href="https://beimingquant.xyz/" target="_blank" rel="noopener noreferrer">访问官网 ↗</a></div></div>
-            </article>
-            <article class="project-card reveal">
-              <a class="project-shot" href="https://aggieai.me" target="_blank" rel="noopener noreferrer" aria-label="打开 Aggie 速记英语经营系统官网">
-                <img src="/assets/works/aggie-dashboard.webp" alt="Aggie 速记英语经营系统经营总览界面截图" loading="lazy" width="2400" height="1333">
-              </a>
-              <div class="project-card-body"><p class="project-index">03 / AGGIE EDUCATION SAAS</p><h3>Aggie 速记英语经营系统</h3><p>面向英语教培机构的 Web / H5 / PWA 经营系统，覆盖学生、课程、收费、线索与运营管理。</p><div class="project-meta"><span>React</span><span>Cloudflare</span><span>D1 / R2</span><a class="project-link" href="/aggie-3a/" target="_blank" rel="noopener">体验 3A 演示 ↗</a><a class="project-link" href="https://aggieai.me" target="_blank" rel="noopener noreferrer">访问官网 ↗</a></div></div>
-            </article>
-            <article class="project-card reveal">
-              <a class="project-shot" href="/assets/works/account-platform.png" target="_blank" rel="noopener" aria-label="查看 AI 账号订阅平台作品截图">
-                <img src="/assets/works/account-platform.png" alt="AI 账号订阅平台产品首页截图" loading="lazy" width="1440" height="900">
-              </a>
-              <div class="project-card-body"><p class="project-index">04 / SUBSCRIPTION</p><h3>AI 账号订阅平台</h3><p>完整的 ChatGPT、Claude、Gemini、X 账号订阅产品，包含前端、后端、管理后台、订单、履约与订阅状态。</p><div class="project-meta"><span>React + Vite</span><span>Hono API</span><span>管理后台</span></div></div>
-            </article>
-            <article class="project-card reveal">
-              <a class="project-shot" href="https://listingforge.shop/" target="_blank" rel="noopener noreferrer" aria-label="打开 Global Growth Engine 官网">
-                <img src="/assets/works/gge.png" alt="Global Growth Engine GEO 可见性优化产品首页截图" loading="lazy" width="1440" height="900">
-              </a>
-              <div class="project-card-body"><p class="project-index">05 / GLOBAL GROWTH ENGINE</p><h3>Global Growth Engine</h3><p>面向海外卖家的 GEO 可见性优化与内容增长产品，提供英文独立站、内容营销与询盘运营能力。</p><div class="project-meta"><span>GEO</span><span>内容增长</span><span>海外营销</span><a class="project-link" href="https://listingforge.shop/" target="_blank" rel="noopener noreferrer">访问官网 ↗</a></div></div>
-            </article>
+          <div class="pb-item">
+            <div class="pb-hd"><a class="t" href="/learning/">学习档案</a><span class="y">本人确认后公开</span></div>
+            <p>正在学习的事，以及学习过程中的记录视频。</p>
           </div>
+        </section>
 
-          <div class="capabilities-foot reveal"><strong>作品还在持续增加</strong><span>OpenClaw、速记英语智能体、OpenMontage 视频生产、教育 SaaS、账号订阅平台与本网站，均来自持续开发中的真实项目。</span></div>
-        </div>
-      </section>
+        <section id="contact" aria-labelledby="contact-title">
+          <h2 id="contact-title">Online <span class="h2z">联系方式</span></h2>
 
-      <section class="onsite section" id="onsite" aria-labelledby="onsite-title">
-        <div class="onsite-wrap">
-          <div class="section-heading reveal">
-            <p class="section-kicker">ON-SITE / REMOTE / PRIVATE DEPLOYMENT</p>
-            <h2 id="onsite-title">上门或远程，把系统装进你的 <span>真实环境。</span></h2>
-            <p>面向企业、教培机构和个人团队，提供现场技术服务、远程部署、私有化部署、环境迁移与交付培训。</p>
-          </div>
-
-          <div class="onsite-layout">
-            <div class="onsite-offer reveal">
-              <div class="onsite-offer-top"><span>适合这些场景</span><strong>PRIVATE / ON-SITE</strong></div>
-              <ul>
-                <li>公司内网或本地服务器部署 AI 工具、Agent 与 SaaS</li>
-                <li>教培机构部署 Aggie 类经营系统与数据看板</li>
-                <li>量化交易、内容生产、GEO 或业务系统的环境迁移</li>
-                <li>团队需要现场培训、权限梳理与交付文档</li>
-              </ul>
-              <a class="button button-primary" href="#contact">预约上门评估</a>
+          <div class="pb-item">
+            <div class="on-hd">
+              <span class="t">微信</span>
+              <button type="button" class="copy" data-copy-public data-copy-value="TerraSol-Ai" data-copy-label="微信号">TerraSol-Ai</button>
             </div>
-
-            <ol class="onsite-steps reveal" aria-label="上门私有化部署流程">
-              <li><span>01</span><div><h3>远程预检</h3><p>确认城市、设备、网络、账号归属、数据边界与目标系统。</p></div></li>
-              <li><span>02</span><div><h3>现场实施</h3><p>安装依赖、配置服务、迁移数据、接入权限并完成基础联调。</p></div></li>
-              <li><span>03</span><div><h3>验收交付</h3><p>按清单演示核心流程，交付操作文档、管理员说明与回滚建议。</p></div></li>
-              <li><span>04</span><div><h3>售后陪跑</h3><p>按确认范围提供远程答疑、问题排查与后续优化建议。</p></div></li>
-            </ol>
+            <p>TerraSol 明远。点右侧复制微信号，或扫下方二维码。</p>
           </div>
-
-          <div class="remote-detail reveal">
-            <div class="remote-detail-heading"><p class="section-kicker">REMOTE DELIVERY / 远程部署</p><h3>不必等上门，线上也能完成一套可验收的部署。</h3><p>适合服务器在云端、团队分布在不同城市，或希望先低成本验证方案的项目。</p></div>
-            <div class="remote-detail-grid">
-              <div>
-                <h4>远程实施流程</h4>
-                <ol class="remote-steps">
-                  <li><b>01</b><span><strong>需求与环境清单</strong><small>确认系统目标、操作系统、CPU / 内存 / 磁盘、网络、域名、端口和现有服务。</small></span></li>
-                  <li><b>02</b><span><strong>授权与安全预检</strong><small>由客户创建临时账号或最小权限入口，先做连通性、磁盘、端口、备份与权限检查。</small></span></li>
-                  <li><b>03</b><span><strong>备份与回滚点</strong><small>部署前记录配置、数据库和文件备份位置，约定失败时的停止条件与回滚方案。</small></span></li>
-                  <li><b>04</b><span><strong>安装与配置</strong><small>通过 SSH、远程终端或屏幕共享完成依赖安装、环境变量、容器、域名和 HTTPS 配置。</small></span></li>
-                  <li><b>05</b><span><strong>联调与数据迁移</strong><small>逐项验证登录、核心业务、文件上传、任务队列、回调、日志和权限，不直接跳过测试。</small></span></li>
-                  <li><b>06</b><span><strong>验收与交接</strong><small>按验收清单演示，交付地址、账号归属、部署记录、操作手册和日常维护建议。</small></span></li>
-                </ol>
-              </div>
-              <div class="remote-tools">
-                <h4>可选远程工具</h4>
-                <ul>
-                  <li><strong>SSH / SFTP</strong><span>服务器登录、文件传输与命令执行。</span></li>
-                  <li><strong>Docker Compose</strong><span>统一启动服务、数据库、队列与依赖。</span></li>
-                  <li><strong>Git / GitHub</strong><span>版本同步、变更记录与可回退交付。</span></li>
-                  <li><strong>Cloudflare / Wrangler</strong><span>域名、DNS、Pages、Workers、D1、R2 与发布检查。</span></li>
-                  <li><strong>屏幕共享 / 视频会议</strong><span>边操作边讲解，客户可实时确认每一步。</span></li>
-                  <li><strong>日志与浏览器开发工具</strong><span>定位接口、跨域、证书、缓存和前端交互问题。</span></li>
-                </ul>
-                <p class="remote-security"><strong>远程安全规则：</strong>优先使用临时账号、最小权限和客户自己的设备；密码、Token、私钥不通过聊天明文传递，项目结束后及时回收临时权限。</p>
-              </div>
+          <div class="pb-item">
+            <div class="on-hd">
+              <span class="t">抖音</span>
+              <button type="button" class="copy" data-copy-public data-copy-value="HPY131419" data-copy-label="抖音号">HPY131419</button>
             </div>
-            <div class="remote-acceptance"><strong>远程交付验收清单</strong><span>服务可启动</span><span>域名可访问</span><span>HTTPS 正常</span><span>核心流程可用</span><span>日志可查看</span><span>备份与回滚点已说明</span></div>
+            <p>@TerraSol·明远。点右侧复制抖音号，或用抖音 App 扫下方二维码。</p>
+          </div>
+          <div class="pb-item">
+            <div class="on-hd"><span class="t">163 邮箱</span><a class="y" href="mailto:653091hepeng@163.com">653091hepeng@163.com</a></div>
+          </div>
+          <div class="pb-item">
+            <div class="on-hd"><span class="t">Gmail</span><a class="y" href="mailto:653091hepeng@gmail.com">653091hepeng@gmail.com</a></div>
+          </div>
+          <div class="pb-item">
+            <div class="on-hd"><span class="t">电话</span><a class="y" href="tel:+8613145113319">+86 131 4511 3319</a></div>
+          </div>
+          <div class="pb-item">
+            <div class="on-hd"><span class="t">Telegram</span><a class="y" href="https://t.me/mason1413">@mason1413</a></div>
+          </div>
+          <div class="pb-item">
+            <div class="on-hd"><span class="t">X</span><a class="y" href="https://x.com/X_mason13">@X_mason13</a></div>
+          </div>
+          <div class="pb-item">
+            <div class="on-hd"><span class="t">YouTube</span><a class="y" href="https://www.youtube.com/@beimingzi">@beimingzi</a></div>
           </div>
 
-          <div class="onsite-boundary reveal"><strong>安全边界</strong><span>服务器、域名、账号和密钥原则上归你所有；现场前确认最小权限，未授权的数据不复制、不外传。</span><em>城市、差旅、周期与费用需单独确认</em></div>
-        </div>
-      </section>
+          <p class="contact-note" data-contact-note role="status" aria-live="polite"></p>
 
-      <section class="services section" id="services" aria-labelledby="services-title">
-        <div class="section-heading reveal">
-          <h2 id="services-title">选择适合你的 <span>AI 服务方案</span></h2>
-          <p>先选择关注方向，再确认具体范围。</p>
-        </div>
-
-        <div class="service-grid">
-          <article class="service-card reveal" data-service-card="consulting" data-service-name="入门咨询" data-selected="false">
-            <span class="service-kicker">问清需求</span>
-            <h3>入门咨询</h3>
-            <ul>
-              <li>需求诊断</li>
-              <li>工具建议</li>
-              <li>风险提醒</li>
-            </ul>
-            <button class="service-select" type="button" data-service-select aria-pressed="false" aria-label="选择入门咨询方案">按需求评估</button>
-          </article>
-
-          <article class="service-card reveal" data-service-card="setup" data-service-name="环境协助" data-selected="false">
-            <span class="service-kicker">装好环境</span>
-            <h3>环境协助</h3>
-            <ul>
-              <li>安装配置</li>
-              <li>故障排查</li>
-              <li>上手指导</li>
-            </ul>
-            <button class="service-select" type="button" data-service-select aria-pressed="false" aria-label="选择环境协助方案">按需求评估</button>
-          </article>
-
-          <article class="service-card reveal" data-service-card="workflow" data-service-name="工作流搭建" data-selected="false">
-            <span class="service-kicker">跑通流程</span>
-            <h3>工作流搭建</h3>
-            <ul>
-              <li>流程梳理</li>
-              <li>自动化建议</li>
-              <li>交付说明</li>
-            </ul>
-            <button class="service-select" type="button" data-service-select aria-pressed="false" aria-label="选择工作流搭建方案">按需求评估</button>
-          </article>
-        </div>
-
-        <p class="service-disclaimer">不代售账号；实际范围、周期与费用以双方确认结果为准。</p>
-      </section>
-
-      <section class="process section" id="process" aria-labelledby="process-title">
-        <div class="section-heading reveal">
-          <h2 id="process-title">协作只需 <span>3 步</span></h2>
-        </div>
-
-        <ol class="process-list">
-          <li class="reveal">
-            <span class="process-number">1</span>
-            <h3>提交需求</h3>
-            <p>说明工具、环境与目标</p>
-          </li>
-          <li class="reveal">
-            <span class="process-number">2</span>
-            <h3>确认范围</h3>
-            <p>确认内容、周期与边界</p>
-          </li>
-          <li class="reveal">
-            <span class="process-number">3</span>
-            <h3>协作交付</h3>
-            <p>按步骤推进并完成说明</p>
-          </li>
-        </ol>
-      </section>
-
-      <section class="faq section" id="faq" aria-labelledby="faq-title">
-        <div class="section-heading reveal">
-          <h2 id="faq-title">常见问题 <span>一次讲清</span></h2>
-          <p>服务范围、准备材料、售后方式与合规边界。</p>
-        </div>
-
-        <div class="faq-list">
-          <details class="reveal">
-            <summary>你们是否代售账号？</summary>
-            <p>不代售账号。本页只介绍工具咨询、环境协助、工作流建议和约定范围内的售后支持。</p>
-          </details>
-          <details class="reveal">
-            <summary>如何确认服务范围？</summary>
-            <p>先说明当前环境、目标和问题，再共同确认具体内容、预计周期、交付形式与费用。</p>
-          </details>
-          <details class="reveal">
-            <summary>交付后如何获得支持？</summary>
-            <p>按双方确认的服务范围提供说明和后续答疑；新增需求会重新确认范围。</p>
-          </details>
-        </div>
-      </section>
-
-      <section class="blog-teaser section" id="blog" aria-labelledby="blog-title">
-        <div class="blog-teaser-inner"><div class="section-heading reveal"><p class="section-kicker">PERSONAL LOG / 个人微博</p><h2 id="blog-title">把正在做的事，写成可搜索的文章。</h2><p>AI 实践、产品开发、学习记录和个人观察，会在这里持续发布。</p></div><a class="blog-teaser-link" href="/blog/">进入个人微博 →</a></div>
-        <div class="blog-feature reveal"><div><p class="blog-feature-meta">置顶文章 · AI 实践 · 2026-08-24</p><h3>我如何一步一步学习 AI，并把 AI 工具手搓成真正能上线的产品</h3><p>从扣子工作流开始，到 OpenClaw、Codex、Claude Code、WorkBuddy、CLI、Skill、SOP、PRD，再到量化交易、英语教育、GEO 和独立部署，我把 AI 从一个聊天工具变成自己的工作流和生产系统。</p></div><a href="/blog/my-ai-learning-and-product-building-journey/">阅读全文 →</a></div>
-      </section>
-
-      <section class="media-archive section" id="media" aria-labelledby="media-title">
-        <div class="media-archive-wrap">
-          <div class="section-heading reveal">
-            <p class="section-kicker">PUBLIC ARCHIVE / VERIFIED ONLY</p>
-            <h2 id="media-title">走过的地方，拍下的画面，以及我正在学习的事。</h2>
-            <p>这里只显示何鹏远本人确认并公开的旅行照片、视频与学习记录。</p>
+          <div class="qr-row">
+            <figure class="qr">
+              <img src="/assets/wechat-terrasol-ai-qr.jpg" width="888" height="1131" loading="lazy" alt="何鹏远微信名片二维码，微信号 TerraSol-Ai">
+              <figcaption>
+                <b>微信 · TerraSol 明远</b>
+                微信号 TerraSol-Ai<br>
+                <a href="https://u.wechat.com/EMtqddT4ZiSg6ogvLEtCx1M?s=2">打开微信名片 ↗</a>
+              </figcaption>
+            </figure>
+            <figure class="qr">
+              <img src="/assets/douyin-hpy131419-code.jpg" width="1125" height="1680" loading="lazy" alt="何鹏远抖音二维码，抖音号 HPY131419">
+              <figcaption>
+                <b>抖音 · @TerraSol·明远</b>
+                抖音号 HPY131419<br>
+                使用抖音 App 扫码关注
+              </figcaption>
+            </figure>
           </div>
-          <div class="media-board reveal" data-media-feed="/api/media.json" data-media-status="empty">
-            <div class="media-board-top">
-              <span>影像档案</span>
-              <strong data-media-feed-status>STATUS / VERIFIED ONLY</strong>
-            </div>
-            <div class="media-board-intro">
-              <h3 data-media-feed-title>本人确认的影像记录会从这里发布。</h3>
-              <p>地点、时间和说明以已公开的档案为准，未确认信息不会展示。</p>
-            </div>
-            <div class="media-grid" data-media-items aria-live="polite" aria-label="公开影像档案">
-              <article class="media-empty-card" data-media-empty>
-                <span class="media-empty-mark" aria-hidden="true">＋</span>
-                <h3>影像档案正在整理</h3>
-                <p>旅行照片、旅行视频和学习视频会在完成隐私与内容核对后显示。</p>
-              </article>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </main>
+    </div>
 
-      <section class="contact section" id="contact" aria-labelledby="contact-title">
-        <div class="contact-copy">
-          <div class="contact-heading reveal">
-            <p data-selected-service>当前未选择服务方案</p>
-            <h2 id="contact-title">找到明远，<span>选你顺手的方式。</span></h2>
-            <p>微信、抖音可以直接扫码；邮箱、电话和社交平台可以直接打开。</p>
-          </div>
-
-          <div class="contact-layout">
-            <div class="contact-directory reveal">
-              <p class="contact-directory-label">DIRECT CHANNELS / 直接联系</p>
-              <address class="contact-list">
-                <button
-                  class="contact-entry"
-                  type="button"
-                  data-copy-public
-                  data-copy-contact
-                  data-copy-value="TerraSol-Ai"
-                  data-copy-label="微信号"
-                >
-                  <span>微信</span>
-                  <strong data-contact-name translate="no">TerraSol-Ai</strong>
-                  <small>复制微信号</small>
-                </button>
-                <button
-                  class="contact-entry"
-                  type="button"
-                  data-copy-public
-                  data-copy-value="HPY131419"
-                  data-copy-label="抖音号"
-                >
-                  <span>抖音</span>
-                  <strong translate="no">HPY131419</strong>
-                  <small>复制抖音号</small>
-                </button>
-                <a class="contact-entry" href="mailto:653091hepeng@163.com">
-                  <span>163 邮箱</span>
-                  <strong translate="no">653091hepeng@163.com</strong>
-                  <small>写邮件</small>
-                </a>
-                <a class="contact-entry" href="mailto:653091hepeng@gmail.com">
-                  <span>Gmail</span>
-                  <strong translate="no">653091hepeng@gmail.com</strong>
-                  <small>写邮件</small>
-                </a>
-                <a class="contact-entry" href="tel:+8613145113319">
-                  <span>电话</span>
-                  <strong translate="no">13145113319</strong>
-                  <small>拨打</small>
-                </a>
-                <a
-                  class="contact-entry"
-                  href="https://t.me/mason1413"
-                  target="_blank"
-                  rel="me noopener noreferrer"
-                >
-                  <span>Telegram</span>
-                  <strong translate="no">@mason1413</strong>
-                  <small>打开</small>
-                </a>
-                <a
-                  class="contact-entry"
-                  href="https://x.com/X_mason13"
-                  target="_blank"
-                  rel="me noopener noreferrer"
-                >
-                  <span>X</span>
-                  <strong translate="no">@X_mason13</strong>
-                  <small>打开</small>
-                </a>
-                <a
-                  class="contact-entry"
-                  href="https://www.youtube.com/@beimingzi"
-                  target="_blank"
-                  rel="me noopener noreferrer"
-                >
-                  <span>YouTube</span>
-                  <strong translate="no">@beimingzi</strong>
-                  <small>打开</small>
-                </a>
-              </address>
-              <p class="contact-status" role="status" aria-live="polite" data-contact-note></p>
-            </div>
-
-            <div class="contact-qr-grid" aria-label="微信与抖音扫码名片">
-              <figure class="contact-qr-card contact-qr-wechat reveal">
-                <div class="contact-qr-media">
-                  <img
-                    src="/assets/wechat-terrasol-ai-qr.jpg"
-                    width="888"
-                    height="1131"
-                    loading="lazy"
-                    decoding="async"
-                    alt="TerraSol 明远微信二维码，微信号 TerraSol-Ai，扫码添加好友"
-                  >
-                </div>
-                <figcaption>
-                  <span>WECHAT / 微信</span>
-                  <strong>TerraSol 明远</strong>
-                  <small>微信号 TerraSol-Ai</small>
-                  <a
-                    href="https://u.wechat.com/EMtqddT4ZiSg6ogvLEtCx1M?s=2"
-                    target="_blank"
-                    rel="me noopener noreferrer"
-                  >打开微信名片 ↗</a>
-                </figcaption>
-              </figure>
-
-              <figure class="contact-qr-card contact-qr-douyin reveal">
-                <div class="contact-qr-media">
-                  <img
-                    src="/assets/douyin-hpy131419-code.jpg"
-                    width="1125"
-                    height="1680"
-                    loading="lazy"
-                    decoding="async"
-                    alt="TerraSol 明远抖音码，抖音号 HPY131419，扫码关注"
-                  >
-                </div>
-                <figcaption>
-                  <span>DOUYIN / 抖音</span>
-                  <strong>@TerraSol·明远</strong>
-                  <small>抖音号 HPY131419</small>
-                  <em>使用抖音 App 扫码关注</em>
-                </figcaption>
-              </figure>
-            </div>
-          </div>
-
-          <div class="contact-legal" aria-label="网站政策与帮助">
-            <span>© 2026 何鹏远 / HPY · TerraSol 明远</span>
-            <nav class="legal-links" aria-label="政策与帮助链接">
-              <a href="/terms/">服务条款</a>
-              <a href="/policy/">隐私政策</a>
-              <a href="/faqs/">常见问题</a>
-            </nav>
-          </div>
-        </div>
-      </section>
-    </main>
+    <footer class="pfoot">
+      <nav aria-label="页脚导航">
+        <a href="/services/">服务</a>
+        <a href="/blog/">文章</a>
+        <a href="/travel/">旅行</a>
+        <a href="/learning/">学习</a>
+        <a href="/faqs/">常见问题</a>
+        <a href="/terms/">服务条款</a>
+        <a href="/policy/">隐私政策</a>
+      </nav>
+      <p class="rights">© 2026 何鹏远 He Pengyuan · HPY · TerraSol 明远</p>
+    </footer>
   </body>
 </html>

@@ -13,6 +13,9 @@ const checks = [
   { path: "/sitemap-media.xml", type: "application/xml", includes: "urlset" },
   { path: "/aggie-3a/", type: "text/html", includes: "Aggie速记英语3A大作 · V6" },
   { path: "/media/promo/pengyuan-personal-promo.mp4", type: "video/mp4", method: "HEAD" },
+  { path: "/room/boot.js", type: "javascript", includes: "hpy-room" },
+  { path: "/room/scene.js", type: "javascript", includes: "export async function mount" },
+  { path: "/assets/vendor/three-0.170.0.module.min.js", type: "javascript", includes: "SPDX-License-Identifier: MIT" },
 ];
 
 for (const check of checks) {
