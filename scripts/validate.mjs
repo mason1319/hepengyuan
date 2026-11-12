@@ -33,6 +33,7 @@ for (const file of requiredFiles) {
 }
 
 const html = await readFile("index.html", "utf8");
+const headers = await readFile("_headers", "utf8");
 const robots = await readFile("robots.txt", "utf8");
 const sitemap = await readFile("sitemap.xml", "utf8");
 const llms = await readFile("llms.txt", "utf8");
@@ -114,6 +115,26 @@ const htmlChecks = [
 
 for (const [pattern, message] of htmlChecks) {
   if (!pattern.test(html)) failures.push(`index.html: ${message}`);
+}
+
+/* 静态页 CSP：只为 Cloudflare Web Analytics 放行它的 beacon 脚本和上报地址，其余保持只信任本站。 */
+const siteCsp = headers.match(/^\/\*\n(?:  .*\n)*?  Content-Security-Policy: (.+)$/m)?.[1] ?? "";
+const cspDirectives = Object.fromEntries(
+  siteCsp.split(";").map((part) => part.trim().split(/\s+/)).filter((tokens) => tokens[0]).map(([name, ...values]) => [name, values]),
+);
+const expectedCsp = {
+  "default-src": ["'self'"],
+  "style-src": ["'self'"],
+  "font-src": ["'self'"],
+  "script-src": ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com"],
+  "connect-src": ["'self'", "https://cloudflareinsights.com"],
+  "frame-ancestors": ["'none'"],
+};
+if (!siteCsp) failures.push("_headers: site-wide Content-Security-Policy for /* is missing");
+for (const [directive, values] of Object.entries(expectedCsp)) {
+  if (JSON.stringify(cspDirectives[directive] ?? null) !== JSON.stringify(values)) {
+    failures.push(`_headers: ${directive} must be exactly "${values.join(" ")}" (found "${(cspDirectives[directive] ?? []).join(" ")}")`);
+  }
 }
 
 for (const bot of ["OAI-SearchBot", "GPTBot", "Claude-SearchBot", "PerplexityBot", "Googlebot"]) {
