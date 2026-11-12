@@ -137,6 +137,13 @@ for (const [directive, values] of Object.entries(expectedCsp)) {
   }
 }
 
+/* style-src 'self' 不允许内联样式：style="" 和 <style> 在线上会被静默丢弃，只会在控制台报错。 */
+for (const page of ["index.html", "services/index.html", "policy/index.html", "terms/index.html", "faqs/index.html", "samples/s1/index.html"]) {
+  const source = await readFile(page, "utf8");
+  const inline = [...source.matchAll(/<style\b|\sstyle\s*=/gi)].length;
+  if (inline > 0) failures.push(`${page}: ${inline} inline style(s) found; the site CSP (style-src 'self') blocks them, move them into a stylesheet class`);
+}
+
 for (const bot of ["OAI-SearchBot", "GPTBot", "Claude-SearchBot", "PerplexityBot", "Googlebot"]) {
   if (!robots.includes(`User-agent: ${bot}`)) failures.push(`robots.txt: ${bot} rule is missing`);
 }
