@@ -157,7 +157,7 @@ const expectedPublicProfile = {
   alternateName: ["He Pengyuan", "Pengyuan He", "HPY", "TerraSol 明远"],
   email: ["653091hepeng@163.com", "653091hepeng@gmail.com"],
   telephone: "+8613145113319",
-  sameAs: ["https://t.me/mason1413", "https://x.com/X_mason13", "https://www.youtube.com/@beimingzi"],
+  sameAs: ["https://t.me/mason1413", "https://x.com/X_mason13", "https://www.youtube.com/@beimingzi", "https://github.com/mason1319"],
   identifier: [
     { "@type": "PropertyValue", propertyID: "WeChat", value: "TerraSol-Ai" },
     { "@type": "PropertyValue", propertyID: "Douyin", value: "HPY131419" },
@@ -182,6 +182,7 @@ for (const value of [
   "@mason1413",
   "@X_mason13",
   "@beimingzi",
+  "@mason1319",
 ]) {
   if (!visibleContactText.includes(value)) failures.push(`index.html: visible contact directory is missing ${value}`);
   if (!llms.includes(value.replace(/^@/, ""))) failures.push(`llms.txt: verified public contact is missing ${value}`);
@@ -194,6 +195,7 @@ for (const href of [
   "https://t.me/mason1413",
   "https://x.com/X_mason13",
   "https://www.youtube.com/@beimingzi",
+  "https://github.com/mason1319",
   "https://u.wechat.com/EMtqddT4ZiSg6ogvLEtCx1M?s=2",
 ]) {
   if (!contactSection.includes(`href="${href}"`)) failures.push(`index.html: visible contact href is missing ${href}`);
