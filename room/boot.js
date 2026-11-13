@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-i18n";
+  const SCENE_URL = "/room/scene.js?v=20261113-i18n-video";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -71,6 +71,7 @@
       workCareer: "履历",
       workProjects: "作品",
       filmTapPlay: "点画面播放",
+      filmCantPlay: "此设备无法播放这段视频",
       play: "继续播放（空格）",
       pause: "暂停（空格）",
       overlay: "可交互的 3D 房间。顶部导航可以打开各个栏目，LO-FI 切到静态版。",
@@ -123,6 +124,7 @@
       workCareer: "Career",
       workProjects: "Projects",
       filmTapPlay: "Tap the screen to play",
+      filmCantPlay: "This device can't play this video",
       play: "Play (Space)",
       pause: "Pause (Space)",
       overlay: "Interactive 3D room. Use the top menu to open each section; LO-FI switches to the static version.",
@@ -178,6 +180,7 @@
       workCareer: "Werdegang",
       workProjects: "Projekte",
       filmTapPlay: "Zum Abspielen auf den Bildschirm tippen",
+      filmCantPlay: "Dieses Gerät kann dieses Video nicht abspielen",
       play: "Abspielen (Leertaste)",
       pause: "Pause (Leertaste)",
       overlay: "Interaktiver 3D-Raum. Über das Menü oben öffnest du die einzelnen Bereiche; LO-FI wechselt zur statischen Version.",
@@ -233,6 +236,7 @@
       workCareer: "이력",
       workProjects: "작업",
       filmTapPlay: "화면을 눌러 재생",
+      filmCantPlay: "이 기기에서는 이 영상을 재생할 수 없습니다",
       play: "재생(스페이스)",
       pause: "일시정지(스페이스)",
       overlay: "인터랙티브 3D 방. 위쪽 메뉴로 각 섹션을 열 수 있고, LO-FI를 누르면 정적 버전으로 바뀝니다.",
@@ -576,10 +580,14 @@
     const title = element("p", "tvfx-title");
     title.setAttribute("aria-live", "polite");
     const tapeName = element("p", "tvfx-tape");
-    panel.append(heading, tapeName, title);
+    /* 状态（加载中、点画面播放、无信号）单独放在屏幕正中，手机上也不会和左上角的录像机字样挤在一起。 */
+    const status = element("p", "tvfx-status");
+    status.setAttribute("role", "status");
+    panel.append(heading, tapeName, status, title);
     panel.addEventListener("click", () => togglePause());
-    panel.setInfo = (tapeText, titleText) => {
+    panel.setInfo = (tapeText, titleText, statusText = "") => {
       tapeName.textContent = tapeText;
+      status.textContent = statusText;
       title.textContent = titleText;
     };
     return panel;
@@ -689,7 +697,7 @@
     if (!tape || !panel) return;
     const item = tape.items[media.index];
     const counter = `${String(media.index + 1).padStart(2, "0")}/${String(tape.items.length).padStart(2, "0")}`;
-    panel.setInfo(`${tape.label} ${tape.en} · ${counter}${status ? ` · ${status}` : ""}`, item?.title || "");
+    panel.setInfo(`${tape.label} ${tape.en} · ${counter}`, item?.title || "", status || "");
     if (ui.play) {
       ui.play.textContent = media.paused ? "PLAY" : "PAUSE";
       ui.play.setAttribute("aria-label", media.paused ? T.play : T.pause);
@@ -697,23 +705,58 @@
     return counter;
   }
 
+  /* 录像带的 <video> 必须挂在页面里（视觉上隐藏，但不能 display:none）：
+     有些 iPhone 版本不会为脱离文档的视频解码画面，电视上就只剩黑屏或雪花。
+     playsinline / webkit-playsinline / x5-* 让 iPhone 和微信内置浏览器在页面里播放，不跳全屏播放器。 */
   function ensureVideo() {
-    if (media.video) return media.video;
+    const host = overlay || document.body;
+    if (media.video) {
+      if (!media.video.isConnected) host.append(media.video);
+      return media.video;
+    }
     const video = document.createElement("video");
+    video.className = "room-tape-video";
     video.playsInline = true;
     video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    video.setAttribute("x5-playsinline", "");
+    video.setAttribute("x5-video-player-type", "h5-page");
+    video.setAttribute("aria-hidden", "true");
+    video.tabIndex = -1;
     video.preload = "auto";
     video.addEventListener("ended", () => step(1));
+    video.addEventListener("waiting", () => {
+      if (media.tape >= 0 && !media.paused && video.getAttribute("src")) filmInfo("BUFFERING");
+    });
+    video.addEventListener("playing", () => {
+      if (media.tape >= 0) filmInfo("");
+    });
     video.addEventListener("error", () => {
       if (media.tape < 0 || !video.getAttribute("src")) return;
       media.failures += 1;
       controller?.tv({ mode: "noise" });
-      filmInfo("NO SIGNAL");
+      /* 最常见的原因是编码：例如 HEVC（H.265）视频在不少安卓手机和微信里解不出来。 */
+      filmInfo(`NO SIGNAL\n${T.filmCantPlay}`);
       const tape = media.tapes[media.tape];
-      if (tape && media.failures < tape.items.length) media.timer = window.setTimeout(() => step(1), 1600);
+      if (tape && media.failures < tape.items.length) media.timer = window.setTimeout(() => step(1), 2400);
     });
+    host.append(video);
     media.video = video;
     return video;
+  }
+
+  /* 视频还没出画面时，先把封面放到电视上，比一直下雪花更像「正在加载」。 */
+  function showPoster(item, token, osd) {
+    if (!item.poster) return;
+    const request = (media.posterRequest = (media.posterRequest || 0) + 1);
+    const poster = new Image();
+    poster.decoding = "async";
+    poster.addEventListener("load", () => {
+      /* 只认最后一次请求：先发的「LOADING」不能盖掉后来的「PAUSE」。 */
+      if (token !== media.token || media.showing || request !== media.posterRequest) return;
+      controller?.tv({ mode: "media", element: poster, osd, osdHold: true });
+    }, { once: true });
+    poster.src = item.poster;
   }
 
   function clearItem() {
@@ -735,6 +778,7 @@
     const token = media.token;
     media.index = (index + tape.items.length) % tape.items.length;
     media.paused = false;
+    media.showing = false;
     const item = tape.items[media.index];
     controller.tv({ mode: "noise" });
     controller.setVcr("play");
@@ -747,20 +791,23 @@
       const show = () => {
         if (token !== media.token) return;
         media.failures = 0;
+        media.showing = true;
         controller?.tv({ mode: "media", element: video, osd: `\u25B6 PLAY ${counter}`, osdHold: false });
         filmInfo("");
       };
       video.addEventListener("playing", show, { once: true });
+      showPoster(item, token, "LOADING");
       const attempt = video.play();
-      attempt?.catch?.(() => {
-        if (token !== media.token) return;
+      attempt?.catch?.((error) => {
+        /* 只有「不允许播放」才提示去点画面；解码失败（例如 HEVC）、地址失效由 error 事件显示 NO SIGNAL，
+           换段时被打断的 AbortError 直接忽略。 */
+        if (token !== media.token || error?.name !== "NotAllowedError") return;
+        /* 浏览器没让自动播：立刻提示「点画面播放」。不能等 loadeddata，
+           iPhone 在真正开始播放之前根本不会加载视频数据。 */
         media.paused = true;
         controller?.setVcr("pause");
-        video.addEventListener("loadeddata", () => {
-          if (token !== media.token) return;
-          controller?.tv({ mode: "media", element: video, osd: `\u2016 PAUSE ${counter}`, osdHold: true });
-          filmInfo(T.filmTapPlay);
-        }, { once: true });
+        filmInfo(T.filmTapPlay);
+        showPoster(item, token, `\u2016 PAUSE ${counter}`);
       });
       return;
     }
@@ -797,16 +844,33 @@
     media.paused = !media.paused;
     const counter = `${String(media.index + 1).padStart(2, "0")}/${String(tape.items.length).padStart(2, "0")}`;
     if (item.kind === "video" && media.video) {
-      if (media.paused) media.video.pause();
-      else media.video.play()?.catch?.(() => {});
+      if (media.paused) {
+        media.video.pause();
+      } else {
+        const token = media.token;
+        /* 用户这次点击就是播放许可：画面出来之后再切到视频。 */
+        if (!media.showing) {
+          media.video.addEventListener("playing", () => {
+            if (token !== media.token) return;
+            media.showing = true;
+            controller?.tv({ mode: "media", element: media.video, osd: `\u25B6 PLAY ${counter}`, osdHold: false });
+            filmInfo("");
+          }, { once: true });
+        }
+        media.video.play()?.catch?.((error) => {
+          if (token !== media.token || error?.name !== "NotAllowedError") return;
+          media.paused = true;
+          controller?.setVcr("pause");
+          filmInfo(T.filmTapPlay);
+        });
+      }
     } else {
       window.clearTimeout(media.timer);
       if (!media.paused) media.timer = window.setTimeout(() => step(1), IMAGE_SECONDS * 1000);
     }
     controller.setVcr(media.paused ? "pause" : "play");
-    if (controller && (media.video || item.kind === "image")) {
-      const element = item.kind === "video" ? media.video : null;
-      if (element) controller.tv({ mode: "media", element, osd: `${media.paused ? "\u2016 PAUSE" : "\u25B6 PLAY"} ${counter}`, osdHold: media.paused });
+    if (controller && item.kind === "video" && media.video && media.showing) {
+      controller.tv({ mode: "media", element: media.video, osd: `${media.paused ? "\u2016 PAUSE" : "\u25B6 PLAY"} ${counter}`, osdHold: media.paused });
     }
     filmInfo(media.paused ? "PAUSE" : "");
   }
