@@ -47,6 +47,7 @@ const ACTIONS = {
   deckPrev: { label: "REW", sub: "上一首" },
   deckRec: { label: "REC", sub: "录音键（按着玩）" },
   calc: { label: "CALC", sub: "计算器 · 拿起来用" },
+  card: { label: "CARD", sub: "名片 · 拿一张出来" },
   tvPower: { label: "POWER", sub: "电视开关" },
   tvPreset: { label: "CH", sub: "预选台 1–6" },
   tvChannel: { label: "TUNE", sub: "换台" },
@@ -1097,6 +1098,264 @@ function talismanTexture(top, bottom, seed) {
   });
 }
 
+/* ------------------------------------------------------------------ 名片
+   正反两面画在 canvas 上：深紫底、细波纹、香槟金描边；字全部来自首页 #card（由启动器读出来交给场景）。 */
+const CARD_PX = { w: 1536, h: 970 };
+const CARD_INK = { bright: "#efe9da", soft: "#cfc6e4", dim: "#b9b0d6", gold: "#d9c58f", silver: "#d9d2bf" };
+const BRUSH = '"Xingkai SC", "STXingkai", "Kaiti SC", "STKaiti", "KaiTi", "Songti SC", serif';
+
+function roundedRectPath(g, x, y, w, h, r) {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+
+/* 按宽度折行：中文一字一断，西文按词断。 */
+function wrapLines(g, text, maxWidth, maxLines = 3) {
+  const tokens = String(text || "").match(/[㐀-鿿　-〿＀-￯]|[^\s㐀-鿿　-〿＀-￯]+|\s+/g) || [];
+  const lines = [];
+  let line = "";
+  for (const token of tokens) {
+    const next = line + token;
+    if (line && g.measureText(next.trimEnd()).width > maxWidth) {
+      lines.push(line.trim());
+      line = token.trimStart();
+      if (lines.length === maxLines) break;
+    } else {
+      line = next;
+    }
+  }
+  if (lines.length < maxLines && line.trim()) lines.push(line.trim());
+  return lines.slice(0, maxLines);
+}
+
+/* 单行字：放不下就缩小字号。 */
+function fitText(g, text, x, y, maxWidth, size, weight = 400, family = SANS) {
+  let px = size;
+  g.font = `${weight} ${px}px ${family}`;
+  while (px > 14 && g.measureText(text).width > maxWidth) {
+    px -= 2;
+    g.font = `${weight} ${px}px ${family}`;
+  }
+  g.fillText(text, x, y);
+  return px;
+}
+
+function drawCardBase(g, W, H) {
+  const base = g.createRadialGradient(W * 0.2, H * 0.1, 40, W * 0.45, H * 0.5, W * 0.9);
+  base.addColorStop(0, "#4a3b88");
+  base.addColorStop(0.5, "#2b2154");
+  base.addColorStop(1, "#191331");
+  g.fillStyle = base;
+  g.fillRect(0, 0, W, H);
+  /* 细波纹 */
+  g.strokeStyle = "rgba(220,205,255,0.05)";
+  g.lineWidth = 2;
+  for (let y = 40; y < H; y += 26) {
+    g.beginPath();
+    for (let x = 0; x <= W; x += 24) g.lineTo(x, y + Math.sin(x / 70 + y / 50) * 6);
+    g.stroke();
+  }
+  /* 斜向的拉丝光泽 */
+  const sheen = g.createLinearGradient(0, 0, W, H);
+  sheen.addColorStop(0, "rgba(255,255,255,0.08)");
+  sheen.addColorStop(0.45, "rgba(255,255,255,0)");
+  sheen.addColorStop(0.8, "rgba(255,255,255,0.04)");
+  g.fillStyle = sheen;
+  g.fillRect(0, 0, W, H);
+  const gold = g.createLinearGradient(0, 0, W, H);
+  gold.addColorStop(0, "#efdcae");
+  gold.addColorStop(0.5, "#a98b56");
+  gold.addColorStop(1, "#e7d3a1");
+  g.strokeStyle = gold;
+  g.lineWidth = 7;
+  roundedRectPath(g, 18, 18, W - 36, H - 36, 52);
+  g.stroke();
+  g.strokeStyle = "rgba(217,197,143,0.45)";
+  g.lineWidth = 2;
+  roundedRectPath(g, 38, 38, W - 76, H - 76, 40);
+  g.stroke();
+}
+
+/* 银色压字：一层深色阴影 + 渐变填充，看起来像压出来的金属字。 */
+function embossed(g, draw) {
+  g.save();
+  g.shadowColor = "rgba(0,0,0,0.55)";
+  g.shadowOffsetY = 4;
+  g.shadowBlur = 6;
+  draw();
+  g.restore();
+}
+
+function drawChip(g, x, y, w, h) {
+  const gold = g.createLinearGradient(x, y, x + w, y + h);
+  gold.addColorStop(0, "#f3dfa2");
+  gold.addColorStop(0.5, "#c9a254");
+  gold.addColorStop(1, "#f0d898");
+  g.fillStyle = gold;
+  roundedRectPath(g, x, y, w, h, 22);
+  g.fill();
+  g.strokeStyle = "rgba(110,80,30,0.65)";
+  g.lineWidth = 4;
+  for (const fx of [0.34, 0.66]) {
+    g.beginPath();
+    g.moveTo(x + w * fx, y + 10);
+    g.lineTo(x + w * fx, y + h - 10);
+    g.stroke();
+  }
+  for (const fy of [0.34, 0.66]) {
+    g.beginPath();
+    g.moveTo(x + 10, y + h * fy);
+    g.lineTo(x + w - 10, y + h * fy);
+    g.stroke();
+  }
+}
+
+function drawBaguaMark(g, cx, cy, r) {
+  g.save();
+  g.translate(cx, cy);
+  g.strokeStyle = "rgba(217,197,143,0.22)";
+  g.fillStyle = "rgba(217,197,143,0.22)";
+  g.lineWidth = 3;
+  g.beginPath();
+  for (let i = 0; i <= 8; i += 1) {
+    const a = (i / 8) * TAU + Math.PI / 8;
+    g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  g.stroke();
+  g.beginPath();
+  g.arc(0, 0, r * 0.42, 0, TAU);
+  g.stroke();
+  [7, 3, 5, 1, 6, 2, 4, 0].forEach((bits, index) => {
+    g.save();
+    g.rotate((index / 8) * TAU);
+    for (let line = 0; line < 3; line += 1) {
+      const y = -r * 0.86 + line * 12;
+      if (bits & (1 << line)) g.fillRect(-26, y, 52, 6);
+      else {
+        g.fillRect(-26, y, 21, 6);
+        g.fillRect(5, y, 21, 6);
+      }
+    }
+    g.restore();
+  });
+  g.restore();
+}
+
+function drawCardFront(g, W, H, data) {
+  drawCardBase(g, W, H);
+  if (!data) return;
+  g.textBaseline = "alphabetic";
+  g.textAlign = "left";
+  g.fillStyle = CARD_INK.silver;
+  if ("letterSpacing" in g) g.letterSpacing = "4px";
+  fitText(g, data.en, 110, 175, 720, 40, 600);
+  if ("letterSpacing" in g) g.letterSpacing = "0px";
+  embossed(g, () => {
+    const silver = g.createLinearGradient(0, 220, 0, 400);
+    silver.addColorStop(0, "#fbf7ee");
+    silver.addColorStop(1, "#a9a294");
+    g.fillStyle = silver;
+    if ("letterSpacing" in g) g.letterSpacing = "18px";
+    fitText(g, data.name, 100, 370, 720, 172, 400, BRUSH);
+    if ("letterSpacing" in g) g.letterSpacing = "0px";
+  });
+  embossed(g, () => {
+    g.fillStyle = CARD_INK.bright;
+    fitText(g, data.tag, 110, 470, 760, 60, 700);
+  });
+  g.fillStyle = CARD_INK.soft;
+  fitText(g, data.sub, 112, 545, 760, 42, 500);
+  drawChip(g, W - 330, 78, 190, 150);
+  /* 右栏：两条定位 */
+  let y = 300;
+  for (const item of data.focus.slice(0, 2)) {
+    g.fillStyle = CARD_INK.bright;
+    embossed(g, () => fitText(g, item.title, 920, y, 520, 52, 700));
+    g.fillStyle = CARD_INK.soft;
+    g.font = `500 34px ${SANS}`;
+    const lines = wrapLines(g, item.text, 500, 2);
+    lines.forEach((line, index) => g.fillText(line, 922, y + 50 + index * 40));
+    y += 60 + lines.length * 40 + 30;
+  }
+  drawBaguaMark(g, W - 300, H - 230, 150);
+  const rule = g.createLinearGradient(100, 0, W - 100, 0);
+  rule.addColorStop(0, "rgba(217,197,143,0.85)");
+  rule.addColorStop(1, "rgba(217,197,143,0.1)");
+  g.fillStyle = rule;
+  g.fillRect(100, 612, W - 220, 3);
+  embossed(g, () => {
+    g.fillStyle = CARD_INK.bright;
+    fitText(g, data.org, 110, 712, 820, 64, 700);
+  });
+  g.fillStyle = CARD_INK.silver;
+  fitText(g, data.role, 112, 790, 820, 44, 600);
+  g.fillStyle = CARD_INK.dim;
+  fitText(g, data.open, 112, 880, 860, 36, 500);
+}
+
+function drawCardBack(g, W, H, data, images = []) {
+  drawCardBase(g, W, H);
+  const stripe = g.createLinearGradient(0, 70, 0, 170);
+  stripe.addColorStop(0, "#121014");
+  stripe.addColorStop(1, "#2b2733");
+  g.fillStyle = stripe;
+  g.fillRect(44, 70, W - 88, 96);
+  if (!data) return;
+  g.textAlign = "left";
+  g.textBaseline = "alphabetic";
+  /* 四类服务：两列两行 */
+  const cells = [[90, 250], [820, 250], [90, 445], [820, 445]];
+  data.services.slice(0, 4).forEach((service, index) => {
+    const [x, y] = cells[index];
+    g.fillStyle = CARD_INK.bright;
+    embossed(g, () => fitText(g, service.title, x, y, 640, 50, 700));
+    g.fillStyle = CARD_INK.soft;
+    g.font = `500 28px ${SANS}`;
+    wrapLines(g, service.text, 640, 4).forEach((line, row) => g.fillText(line, x + 2, y + 44 + row * 34));
+  });
+  g.fillStyle = "rgba(217,197,143,0.5)";
+  g.fillRect(780, 205, 2, 380);
+  g.fillRect(90, 405, W - 180, 2);
+  g.fillRect(90, 612, W - 180, 3);
+  /* 联系方式 */
+  data.contacts.slice(0, 3).forEach((contact, index) => {
+    const y = 690 + index * 64;
+    g.fillStyle = CARD_INK.silver;
+    g.font = `500 38px ${SANS}`;
+    g.fillText(contact.label, 92, y);
+    const labelWidth = Math.max(110, g.measureText(contact.label).width + 26);
+    g.fillStyle = "#ecd9a6";
+    fitText(g, contact.value, 92 + labelWidth, y, 520, 42, 600, `"Fira Code", ${SANS}`);
+  });
+  g.fillStyle = CARD_INK.dim;
+  data.notes.slice(0, 2).forEach((note, index) => fitText(g, note, 92, 878 + index * 36, 640, 28, 500));
+  /* 三个二维码 */
+  data.qrs.slice(0, 3).forEach((qr, index) => {
+    const size = 180;
+    const x = 810 + index * 228;
+    const y = 650;
+    g.fillStyle = "#cdb98d";
+    roundedRectPath(g, x - 8, y - 8, size + 16, size + 16, 16);
+    g.fill();
+    g.fillStyle = "#ffffff";
+    roundedRectPath(g, x - 2, y - 2, size + 4, size + 4, 12);
+    g.fill();
+    const image = images[index];
+    if (image?.complete && image.naturalWidth) g.drawImage(image, x + 6, y + 6, size - 12, size - 12);
+    g.textAlign = "center";
+    g.fillStyle = CARD_INK.bright;
+    fitText(g, qr.label, x + size / 2, y + size + 44, 220, 30, 700);
+    g.fillStyle = CARD_INK.silver;
+    fitText(g, qr.caption, x + size / 2, y + size + 76, 220, 24, 500);
+    g.textAlign = "left";
+  });
+}
+
 /* ------------------------------------------------------------------ 场景 */
 
 const BACK = -1.6;
@@ -2128,6 +2387,109 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     lcdMap.needsUpdate = true;
   };
 
+  /* ---- 名片盒（主书桌右前方）：金属卡座里斜靠着一摞名片，最外面那张能拿起来看正反面。
+     名片上的字由启动器从首页 #card 读出来交给 setCard，场景里不写任何事实。 */
+  const CARD_SIZE = [0.0856, 0.054];
+  const cardHolder = new THREE.Group();
+  cardHolder.userData.action = "card";
+  cardHolder.position.set(0.77, DESK_TOP, -0.93);
+  cardHolder.rotation.y = -0.4;
+  const holderMetal = std(0x2b2a31, 0.32, 0.8);
+  cardHolder.add(roundedBox(0.104, 0.008, 0.06, 0.003, holderMetal, 0, 0.004, 0));
+  const holderBack = roundedBox(0.1, 0.06, 0.004, 0.002, holderMetal, 0, 0.034, -0.021);
+  holderBack.rotation.x = -0.3;
+  cardHolder.add(holderBack);
+  cardHolder.add(box(0.1, 0.014, 0.004, holderMetal, 0, 0.012, 0.026));
+  const cardTilt = new THREE.Group();
+  cardTilt.position.set(0, 0.009, 0.004);
+  cardTilt.rotation.x = -0.3;
+  cardHolder.add(cardTilt);
+  const cardBody = std(0x2c2156, 0.45, 0.35);
+  const cardRimMaterial = std(0xd2bb85, 0.28, 0.9);
+  for (let i = 0; i < 6; i += 1) {
+    const spare = box(CARD_SIZE[0], CARD_SIZE[1], 0.0007, cardBody, 0, CARD_SIZE[1] / 2, -0.016 + i * 0.0011);
+    cardTilt.add(spare);
+  }
+  cardHolder.add(hitBox(0.12, 0.08, 0.08, 0, 0.035, 0));
+  scene.add(cardHolder);
+
+  /* 能拿起来的那张：正反两面各一张 canvas 贴图，边是一圈香槟金。 */
+  const cardCanvases = [0, 1].map(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = CARD_PX.w;
+    canvas.height = CARD_PX.h;
+    return canvas;
+  });
+  const cardTextures = cardCanvases.map((canvas) => {
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = anisotropy;
+    return texture;
+  });
+  const cardShape = new THREE.Shape();
+  {
+    const [w, h] = CARD_SIZE;
+    const r = 0.0032;
+    cardShape.moveTo(-w / 2 + r, -h / 2);
+    cardShape.lineTo(w / 2 - r, -h / 2);
+    cardShape.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
+    cardShape.lineTo(w / 2, h / 2 - r);
+    cardShape.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+    cardShape.lineTo(-w / 2 + r, h / 2);
+    cardShape.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r);
+    cardShape.lineTo(-w / 2, -h / 2 + r);
+    cardShape.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+  }
+  const cardFaceGeometry = () => {
+    const geometry = new THREE.ShapeGeometry(cardShape, 6);
+    const position = geometry.attributes.position;
+    const uv = geometry.attributes.uv;
+    for (let i = 0; i < position.count; i += 1) uv.setXY(i, position.getX(i) / CARD_SIZE[0] + 0.5, position.getY(i) / CARD_SIZE[1] + 0.5);
+    uv.needsUpdate = true;
+    return geometry;
+  };
+  const cardFaceMaterial = (texture) => new THREE.MeshStandardMaterial({
+    map: texture, emissiveMap: texture, emissive: 0xffffff, emissiveIntensity: 0.34, roughness: 0.38, metalness: 0.3,
+  });
+  const heroCard = new THREE.Group();
+  heroCard.userData.action = "card";
+  const cardFront = new THREE.Mesh(cardFaceGeometry(), cardFaceMaterial(cardTextures[0]));
+  cardFront.position.z = 0.00042;
+  const cardBack = new THREE.Mesh(cardFaceGeometry(), cardFaceMaterial(cardTextures[1]));
+  cardBack.rotation.y = Math.PI;
+  cardBack.position.z = -0.00042;
+  const cardRim = new THREE.Mesh(new THREE.ExtrudeGeometry(cardShape, { depth: 0.0008, bevelEnabled: false, curveSegments: 6 }), [HIT_MATERIAL, cardRimMaterial]);
+  cardRim.position.z = -0.0004;
+  heroCard.add(cardFront, cardBack, cardRim);
+  heroCard.position.set(0, CARD_SIZE[1] / 2, -0.0085);
+  cardTilt.add(heroCard);
+  /* 记下它在盒子里的世界位置，然后挂到场景上，拿出来时直接在世界坐标里插值。 */
+  scene.updateMatrixWorld(true);
+  const cardHome = {
+    position: heroCard.getWorldPosition(new THREE.Vector3()),
+    quaternion: heroCard.getWorldQuaternion(new THREE.Quaternion()),
+  };
+  scene.attach(heroCard);
+  let cardData = null;
+  let cardImages = [];
+  const redrawCard = () => {
+    drawCardFront(cardCanvases[0].getContext("2d"), CARD_PX.w, CARD_PX.h, cardData);
+    drawCardBack(cardCanvases[1].getContext("2d"), CARD_PX.w, CARD_PX.h, cardData, cardImages);
+    for (const texture of cardTextures) texture.needsUpdate = true;
+  };
+  const setCard = (data) => {
+    cardData = data;
+    cardImages = (data?.qrs || []).map((qr) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.addEventListener("load", redrawCard, { once: true });
+      image.src = qr.src;
+      return image;
+    });
+    redrawCard();
+  };
+  redrawCard();
+
   /* ---- 调制解调器（SERVICES） + 叠在上面的按键电话（ONLINE） */
   const modem = new THREE.Group();
   modem.position.set(0.86, DESK_TOP, -1.2);
@@ -2755,6 +3117,11 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     recorder,
     calculator,
     calcAnchor: calcHome.clone(),
+    cardHolder,
+    heroCard,
+    cardHome,
+    CARD_SIZE,
+    setCard,
     liftCalculator,
     setCalcDisplay,
     operate,
@@ -2860,7 +3227,7 @@ export async function mount({
   built.computerState.subs = subs;
   built.tvState.insertText = labels.tvInsert || "";
   const byId = Object.fromEntries(HOTSPOTS.map((hotspot) => [hotspot.id, hotspot]));
-  const pickRoots = [...Object.values(built.hotspots).flatMap((entry) => entry.groups), built.lamp, built.recorder, built.calculator, built.cassetteStack, built.workBooks];
+  const pickRoots = [...Object.values(built.hotspots).flatMap((entry) => entry.groups), built.lamp, built.recorder, built.calculator, built.cassetteStack, built.workBooks, built.cardHolder, built.heroCard];
 
   /* 悬停时给受光材质一点暖色自发光。 */
   const highlight = new THREE.Color(CORAL);
@@ -2935,6 +3302,13 @@ export async function mount({
     poses.calc = {
       pos: overview.pos.clone().lerp(new THREE.Vector3(anchor.x - 0.08, anchor.y + 0.55, anchor.z + 1.05), 0.45),
       look: overview.look.clone().lerp(anchor, 0.5),
+    };
+
+    /* 名片：镜头往右前方的名片盒靠过去，名片拿到镜头跟前。 */
+    const holderAt = built.cardHome.position;
+    poses.card = {
+      pos: overview.pos.clone().lerp(new THREE.Vector3(holderAt.x - 0.05, holderAt.y + 0.5, holderAt.z + 0.95), 0.5),
+      look: overview.look.clone().lerp(holderAt, 0.55),
     };
 
     /* MUSIC：正对录音机，录音机放在画面上半部分，下面留给磁带封套面板。 */
@@ -3197,8 +3571,14 @@ export async function mount({
       disarm();
       if (mouse && canOrbit()) stage.style.cursor = "grabbing";
     }
-    if (!gesture.moved || !canOrbit()) return;
+    if (!gesture.moved) return;
     const size = Math.max(320, Math.min(width, height));
+    if (current === "card" && !flight) {
+      cardAnim.yawGoal += (dx / size) * 3.2;
+      cardAnim.pitchGoal = clamp(cardAnim.pitchGoal + (dy / size) * 2.4, -0.8, 0.8);
+      return;
+    }
+    if (!canOrbit()) return;
     if (pointers.size >= 2) {
       const [a, b] = [...pointers.values()];
       const distance = Math.hypot(a.x - b.x, a.y - b.y);
@@ -3257,6 +3637,10 @@ export async function mount({
   }
 
   function tap(event, type) {
+    if (current === "card") {
+      if (!flight) flipCard();
+      return;
+    }
     if (!canOrbit()) return;
     toNdc(event);
     const hit = pick();
@@ -3331,6 +3715,58 @@ export async function mount({
   stage.addEventListener("gesturestart", stopDefault);
   stage.addEventListener("gesturechange", stopDefault);
 
+  /* ---- 名片：拿出来、翻面、拖着转 */
+  const cardAnim = { out: 0, goal: 0, flip: 0, flipGoal: 0, yaw: 0, pitch: 0, yawGoal: 0, pitchGoal: 0 };
+  const cardViewPos = new THREE.Vector3();
+  const cardViewQuat = new THREE.Quaternion();
+  const cardFacing = new THREE.Object3D();
+  const cardSpin = new THREE.Quaternion();
+  const cardEuler = new THREE.Euler(0, 0, 0, "YXZ");
+  const cardDir = new THREE.Vector3();
+  function cardTarget() {
+    const pose = poses.card;
+    cardDir.subVectors(pose.look, pose.pos).normalize();
+    const halfV = Math.tan(rad(camera.fov) / 2);
+    const halfH = halfV * camera.aspect;
+    const [w, h] = built.CARD_SIZE;
+    const distance = Math.max(w / ((width >= 720 ? 0.48 : 0.84) * 2 * halfH), h / (0.6 * 2 * halfV));
+    cardViewPos.copy(pose.pos).addScaledVector(cardDir, distance);
+    cardFacing.position.copy(cardViewPos);
+    cardFacing.up.copy(camera.up);
+    cardFacing.lookAt(pose.pos);
+    cardEuler.set(cardAnim.pitch, cardAnim.yaw + cardAnim.flip, 0, "YXZ");
+    cardSpin.setFromEuler(cardEuler);
+    cardViewQuat.copy(cardFacing.quaternion).multiply(cardSpin);
+  }
+  function placeCard(realDt) {
+    const step = Math.min(realDt, 0.1);
+    if (cardAnim.out !== cardAnim.goal) {
+      const delta = step / (reducedMotion ? 0.05 : 0.75);
+      cardAnim.out = cardAnim.goal > cardAnim.out ? Math.min(cardAnim.goal, cardAnim.out + delta) : Math.max(cardAnim.goal, cardAnim.out - delta);
+    }
+    const follow = 1 - Math.exp(-step * 10);
+    cardAnim.flip = lerp(cardAnim.flip, cardAnim.flipGoal, follow);
+    cardAnim.yaw = lerp(cardAnim.yaw, cardAnim.yawGoal, follow);
+    cardAnim.pitch = lerp(cardAnim.pitch, cardAnim.pitchGoal, follow);
+    const card = built.heroCard;
+    if (cardAnim.out <= 0) {
+      if (cardAnim.goal === 0 && (cardAnim.flipGoal || cardAnim.yawGoal || cardAnim.pitchGoal)) {
+        Object.assign(cardAnim, { flip: 0, flipGoal: 0, yaw: 0, yawGoal: 0, pitch: 0, pitchGoal: 0 });
+      }
+      card.position.copy(built.cardHome.position);
+      card.quaternion.copy(built.cardHome.quaternion);
+      return;
+    }
+    cardTarget();
+    const k = easeInOut(cardAnim.out);
+    card.position.lerpVectors(built.cardHome.position, cardViewPos, k);
+    card.position.y += Math.sin(k * Math.PI) * 0.06;
+    card.quaternion.slerpQuaternions(built.cardHome.quaternion, cardViewQuat, k);
+  }
+  const flipCard = () => {
+    if (current === "card") cardAnim.flipGoal += Math.PI;
+  };
+
   /* ---- 镜头 */
   const view = { pos: new THREE.Vector3(), look: new THREE.Vector3() };
   let current = "desk";
@@ -3365,6 +3801,7 @@ export async function mount({
     built.powerFor(target);
     built.liftCalculator(target === "calc", reducedMotion);
     built.setDeckOpen(target === "music");
+    cardAnim.goal = target === "card" ? 1 : 0;
     built.computerState.mode = target === "about" || target === "online" ? target : "desk";
     built.redrawComputer();
     if (target === "posts") tv({ mode: "teletext" });
@@ -3549,6 +3986,8 @@ export async function mount({
       built.tvState.clock = clockText(true);
       if (built.tvState.mode === "idle") built.redrawTv();
     }
+    placeCard(realDt);
+
     /* 正在放带、雪花、开关机或显示面板屏显时，屏幕每一帧都要重画。 */
     const busy = built.screensBusy();
     if (busy.tv) built.redrawTv();
@@ -3691,6 +4130,8 @@ export async function mount({
       return built.loadedCassette;
     },
     setBooks: (list) => built.setBooks(list),
+    setCard: (data) => built.setCard(data),
+    flipCard,
     /* 换到下一个书桌机位；只在书桌视角下有效。返回新的机位序号。 */
     cycleDeskView(step = 1) {
       if (current !== "desk") return deskIndex;

@@ -132,6 +132,7 @@ if (failures.length === 0) {
     [/<span data-film-title><b>片名<\/b>/, "the data-film-title caption in #personal-film (FILM tape title)"],
     [/<section id="music"[\s\S]*?data-music[\s\S]*?data-music-title[\s\S]*?<source src="\/media\/music\/[^"]+\.mp3"/, "#music [data-music] items with a title and a /media/music/ source (MUSIC cassettes)"],
     [/class="pb-lbl pb-grp"/, "the Projects divider in #work (bookshelf work books)"],
+    [/<section id="card"[\s\S]*?data-card-name[\s\S]*?data-card-service[\s\S]*?data-card-contact[\s\S]*?data-card-qr/, "#card front/back fields (desk business card)"],
   ]) {
     if (!pattern.test(html)) fail(`index.html: room panels read ${message}, which is missing`);
   }
