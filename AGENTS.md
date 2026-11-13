@@ -17,7 +17,7 @@
 - `index.html`：主页可见内容、meta 和 JSON-LD。
 - `styles.css`：设计 token、自托管字体与全站版式（首页、`services/`、`policy.css` 都依赖它）。
 - `script.js`：三态配色切换、公开联系方式复制与滚动渐显。
-- `room/`：首页的 hi-fi 版——可交互的 3D 夜间工作台，盖在静态首页之上。`boot.js` 判断设备能力、负责降级提示与进出切换；`scene.js` 是按需加载的 three.js 场景（纯程序化建模，无外部模型）。样式在 `styles.css` 的「hi-fi 房间」一节。
+- `room/`：首页的 hi-fi 版——可交互的 3D 80 年代夜间书桌，盖在静态首页之上，布局参照 felixrieseberg.com 的房间版（只借鉴布局与交互方式，模型、文字、代码都是自己的）。桌上是老电脑（ABOUT、ONLINE 拨号 BBS）、放在录像机上的老电视（POSTS 图文电视、FILM 录像带）、录像带、遥控器、按键电话与调制解调器（ONLINE / SERVICES）、黄色记事本与墙上年份卡片（WORK）、掌机（GAME），窗台上的手提录音机开关雨声。`boot.js` 判断设备能力、负责降级提示与进出切换，并搭建房间里的全部 HTML（导航、右下按钮、光标提示、盖在屏幕上的面板、录像带播放控制）；`scene.js` 是按需加载的 three.js 场景（纯程序化建模，无外部模型），只负责画面、镜头、放带退带和屏幕投影位置。样式在 `styles.css` 的「hi-fi 房间」一节。
 - `profile.json`：机器可读权威个人资料。
 - `policy.css`：`policy/`、`terms/`、`faqs/` 三页的版式，依赖 `styles.css` 的 token。
 - `robots.txt` / `sitemap.xml` / `llms.txt`：抓取、发现与 GEO 补充入口。
@@ -38,7 +38,8 @@
 - 保持核心内容为服务器直出 HTML，不要把身份与事实仅放入 JavaScript 渲染。
 - 保留键盘焦点、语义标签、手机端布局和 `prefers-reduced-motion` 支持。
 - 3D 房间只是增强层：没有 JS、没有 WebGL 2、软件渲染、省流量、`prefers-reduced-motion`、帧率过低或加载失败时都必须自动回到静态首页并说明原因；不得把任何内容只放在房间里。
-- 房间里出现的履历（墙上的年份卡片 `TIMELINE`）必须与首页 Work 区逐字一致，热点 `HOTSPOTS` 必须指向真实存在的栏目；改首页履历或锚点时同步改 `room/scene.js`，校验脚本会拦住不一致。
+- 房间面板里的文字和链接一律在运行时从首页已有栏目读取（`main h1`、`.pb-dek`、`#aggie-role`、`#work` 里的 `.pb-item` 与 `.pb-note`、`#posts`、`#contact .on-hd`），不要在 `room/` 里另存一份事实；改这些栏目的结构时同步改 `room/boot.js` 的 `build*` 函数，校验脚本会检查这些结构是否还在。墙上的年份卡片 `TIMELINE` 是唯一写在场景里的履历，必须与首页 Work 区逐字一致；热点 `HOTSPOTS` 必须打开一个房间视图或指向真实存在的栏目。
+- 录像带（FILM）里的影像只能来自两处：首页 `#personal-film` 的宣传片，以及 `/api/media.json`（服务端只返回已发布条目，`boot.js` 只接受本站同源地址）。不要在 `room/` 里写死任何影像地址、标题、地点或日期；带子侧标只写栏目名（宣传片 / 旅行 / 学习），条目标题只在播放时显示。
 - 改 `room/` 下任何文件后，同步更新 `index.html` 里 `boot.js?v=` 与 `room/boot.js` 里 `SCENE_URL` 的版本号（两处必须一致）。
 - 旅行国家、城市、日期、标题与媒体内容只能来自何鹏远本人确认；草稿不得进入公开 HTML、JSON、sitemap 或链接。
 - 图片公开上传前必须生成去除 EXIF/GPS 的 WebP 公开版；视频必须有真实 poster 才能发布。

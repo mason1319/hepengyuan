@@ -87,12 +87,23 @@ if (failures.length === 0) {
     fail("styles.css: the room overlay must be hidden when printing");
   }
 
-  /* ---- 热点必须指向真实存在的栏目 */
+  /* ---- 热点：要么在房间里打开一个视图，要么离开房间去一个真实存在的地方 */
   const hotspotBlock = scene.match(/export const HOTSPOTS = \[([\s\S]*?)\n\];/)?.[1] ?? "";
-  const hotspotLinks = [...hotspotBlock.matchAll(/href:\s*"([^"]+)"/g)].map((match) => match[1]);
-  if (hotspotLinks.length < 5) fail("room/scene.js: HOTSPOTS list could not be read");
+  const hotspotEntries = [...hotspotBlock.matchAll(/\{([^}]*)\}/g)].map((match) => ({
+    id: match[1].match(/id:\s*"([^"]+)"/)?.[1],
+    view: match[1].match(/view:\s*"([^"]+)"/)?.[1],
+    href: match[1].match(/href:\s*"([^"]+)"/)?.[1],
+  }));
+  if (hotspotEntries.length < 5) fail("room/scene.js: HOTSPOTS list could not be read");
   const workerRoutes = new Set(["/aggie-3a/"]);
-  for (const href of hotspotLinks) {
+  for (const { id, view, href } of hotspotEntries) {
+    if (!id || (!view && !href)) fail(`room hotspot ${id ?? "?"}: needs an id and either a view or an href`);
+    if (view && !new RegExp(`view: "${view}"`).test(boot)) fail(`room hotspot ${id}: room/boot.js has no NAV entry for view "${view}"`);
+    if (view && !new RegExp(`function build${view[0].toUpperCase()}${view.slice(1)}\\(`).test(boot)) fail(`room hotspot ${id}: room/boot.js has no panel builder for view "${view}"`);
+    if (!href) continue;
+    if (!new RegExp(`${id}: "${href.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}"`).test(boot)) {
+      fail(`room hotspot ${id}: room/boot.js LEAVE_LINKS must send it to ${href}`);
+    }
     if (href.startsWith("#")) {
       if (!new RegExp(`\\bid="${href.slice(1)}"`).test(html)) fail(`room hotspot ${href}: no element with that id in index.html`);
     } else if (!workerRoutes.has(href)) {
@@ -102,6 +113,25 @@ if (failures.length === 0) {
         fail(`room hotspot ${href}: no such page in the repository`);
       }
     }
+  }
+
+  /* ---- 房间面板的内容全部取自首页：这些栏目和结构必须还在 */
+  for (const [pattern, message] of [
+    [/<h1[^>]*>/, "an h1 (ABOUT heading)"],
+    [/class="pb-dek"/, ".pb-dek (ABOUT summary)"],
+    [/<section class="pb-item" id="aggie-role"/, "#aggie-role (ABOUT current role)"],
+    [/class="pb-note"/, ".pb-note (ABOUT AI timeline)"],
+    [/<section id="work"/, "#work (WORK notepad)"],
+    [/class="pb-lbl pb-grp">Projects</, "the Projects divider inside #work"],
+    [/<section id="posts"/, "#posts (POSTS teletext)"],
+    [/class="pb-idx"/, ".pb-idx post list"],
+    [/<section id="contact"/, "#contact (ONLINE phone)"],
+    [/class="on-hd"/, ".on-hd contact rows"],
+    [/data-contact-note/, "[data-contact-note] copy status"],
+    [/<section id="personal-film"[\s\S]*?<source src="\/media\/promo\/[^"]+"/, "the #personal-film video source (FILM promo tape)"],
+    [/<span><b>片名<\/b>/, "the 片名 caption in #personal-film (FILM tape title)"],
+  ]) {
+    if (!pattern.test(html)) fail(`index.html: room panels read ${message}, which is missing`);
   }
 
   /* ---- 墙上的年份卡片必须与首页 Work 区逐字一致 */
