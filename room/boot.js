@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-room90";
+  const SCENE_URL = "/room/scene.js?v=20261113-tapclick";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -93,7 +93,6 @@
         ["字体", "Literata · Fira Sans · Fira Code · VT323 · OFL"],
         ["雨声", "浏览器现场合成"],
         ["录像带", "宣传片取自首页；旅行与学习影像只来自已公开的影像档案"],
-        ["布局灵感", "Felix Rieseberg 的个人网站 felixrieseberg.com"],
       ],
       hotspots: {},
       tvInsert: "",
@@ -154,7 +153,6 @@
         ["Fonts", "Literata · Fira Sans · Fira Code · VT323 · OFL"],
         ["Rain", "Synthesized live in the browser"],
         ["Tapes", "The promo film comes from the homepage; travel and learning media come only from the published media archive"],
-        ["Layout inspiration", "Felix Rieseberg's personal website felixrieseberg.com"],
       ],
       hotspots: {
         about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Tapes · promo film & media",
@@ -220,7 +218,6 @@
         ["Schriften", "Literata · Fira Sans · Fira Code · VT323 · OFL"],
         ["Regen", "Live im Browser erzeugt"],
         ["Kassetten", "Der Imagefilm stammt von der Startseite; Reise- und Lernmedien nur aus dem veröffentlichten Medienarchiv"],
-        ["Layout-Idee", "Die persönliche Website von Felix Rieseberg, felixrieseberg.com"],
       ],
       hotspots: {
         about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Kassetten · Imagefilm & Medien",
@@ -286,7 +283,6 @@
         ["글꼴", "Literata · Fira Sans · Fira Code · VT323 · OFL"],
         ["빗소리", "브라우저에서 실시간 합성"],
         ["비디오테이프", "홍보 영상은 홈페이지에서, 여행·학습 미디어는 공개된 미디어 아카이브에서만 가져옵니다"],
-        ["레이아웃 영감", "Felix Rieseberg의 개인 웹사이트 felixrieseberg.com"],
       ],
       hotspots: {
         about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "테이프 · 홍보 영상과 미디어",
