@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-i18n-video";
+  const SCENE_URL = "/room/scene.js?v=20261113-menu";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -41,6 +41,8 @@
   ];
   const STRINGS = {
     zh: {
+      menu: { about: "关于", work: "履历", posts: "文章", film: "录像带", online: "联系", services: "服务" },
+      buttons: { back: "回到桌面 · ESC", notepad: "放下记事本 · ESC", eject: "退带 · ESC", hangup: "挂断 · ESC", play: "播放", pause: "暂停", next: "下一段", credits: "致谢", soundOn: "声音：开", soundOff: "声音：关", lofi: "静态版" },
       noticeIntro: "个人网站是互联网上少数还能好玩的地方，所以这里还有一个可交互的版本。",
       reasons: {
         "no-webgl": "你的浏览器没有提供 WebGL 2，所以看到的是这个静态版本。",
@@ -94,6 +96,8 @@
       tvInsert: "",
     },
     en: {
+      menu: { about: "ABOUT", work: "WORK", posts: "POSTS", film: "FILM", online: "ONLINE", services: "SERVICES" },
+      buttons: { back: "BACK TO DESK · ESC", notepad: "PUT DOWN NOTEPAD · ESC", eject: "EJECT · ESC", hangup: "HANG UP · ESC", play: "PLAY", pause: "PAUSE", next: "NEXT", credits: "CREDITS", soundOn: "SOUND ON", soundOff: "SOUND OFF", lofi: "LO-FI" },
       noticeIntro: "Personal websites are one of the few places on the internet that can still be fun, so there is also an interactive version here. ",
       reasons: {
         "no-webgl": "Your browser doesn't provide WebGL 2, so you're seeing this static version.",
@@ -150,6 +154,8 @@
       tvInsert: "Insert a tape · FILM",
     },
     de: {
+      menu: { about: "ÜBER MICH", work: "WERDEGANG", posts: "BEITRÄGE", film: "FILM", online: "KONTAKT", services: "LEISTUNGEN" },
+      buttons: { back: "ZUM SCHREIBTISCH · ESC", notepad: "NOTIZBLOCK WEGLEGEN · ESC", eject: "AUSWERFEN · ESC", hangup: "AUFLEGEN · ESC", play: "ABSPIELEN", pause: "PAUSE", next: "WEITER", credits: "CREDITS", soundOn: "TON AN", soundOff: "TON AUS", lofi: "LO-FI" },
       noticeIntro: "Persönliche Websites gehören zu den wenigen Orten im Internet, die noch Spaß machen dürfen – deshalb gibt es hier auch eine interaktive Version. ",
       reasons: {
         "no-webgl": "Dein Browser bietet kein WebGL 2, deshalb siehst du diese statische Version.",
@@ -206,6 +212,8 @@
       tvInsert: "Kassette einlegen · FILM",
     },
     ko: {
+      menu: { about: "소개", work: "이력", posts: "글", film: "영상", online: "연락처", services: "서비스" },
+      buttons: { back: "책상으로 · ESC", notepad: "메모장 내려놓기 · ESC", eject: "꺼내기 · ESC", hangup: "끊기 · ESC", play: "재생", pause: "일시정지", next: "다음", credits: "크레딧", soundOn: "소리 켬", soundOff: "소리 끔", lofi: "정적 버전" },
       noticeIntro: "개인 웹사이트는 인터넷에서 아직 재미있을 수 있는 몇 안 되는 곳이라, 여기에는 인터랙티브 버전도 있습니다. ",
       reasons: {
         "no-webgl": "브라우저가 WebGL 2를 지원하지 않아 정적 버전을 보고 계십니다.",
@@ -268,11 +276,11 @@
 
   /* 顶部导航与快捷键。SERVICES 是离开房间的普通链接。 */
   const NAV = [
-    { view: "about", label: "ABOUT", sub: T.nav.about, key: "a" },
-    { view: "work", label: "WORK", sub: T.nav.work, key: "w" },
-    { view: "posts", label: "POSTS", sub: T.nav.posts, key: "p" },
-    { view: "film", label: "FILM", sub: T.nav.film, key: "f" },
-    { view: "online", label: "ONLINE", sub: T.nav.online, key: "o" },
+    { view: "about", label: T.menu.about, sub: T.nav.about, key: "a" },
+    { view: "work", label: T.menu.work, sub: T.nav.work, key: "w" },
+    { view: "posts", label: T.menu.posts, sub: T.nav.posts, key: "p" },
+    { view: "film", label: T.menu.film, sub: T.nav.film, key: "f" },
+    { view: "online", label: T.menu.online, sub: T.nav.online, key: "o" },
   ];
   const LEAVE_LINKS = { services: "/services/", game: "/aggie-3a/" };
   const HINTS = T.hints;
@@ -699,7 +707,7 @@
     const counter = `${String(media.index + 1).padStart(2, "0")}/${String(tape.items.length).padStart(2, "0")}`;
     panel.setInfo(`${tape.label} ${tape.en} · ${counter}`, item?.title || "", status || "");
     if (ui.play) {
-      ui.play.textContent = media.paused ? "PLAY" : "PAUSE";
+      ui.play.textContent = media.paused ? T.buttons.play : T.buttons.pause;
       ui.play.setAttribute("aria-label", media.paused ? T.play : T.pause);
     }
     return counter;
@@ -872,7 +880,7 @@
     if (controller && item.kind === "video" && media.video && media.showing) {
       controller.tv({ mode: "media", element: media.video, osd: `${media.paused ? "\u2016 PAUSE" : "\u25B6 PLAY"} ${counter}`, osdHold: media.paused });
     }
-    filmInfo(media.paused ? "PAUSE" : "");
+    filmInfo(media.paused ? T.buttons.pause : "");
   }
 
   /* 换带：同步开始播放（保住点击带来的播放许可），带子的动画随后补上。 */
@@ -947,7 +955,7 @@
     setSound(typeof force === "boolean" ? force : !sound.on);
     controller?.setRecorder(sound.on);
     if (ui?.sound) {
-      ui.sound.textContent = sound.on ? "SOUND ON" : "SOUND OFF";
+      ui.sound.textContent = sound.on ? T.buttons.soundOn : T.buttons.soundOff;
       ui.sound.setAttribute("aria-pressed", String(sound.on));
     }
   }
@@ -989,7 +997,7 @@
       navButtons[item.view] = button;
       nav.append(button);
     }
-    const services = element("a", "room-nav-b room-nav-ext", "SERVICES");
+    const services = element("a", "room-nav-b room-nav-ext", T.menu.services);
     services.href = "/services/";
     services.addEventListener("click", (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -1034,32 +1042,32 @@
     const dock = element("div", "room-dock");
     const keys = element("p", "room-keys", HINTS.desk);
     const buttons = element("div", "room-btns");
-    const back = element("button", "room-btn room-back", "BACK TO DESK · ESC");
+    const back = element("button", "room-btn room-back", T.buttons.back);
     back.type = "button";
     back.hidden = true;
     back.setAttribute("aria-label", T.back);
     back.addEventListener("click", () => openView("desk"));
-    const play = element("button", "room-btn room-play", "PAUSE");
+    const play = element("button", "room-btn room-play", T.buttons.pause);
     play.type = "button";
     play.hidden = true;
     play.addEventListener("click", () => togglePause());
-    const next = element("button", "room-btn room-next", "NEXT");
+    const next = element("button", "room-btn room-next", T.buttons.next);
     next.type = "button";
     next.hidden = true;
     next.setAttribute("aria-label", T.next);
     next.addEventListener("click", () => step(1));
-    const credits = element("button", "room-btn room-credits-b", "CREDITS");
+    const credits = element("button", "room-btn room-credits-b", T.buttons.credits);
     credits.type = "button";
     credits.setAttribute("aria-expanded", "false");
-    const soundButton = element("button", "room-btn room-sound", "SOUND OFF");
+    const soundButton = element("button", "room-btn room-sound", T.buttons.soundOff);
     soundButton.type = "button";
     soundButton.setAttribute("aria-pressed", "false");
     soundButton.setAttribute("aria-label", T.sound);
     soundButton.addEventListener("click", () => toggleSound());
-    const lofi = element("button", "room-btn room-lofi", "LO-FI");
+    const lofi = element("button", "room-btn room-lofi", T.buttons.lofi);
     lofi.type = "button";
     lofi.title = T.lofi;
-    lofi.setAttribute("aria-label", `LO-FI: ${T.lofi}`);
+    lofi.setAttribute("aria-label", `${T.buttons.lofi}: ${T.lofi}`);
     lofi.addEventListener("click", () => leave({ target: "#top", persist: true }));
     buttons.append(back, play, next, credits, soundButton, lofi);
     dock.append(keys, buttons);
@@ -1153,7 +1161,7 @@
     }
     ui.keys.textContent = HINTS[next] || "";
     ui.back.hidden = next === "desk";
-    ui.back.textContent = next === "work" ? "PUT DOWN NOTEPAD · ESC" : next === "film" ? "EJECT · ESC" : next === "online" ? "HANG UP · ESC" : "BACK TO DESK · ESC";
+    ui.back.textContent = next === "work" ? T.buttons.notepad : next === "film" ? T.buttons.eject : next === "online" ? T.buttons.hangup : T.buttons.back;
     ui.play.hidden = next !== "film";
     ui.next.hidden = next !== "film";
 
