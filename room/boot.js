@@ -13,11 +13,12 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-photos";
+  const SCENE_URL = "/room/scene.js?v=20261113-phonefit";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
   const SEEN_KEY = "hpy-room-seen"; /* 本次会话已经进过房间，回到首页不再自动弹出 */
+  const INTRO_KEY = "hpy-room-intro"; /* 本次会话已经在手机上演示过左右拖动 */
   const NOTICE_KEY = "hpy-static-notice"; /* "off" 静态版提示已被关掉 */
   const FADE_MS = 460;
   const LOAD_TIMEOUT_MS = 12000; /* 超过这个时间还没布置好，就不让访客继续对着黑屏等 */
@@ -87,6 +88,7 @@
       sound: "雨声",
       lofi: "切到静态版，并记住这个选择",
       loading: "正在布置房间…",
+      dragHint: "← 左右拖动看整个房间 · 双指缩放 →",
       language: "语言 / Language",
       credits: [
         ["场景", "程序化建模，没有使用外部模型"],
@@ -148,6 +150,7 @@
       sound: "Rain sound",
       lofi: "Switch to the static version and remember this choice",
       loading: "Setting up the room…",
+      dragHint: "← Drag to see the whole room · pinch to zoom →",
       language: "Language",
       credits: [
         ["Scene", "Procedurally modelled, no external models"],
@@ -214,6 +217,7 @@
       sound: "Regengeräusch",
       lofi: "Zur statischen Version wechseln und diese Wahl merken",
       loading: "Der Raum wird eingerichtet …",
+      dragHint: "← Ziehen, um den ganzen Raum zu sehen · mit zwei Fingern zoomen →",
       language: "Sprache / Language",
       credits: [
         ["Szene", "Prozedural modelliert, keine externen Modelle"],
@@ -280,6 +284,7 @@
       sound: "빗소리",
       lofi: "정적 버전으로 바꾸고 이 선택 기억하기",
       loading: "방을 꾸미는 중…",
+      dragHint: "← 드래그해서 방 전체 보기 · 두 손가락으로 확대 →",
       language: "언어 / Language",
       credits: [
         ["장면", "절차적 모델링, 외부 모델 없음"],
@@ -1144,6 +1149,21 @@
     return counter;
   }
 
+  /* 手机和平板上，录像带的 <video> 直接摆在电视屏幕的位置上播放，不经过 3D 贴图：
+     iPhone 和微信把视频画进 canvas / WebGL 的支持不稳定（黑屏、不出画面），直接显示的视频最可靠。
+     电脑上仍然把画面画进电视里，带弧面和扫描线。 */
+  const ONSCREEN_VIDEO = matches("(pointer: coarse)");
+  function placeTapeVideo() {
+    const video = media.video;
+    if (!video || !ONSCREEN_VIDEO) return;
+    const panel = ui?.panels.film;
+    const item = media.tapes[media.tape]?.items[media.index];
+    const onscreen = Boolean(panel && !panel.hidden && view === "film" && media.tape >= 0 && item?.kind === "video");
+    video.classList.toggle("is-onscreen", onscreen);
+    panel?.classList.toggle("has-video", onscreen);
+    for (const key of ["left", "top", "width", "height"]) video.style[key] = onscreen ? panel.style[key] : "";
+  }
+
   /* 录像带的 <video> 必须挂在页面里（视觉上隐藏，但不能 display:none）：
      有些 iPhone 版本不会为脱离文档的视频解码画面，电视上就只剩黑屏或雪花。
      playsinline / webkit-playsinline / x5-* 让 iPhone 和微信内置浏览器在页面里播放，不跳全屏播放器。 */
@@ -1227,6 +1247,7 @@
       const video = ensureVideo();
       if (item.poster) video.poster = item.poster;
       video.src = item.src;
+      placeTapeVideo();
       const show = () => {
         if (token !== media.token) return;
         media.failures = 0;
@@ -1252,6 +1273,7 @@
     }
 
     if (media.video) media.video.pause();
+    placeTapeVideo();
     const image = new Image();
     image.decoding = "async";
     image.addEventListener("load", () => {
@@ -1330,6 +1352,7 @@
     clearItem();
     media.tape = -1;
     media.paused = false;
+    placeTapeVideo();
     if (!controller) return;
     controller.tv({ mode: "idle" });
     controller.setVcr("clock");
@@ -1540,12 +1563,15 @@
 
     const status = element("p", "room-status", T.loading);
     status.setAttribute("role", "status");
+    const hint = element("p", "room-hint", T.dragHint);
+    hint.hidden = true;
+    hint.setAttribute("aria-hidden", "true");
 
-    overlay.append(stage, ...Object.values(panels), hud, tip, creditsPanel, dock, status);
+    overlay.append(stage, ...Object.values(panels), hud, tip, creditsPanel, dock, status, hint);
     overlay.addEventListener("keydown", onKey);
     document.body.append(overlay);
     ui = {
-      navButtons, panels, tip, keys, back, flip: flipButton, play, next, sound: soundButton, credits, creditsPanel,
+      navButtons, panels, tip, keys, back, flip: flipButton, play, next, sound: soundButton, credits, creditsPanel, hint,
       unbind: () => narrow?.removeEventListener?.("change", placeTools),
     };
     calcShow();
@@ -1609,6 +1635,7 @@
     if (next === "film") startTape(Number.isInteger(tape) ? tape : 0);
 
     closePanels();
+    placeTapeVideo();
     ui.creditsPanel.hidden = true;
     ui.credits.setAttribute("aria-expanded", "false");
     for (const [id, button] of Object.entries(ui.navButtons)) {
@@ -1650,6 +1677,7 @@
       panel.inert = false;
       requestAnimationFrame(() => panel.classList.add("is-open"));
     }
+    placeTapeVideo();
     if (panel) panel.querySelector("h2")?.focus({ preventScroll: true });
     else overlay.focus({ preventScroll: true });
   }
@@ -1832,6 +1860,22 @@
     tip.classList.add("is-on");
   }
 
+  /* 手机上第一次进房间：底部出一句“左右拖动”的提示；竖屏时镜头再自动左右平移一遍。每次会话只演示一次。 */
+  function introduceRoom() {
+    if (!matches("(pointer: coarse)") || session.get(INTRO_KEY) === "1" || !ui?.hint || state !== "open") return;
+    session.set(INTRO_KEY, "1");
+    if (window.innerHeight > window.innerWidth) controller?.introPan();
+    const hint = ui.hint;
+    hint.hidden = false;
+    requestAnimationFrame(() => hint.classList.add("is-on"));
+    window.setTimeout(() => {
+      hint.classList.remove("is-on");
+      window.setTimeout(() => {
+        hint.hidden = true;
+      }, 600);
+    }, 5600);
+  }
+
   function onPopState() {
     if (state !== "open") return;
     const target = window.history.state?.hpyRoom;
@@ -1919,6 +1963,7 @@
       controller = mounted;
       unLayout = controller.onLayout(() => {
         if (view !== "desk" && !FLOATING.has(view)) placePanel(view);
+        placeTapeVideo();
       });
       if (!media.tapes.length) media.tapes = collectTapes();
       syncTapes();
@@ -1937,6 +1982,7 @@
     controller.start();
     root.setAttribute("data-room", "on");
     state = "open";
+    window.setTimeout(introduceRoom, 900);
   }
 
   function leave({ target, persist }) {
