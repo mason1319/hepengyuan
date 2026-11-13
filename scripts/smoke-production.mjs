@@ -12,6 +12,7 @@ const checks = [
   { path: "/learning/", type: "text/html", includes: "学习视频" },
   { path: "/sitemap-media.xml", type: "application/xml", includes: "urlset" },
   { path: "/aggie-3a/", type: "text/html", includes: "Aggie速记英语3A大作 · V6" },
+  { path: "/aggie-3a/", type: "text/html", includes: '<script id="hpy-aggie-guard"' },
   { path: "/media/promo/pengyuan-personal-promo.mp4", type: "video/mp4", method: "HEAD" },
   { path: "/media/promo/pengyuan-personal-promo-720p.mp4", type: "video/mp4", method: "HEAD" },
   { path: "/media/music/lai-zi-gao-wei-de-ni.mp3", type: "audio/mpeg", method: "HEAD" },

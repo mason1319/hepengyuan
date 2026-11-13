@@ -28,6 +28,7 @@
 - `services/`：服务方案、上门与远程部署、能力与作品、FAQ。首页只保留身份、履历、作品、文章与联系方式。
 - `admin/`：Cloudflare Access 保护的影像上传与发布后台静态界面。
 - `src/`：Cloudflare Worker、Access JWT 校验、D1/R2 媒体 API 与公开 SSR 页面。
+- `src/aggie-guard.js`：`/aggie-3a/` 的游戏是 R2 里编译好的单文件（`public/experiences/aggie-3a-v6.html`，没有源码，不要改它）。它按电脑规格做（约 190 万三角形、116 个着色器），手机上常被系统因内存不够杀掉重载，看起来就是一直卡在载入。Worker 返回游戏页时用 HTMLRewriter 在 `<head>` 末尾插入这段手机保护脚本：上次被杀掉时不再启动游戏、改为说明停在哪一步；同一阶段卡 45 秒给出提示；游戏报启动失败时补上出路；`?debug=1` 在任何设备上显示各阶段耗时和报错。电脑不带 `?debug=1` 时脚本立即退出。改脚本要同步改 `AGGIE_GUARD_VERSION`（ETag 跟着变），并保持旧 iOS 能解析的语法（校验脚本会查）。
 - `migrations/`：D1 媒体资料 schema；生产发布前必须先应用 migration。
 - `wrangler.jsonc`：Workers Static Assets、D1、R2 与生产域名绑定。
 

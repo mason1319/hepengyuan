@@ -1,6 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { webcrypto } from "node:crypto";
 
+import { AGGIE_GUARD_SCRIPT, AGGIE_GUARD_TAG } from "../src/aggie-guard.js";
 import { verifyAccessIdentity } from "../src/auth.js";
 import {
   UPLOAD_PART_SIZE,
@@ -154,6 +155,15 @@ assert(workerSource.includes('"X-Aggie-Version": "V6"'), "Aggie 3A response does
 assert(workerSource.includes("handleAggie3AExperience"), "Aggie 3A R2 handler is missing");
 assert(workerSource.includes("https://static.cloudflareinsights.com"), "Aggie 3A CSP does not allow the Cloudflare Web Analytics script");
 assert(workerSource.includes("connect-src 'self' https://cloudflareinsights.com"), "Aggie 3A CSP does not allow Cloudflare Web Analytics reporting");
+/* 手机保护脚本：Worker 把它插进游戏页 <head>；必须是能解析的内联脚本，不能提前结束 <script>，电脑上不带 debug 时立即退出。 */
+assert(workerSource.includes("head.append(AGGIE_GUARD_TAG, { html: true })"), "Aggie 3A page does not inject the phone guard into <head>");
+assert(workerSource.includes("-guard${AGGIE_GUARD_VERSION}"), "Aggie 3A ETag must change with the phone guard version");
+assert(!/"Content-Length": String\(object\.size\)[\s\S]{0,400}"X-Aggie-Version"/.test(workerSource), "Aggie 3A response must not send the R2 size as Content-Length after injecting the guard");
+new Function(AGGIE_GUARD_SCRIPT);
+assert(!/<\/script/i.test(AGGIE_GUARD_SCRIPT), "phone guard must not close its own <script> early");
+assert(AGGIE_GUARD_TAG.startsWith('<script id="hpy-aggie-guard"'), "phone guard tag id changed; update the production smoke check");
+assert(/if \(!phone && !debug\) return;/.test(AGGIE_GUARD_SCRIPT), "phone guard must leave desktop visitors alone unless ?debug=1");
+assert(!/\?\.|\?\?|catch \{/.test(AGGIE_GUARD_SCRIPT), "phone guard must stay old-iOS compatible (no ?. ?? or bare catch)");
 assert(!workerSource.includes("max-age=31536000, immutable"), "revocable media must not use immutable browser caching");
 assert(workerSource.includes("REVOCABLE_PUBLIC_CACHE"), "revocable public responses must share one revalidation policy");
 assert(workerSource.includes("deleteMedia"), "admin media route is missing permanent deletion");
