@@ -103,7 +103,7 @@ img,video{max-width:100%}
 .site .name .en{display:block;font-size:10.5px;letter-spacing:.2em;color:var(--muted);margin-top:1px}
 .site nav{display:flex;gap:2px;flex-wrap:wrap}
 .site nav a{
-  font-family:var(--osd);font-size:19px;letter-spacing:.07em;text-decoration:none;
+  font-family:var(--osd);font-size:19px;letter-spacing:.07em;text-decoration:none;text-transform:uppercase;
   color:var(--muted);padding:2px 8px 1px;border-radius:3px;flex-shrink:0;
 }
 .site nav a:hover{color:var(--ink)}
