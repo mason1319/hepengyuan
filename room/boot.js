@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-github";
+  const SCENE_URL = "/room/scene.js?v=20261113-photos";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */

@@ -41,6 +41,7 @@
 - 保留键盘焦点、语义标签、手机端布局和 `prefers-reduced-motion` 支持。
 - 3D 房间只是增强层：没有 JS、没有 WebGL 2、软件渲染、省流量、`prefers-reduced-motion`、帧率过低或加载失败时都必须自动回到静态首页并说明原因；不得把任何内容只放在房间里。
 - 房间面板里的文字和链接一律在运行时从首页已有栏目读取（`main h1`、`.pb-dek`、`#aggie-role`、`#work` 里的 `.pb-item` 与 `.pb-note`、`#posts`、`#contact .on-hd`），不要在 `room/` 里另存一份事实；改这些栏目的结构时同步改 `room/boot.js` 的 `build*` 函数，校验脚本会检查这些结构是否还在。墙上的年份卡片 `TIMELINE` 是唯一写在场景里的履历，必须与首页 Work 区逐字一致；热点 `HOTSPOTS` 必须打开一个房间视图或指向真实存在的栏目。
+- 房间里的三张照片（墙上全家福、主书桌上的童年照立框、显示器右上角的拍立得）是纯装饰，放在 `assets/room/`；换照片要先去掉 EXIF / GPS 并转成 WebP（单张远小于 1MB），不要放未经本人同意公开的照片。
 - 名片盒里那张名片的正反面文字、联系方式和二维码，只能来自首页 `#card`（`data-card-*` 字段，二维码图片在 `assets/card/`）；改名片就改首页这一节和 `i18n/*.json`，场景按它重画贴图，`room/` 里不写名片内容。
 - 录音机（MUSIC）里的磁带只能来自首页 `#music` 的 `[data-music]` 条目（歌名 `[data-music-title]`、时长 `[data-music-length]`、`<audio>` 的同源地址）。音乐文件大于 1MB，不进 Git：放在 R2 的 `public/music/` 下，由 `src/worker.js` 的 `MUSIC_ROUTES` 以 `/media/music/*` 提供；新增一首要同时改首页条目、`MUSIC_ROUTES`、`i18n/*.json`、JSON-LD、`llms.txt` 和 `scripts/smoke-production.mjs`，并先把文件传到 R2 再发布。磁带侧标只写栏目名（音乐 MUSIC），歌名只在面板里显示。
 - 录像带（FILM）里的影像只能来自两处：首页 `#personal-film` 的宣传片，以及 `/api/media.json`（服务端只返回已发布条目，`boot.js` 只接受本站同源地址）。不要在 `room/` 里写死任何影像地址、标题、地点或日期；带子侧标只写栏目名（宣传片 / 旅行 / 学习），条目标题只在播放时显示。
