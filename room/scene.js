@@ -3213,16 +3213,37 @@ export async function mount({
     clampOrbit();
   }
 
+  /* 真正“点”下去只在 click 里处理：iPhone Safari 和微信只把 click / touchend 当成允许出声播放的点击，
+     在 pointerup 里调 video.play() / audio.play() 会被拦下（录像带、磁带就放不出来）。
+     pointerup 只判断这一下算不算“点”（没拖动、没多指、不太久）；万一 click 没来，400ms 后照样处理，只是不保证能出声。 */
+  let pendingTap = null;
+
   function onPointerUp(event) {
     if (!pointers.delete(event.pointerId)) return;
     if (pointers.size) return;
     const finished = gesture;
     gesture = null;
     if (finished?.type === "mouse") stage.style.cursor = "";
+    if (pendingTap) window.clearTimeout(pendingTap.timer);
+    pendingTap = null;
     if (!finished || finished.moved || finished.multi || event.type === "pointercancel") return;
     if (performance.now() - finished.startTime > 650) return;
     if (finished.type === "mouse" && (finished.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
-    tap(event, finished.type);
+    const info = { type: finished.type, clientX: event.clientX, clientY: event.clientY, timer: 0 };
+    info.timer = window.setTimeout(() => {
+      if (pendingTap !== info) return;
+      pendingTap = null;
+      tap(info, info.type);
+    }, 400);
+    pendingTap = info;
+  }
+
+  function onClick(event) {
+    const info = pendingTap;
+    if (!info) return;
+    pendingTap = null;
+    window.clearTimeout(info.timer);
+    tap(event, info.type);
   }
 
   function activate(hit) {
@@ -3301,6 +3322,7 @@ export async function mount({
   stage.addEventListener("pointerdown", onPointerDown);
   stage.addEventListener("pointermove", onPointerMove);
   stage.addEventListener("pointerup", onPointerUp);
+  stage.addEventListener("click", onClick);
   stage.addEventListener("pointercancel", onPointerUp);
   stage.addEventListener("pointerleave", onPointerLeave);
   stage.addEventListener("wheel", onWheel, { passive: false });
@@ -3597,6 +3619,8 @@ export async function mount({
     stage.removeEventListener("pointerdown", onPointerDown);
     stage.removeEventListener("pointermove", onPointerMove);
     stage.removeEventListener("pointerup", onPointerUp);
+    stage.removeEventListener("click", onClick);
+    if (pendingTap) window.clearTimeout(pendingTap.timer);
     stage.removeEventListener("pointercancel", onPointerUp);
     stage.removeEventListener("pointerleave", onPointerLeave);
     stage.removeEventListener("wheel", onWheel);
