@@ -30,6 +30,7 @@
       "/media/file/*",
       "/media/poster/*",
       "/media/promo/*",
+      "/media/music/*",
       "/travel",
       "/travel/*",
       "/learning",

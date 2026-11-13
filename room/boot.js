@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-menu";
+  const SCENE_URL = "/room/scene.js?v=20261113-room90";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -41,8 +41,8 @@
   ];
   const STRINGS = {
     zh: {
-      menu: { about: "关于", work: "履历", posts: "文章", film: "录像带", online: "联系", services: "服务" },
-      buttons: { back: "回到桌面 · ESC", notepad: "放下记事本 · ESC", eject: "退带 · ESC", hangup: "挂断 · ESC", play: "播放", pause: "暂停", next: "下一段", credits: "致谢", soundOn: "声音：开", soundOff: "声音：关", lofi: "静态版" },
+      menu: { about: "关于", work: "履历", posts: "文章", film: "录像带", music: "音乐", online: "联系", services: "服务" },
+      buttons: { back: "回到桌面", notepad: "放下记事本", eject: "退带", hangup: "挂断", calc: "放下计算器", play: "播放", pause: "暂停", next: "下一段", credits: "致谢", soundOn: "声音：开", soundOff: "声音：关", lofi: "静态版", view: "视角" },
       noticeIntro: "个人网站是互联网上少数还能好玩的地方，所以这里还有一个可交互的版本。",
       reasons: {
         "no-webgl": "你的浏览器没有提供 WebGL 2，所以看到的是这个静态版本。",
@@ -55,16 +55,19 @@
         "load-failed": "可交互的版本这次没能加载成功，所以先给你这个静态版本。",
         "context-lost": "浏览器中断了 3D 渲染，所以换回了这个静态版本。",
       },
-      nav: { about: "关于我", work: "履历与作品", posts: "文章与档案", film: "录像带", online: "联系方式" },
+      nav: { about: "关于我", work: "履历与作品", posts: "文章与档案", film: "录像带", music: "录音机 · 原创音乐", online: "联系方式" },
       hints: {
-        desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · M 录音机 · L 台灯",
+        desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · C 计算器 · M 录音机 · L 台灯",
+        calc: "数字键与 + − × ÷ 计算 · Enter 等于 · Backspace 退格 · Delete 清零 · ESC 放下",
+        orbit: "拖动 转视角 · 右键拖动 平移 · 滚轮 缩放 · 双击 复位",
+        music: "点磁带放进录音机 · 空格 播放 / 暂停 · ← → 上一首 / 下一首 · S 停止退带 · ESC 回到桌面",
         about: "↑ ↓ 滚动 · 1–5 功能键 · ESC 回到桌面",
         work: "点条目打开 · ESC 放下记事本",
         posts: "1–9 打开 · ESC 回到桌面",
         film: "空格 暂停 · ← → 上一段 / 下一段 · 1–4 换带 · ESC 退带",
         online: "1–8 打开或复制 · ESC 挂断",
       },
-      tapes: { promo: "宣传片", travel: "旅行", learning: "学习" },
+      tapes: { promo: "宣传片", travel: "旅行", learning: "学习", music: "音乐" },
       postsHeading: "文章 POSTS",
       postsFoot: "按数字键打开 · ESC 回到桌面",
       onlineFind: "在这些地方找到我：",
@@ -94,10 +97,13 @@
       ],
       hotspots: {},
       tvInsert: "",
+      tapAgain: "再点一次",
+      calc: { name: "计算器", display: "计算器显示", clear: "清零", sign: "正负号", percent: "百分比", divide: "除以", multiply: "乘以", minus: "减", plus: "加", equals: "等于", back: "退格", point: "小数点", error: "错误" },
+      music: { side: "SIDE A", title: "音乐", pick: "选一盒磁带，放进录音机", loading: "正在倒带…", cantPlay: "这台设备放不了这段音频", tapPlay: "点 ▶ 开始播放", prev: "上一首", play: "播放 / 暂停", next: "下一首", stop: "停止并退带", view: "切换视角（V）" },
     },
     en: {
-      menu: { about: "ABOUT", work: "WORK", posts: "POSTS", film: "FILM", online: "ONLINE", services: "SERVICES" },
-      buttons: { back: "BACK TO DESK · ESC", notepad: "PUT DOWN NOTEPAD · ESC", eject: "EJECT · ESC", hangup: "HANG UP · ESC", play: "PLAY", pause: "PAUSE", next: "NEXT", credits: "CREDITS", soundOn: "SOUND ON", soundOff: "SOUND OFF", lofi: "LO-FI" },
+      menu: { about: "ABOUT", work: "WORK", posts: "POSTS", film: "FILM", music: "MUSIC", online: "ONLINE", services: "SERVICES" },
+      buttons: { back: "BACK TO DESK", notepad: "PUT DOWN NOTEPAD", eject: "EJECT", hangup: "HANG UP", calc: "PUT DOWN CALCULATOR", play: "PLAY", pause: "PAUSE", next: "NEXT", credits: "CREDITS", soundOn: "SOUND ON", soundOff: "SOUND OFF", lofi: "LO-FI", view: "VIEW" },
       noticeIntro: "Personal websites are one of the few places on the internet that can still be fun, so there is also an interactive version here. ",
       reasons: {
         "no-webgl": "Your browser doesn't provide WebGL 2, so you're seeing this static version.",
@@ -110,16 +116,19 @@
         "load-failed": "The interactive version didn't load this time, so here is the static version for now.",
         "context-lost": "Your browser stopped the 3D rendering, so we switched back to this static version.",
       },
-      nav: { about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Videotapes", online: "Contact" },
+      nav: { about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Videotapes", music: "Boombox · original music", online: "Contact" },
       hints: {
-        desk: "A about · W work · P posts · F tapes · O online · M recorder · L lamp",
+        desk: "A about · W work · P posts · F tapes · O online · C calculator · M recorder · L lamp",
+        calc: "Digits and + − × ÷ to calculate · Enter equals · Backspace delete · Delete clear · ESC put it down",
+        orbit: "Drag to look around · right-drag to pan · scroll to zoom · double-click to reset",
+        music: "Pick a cassette · Space play / pause · ← → previous / next · S stop & eject · ESC back to desk",
         about: "↑ ↓ scroll · 1–5 function keys · ESC back to desk",
         work: "Click an entry to open it · ESC put down the notepad",
         posts: "1–9 open · ESC back to desk",
         film: "Space pause · ← → previous / next · 1–4 switch tape · ESC eject",
         online: "1–8 open or copy · ESC hang up",
       },
-      tapes: { promo: "Promo film", travel: "Travel", learning: "Learning" },
+      tapes: { promo: "Promo film", travel: "Travel", learning: "Learning", music: "Music" },
       postsHeading: "POSTS",
       postsFoot: "Press a number to open · ESC back to desk",
       onlineFind: "Find me here:",
@@ -149,13 +158,18 @@
       ],
       hotspots: {
         about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Tapes · promo film & media",
-        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", tape: "Recorder · rain sound",
+        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", tape: "Boombox · play a cassette", cassette: "Put it in the boombox", book: "Projects",
+        deckPlay: "Play / pause", deckPause: "Pause", deckStop: "Stop · eject", deckNext: "Next track", deckPrev: "Previous track", deckRec: "Record key (just for fun)", calc: "Calculator · pick it up",
+        tvPower: "TV on/off", tvPreset: "Channel presets 1–6", tvChannel: "Change channel", tvVolume: "Volume", pcPower: "Computer on/off", pcBright: "Screen brightness",
       },
       tvInsert: "Insert a tape · FILM",
+      tapAgain: "TAP AGAIN",
+      calc: { name: "Calculator", display: "Calculator display", clear: "Clear", sign: "Change sign", percent: "Percent", divide: "Divide", multiply: "Multiply", minus: "Minus", plus: "Plus", equals: "Equals", back: "Backspace", point: "Decimal point", error: "Error" },
+      music: { side: "SIDE A", title: "Music", pick: "Pick a cassette to put in the boombox", loading: "Rewinding…", cantPlay: "This device can't play this audio", tapPlay: "Tap ▶ to play", prev: "Previous", play: "Play / pause", next: "Next", stop: "Stop and eject", view: "Switch view (V)" },
     },
     de: {
-      menu: { about: "ÜBER MICH", work: "WERDEGANG", posts: "BEITRÄGE", film: "FILM", online: "KONTAKT", services: "LEISTUNGEN" },
-      buttons: { back: "ZUM SCHREIBTISCH · ESC", notepad: "NOTIZBLOCK WEGLEGEN · ESC", eject: "AUSWERFEN · ESC", hangup: "AUFLEGEN · ESC", play: "ABSPIELEN", pause: "PAUSE", next: "WEITER", credits: "CREDITS", soundOn: "TON AN", soundOff: "TON AUS", lofi: "LO-FI" },
+      menu: { about: "ÜBER MICH", work: "WERDEGANG", posts: "BEITRÄGE", film: "FILM", music: "MUSIK", online: "KONTAKT", services: "LEISTUNGEN" },
+      buttons: { back: "ZUM SCHREIBTISCH", notepad: "NOTIZBLOCK WEGLEGEN", eject: "AUSWERFEN", hangup: "AUFLEGEN", calc: "RECHNER WEGLEGEN", play: "ABSPIELEN", pause: "PAUSE", next: "WEITER", credits: "CREDITS", soundOn: "TON AN", soundOff: "TON AUS", lofi: "LO-FI", view: "ANSICHT" },
       noticeIntro: "Persönliche Websites gehören zu den wenigen Orten im Internet, die noch Spaß machen dürfen – deshalb gibt es hier auch eine interaktive Version. ",
       reasons: {
         "no-webgl": "Dein Browser bietet kein WebGL 2, deshalb siehst du diese statische Version.",
@@ -168,16 +182,19 @@
         "load-failed": "Die interaktive Version konnte diesmal nicht geladen werden, deshalb vorerst die statische Version.",
         "context-lost": "Dein Browser hat das 3D-Rendering unterbrochen, deshalb wieder die statische Version.",
       },
-      nav: { about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Videokassetten", online: "Kontakt" },
+      nav: { about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Videokassetten", music: "Kassettenrekorder · eigene Musik", online: "Kontakt" },
       hints: {
-        desk: "A Über mich · W Werdegang · P Beiträge · F Kassetten · O Kontakt · M Rekorder · L Lampe",
+        desk: "A Über mich · W Werdegang · P Beiträge · F Kassetten · O Kontakt · C Rechner · M Rekorder · L Lampe",
+        calc: "Ziffern und + − × ÷ zum Rechnen · Enter gleich · Rücktaste löschen · Entf zurücksetzen · ESC weglegen",
+        orbit: "Ziehen zum Umsehen · Rechts ziehen zum Verschieben · Scrollen zum Zoomen · Doppelklick zurücksetzen",
+        music: "Kassette wählen · Leertaste Wiedergabe / Pause · ← → zurück / weiter · S Stopp & Auswurf · ESC zum Schreibtisch",
         about: "↑ ↓ scrollen · 1–5 Funktionstasten · ESC zurück zum Schreibtisch",
         work: "Eintrag anklicken zum Öffnen · ESC Notizblock weglegen",
         posts: "1–9 öffnen · ESC zurück zum Schreibtisch",
         film: "Leertaste Pause · ← → zurück / weiter · 1–4 Kassette wechseln · ESC auswerfen",
         online: "1–8 öffnen oder kopieren · ESC auflegen",
       },
-      tapes: { promo: "Imagefilm", travel: "Reisen", learning: "Lernen" },
+      tapes: { promo: "Imagefilm", travel: "Reisen", learning: "Lernen", music: "Musik" },
       postsHeading: "BEITRÄGE",
       postsFoot: "Zahl drücken zum Öffnen · ESC zurück zum Schreibtisch",
       onlineFind: "Hier findest du mich:",
@@ -207,13 +224,18 @@
       ],
       hotspots: {
         about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Kassetten · Imagefilm & Medien",
-        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", tape: "Rekorder · Regen",
+        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", tape: "Kassettenrekorder · Kassette abspielen", cassette: "In den Rekorder legen", book: "Projekte",
+        deckPlay: "Wiedergabe / Pause", deckPause: "Pause", deckStop: "Stopp · Auswurf", deckNext: "Nächster Titel", deckPrev: "Vorheriger Titel", deckRec: "Aufnahmetaste (nur zum Spaß)", calc: "Taschenrechner · in die Hand nehmen",
+        tvPower: "Fernseher ein/aus", tvPreset: "Programmtasten 1–6", tvChannel: "Kanal wechseln", tvVolume: "Lautstärke", pcPower: "Computer ein/aus", pcBright: "Bildschirmhelligkeit",
       },
       tvInsert: "Kassette einlegen · FILM",
+      tapAgain: "NOCHMAL TIPPEN",
+      calc: { name: "Taschenrechner", display: "Anzeige des Taschenrechners", clear: "Löschen", sign: "Vorzeichen wechseln", percent: "Prozent", divide: "Geteilt durch", multiply: "Mal", minus: "Minus", plus: "Plus", equals: "Gleich", back: "Rücktaste", point: "Dezimalpunkt", error: "Fehler" },
+      music: { side: "SEITE A", title: "Musik", pick: "Wähle eine Kassette für den Rekorder", loading: "Spult zurück…", cantPlay: "Dieses Gerät kann diese Audiodatei nicht abspielen", tapPlay: "Tippe ▶ zum Abspielen", prev: "Zurück", play: "Wiedergabe / Pause", next: "Weiter", stop: "Stopp und auswerfen", view: "Ansicht wechseln (V)" },
     },
     ko: {
-      menu: { about: "소개", work: "이력", posts: "글", film: "영상", online: "연락처", services: "서비스" },
-      buttons: { back: "책상으로 · ESC", notepad: "메모장 내려놓기 · ESC", eject: "꺼내기 · ESC", hangup: "끊기 · ESC", play: "재생", pause: "일시정지", next: "다음", credits: "크레딧", soundOn: "소리 켬", soundOff: "소리 끔", lofi: "정적 버전" },
+      menu: { about: "소개", work: "이력", posts: "글", film: "영상", music: "음악", online: "연락처", services: "서비스" },
+      buttons: { back: "책상으로", notepad: "메모장 내려놓기", eject: "꺼내기", hangup: "끊기", calc: "계산기 내려놓기", play: "재생", pause: "일시정지", next: "다음", credits: "크레딧", soundOn: "소리 켬", soundOff: "소리 끔", lofi: "정적 버전", view: "시점" },
       noticeIntro: "개인 웹사이트는 인터넷에서 아직 재미있을 수 있는 몇 안 되는 곳이라, 여기에는 인터랙티브 버전도 있습니다. ",
       reasons: {
         "no-webgl": "브라우저가 WebGL 2를 지원하지 않아 정적 버전을 보고 계십니다.",
@@ -226,16 +248,19 @@
         "load-failed": "이번에는 인터랙티브 버전을 불러오지 못해 우선 정적 버전을 보여 드립니다.",
         "context-lost": "브라우저가 3D 렌더링을 중단해 정적 버전으로 돌아왔습니다.",
       },
-      nav: { about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "비디오테이프", online: "연락처" },
+      nav: { about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "비디오테이프", music: "카세트 · 창작 음악", online: "연락처" },
       hints: {
-        desk: "A 소개 · W 이력 · P 글 · F 테이프 · O 연락처 · M 카세트 · L 스탠드",
+        desk: "A 소개 · W 이력 · P 글 · F 테이프 · O 연락처 · C 계산기 · M 카세트 · L 스탠드",
+        calc: "숫자와 + − × ÷ 로 계산 · Enter 결과 · Backspace 지우기 · Delete 초기화 · ESC 내려놓기",
+        orbit: "드래그로 둘러보기 · 오른쪽 드래그로 이동 · 스크롤로 확대 · 더블클릭으로 원위치",
+        music: "카세트 고르기 · Space 재생 / 일시정지 · ← → 이전 / 다음 · S 정지·꺼내기 · ESC 책상으로",
         about: "↑ ↓ 스크롤 · 1–5 기능 키 · ESC 책상으로",
         work: "항목을 눌러 열기 · ESC 메모장 내려놓기",
         posts: "1–9 열기 · ESC 책상으로",
         film: "스페이스 일시정지 · ← → 이전 / 다음 · 1–4 테이프 바꾸기 · ESC 꺼내기",
         online: "1–8 열기 또는 복사 · ESC 끊기",
       },
-      tapes: { promo: "홍보 영상", travel: "여행", learning: "학습" },
+      tapes: { promo: "홍보 영상", travel: "여행", learning: "학습", music: "음악" },
       postsHeading: "글 POSTS",
       postsFoot: "숫자 키로 열기 · ESC 책상으로",
       onlineFind: "여기에서 만나요:",
@@ -265,9 +290,14 @@
       ],
       hotspots: {
         about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "테이프 · 홍보 영상과 미디어",
-        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", tape: "카세트 · 빗소리",
+        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", tape: "카세트 · 음악 듣기", cassette: "카세트에 넣기", book: "작업",
+        deckPlay: "재생 / 일시정지", deckPause: "일시정지", deckStop: "정지 · 꺼내기", deckNext: "다음 곡", deckPrev: "이전 곡", deckRec: "녹음 버튼(그냥 눌러 보기)", calc: "계산기 · 들어서 쓰기",
+        tvPower: "TV 켜기/끄기", tvPreset: "채널 프리셋 1–6", tvChannel: "채널 바꾸기", tvVolume: "볼륨", pcPower: "컴퓨터 켜기/끄기", pcBright: "화면 밝기",
       },
       tvInsert: "테이프를 넣어 주세요 · FILM",
+      tapAgain: "한 번 더 탭",
+      calc: { name: "계산기", display: "계산기 화면", clear: "초기화", sign: "부호 바꾸기", percent: "퍼센트", divide: "나누기", multiply: "곱하기", minus: "빼기", plus: "더하기", equals: "결과", back: "지우기", point: "소수점", error: "오류" },
+      music: { side: "SIDE A", title: "음악", pick: "카세트를 골라 넣어 주세요", loading: "되감는 중…", cantPlay: "이 기기에서는 이 오디오를 재생할 수 없습니다", tapPlay: "▶를 눌러 재생", prev: "이전 곡", play: "재생 / 일시정지", next: "다음 곡", stop: "정지하고 꺼내기", view: "시점 바꾸기 (V)" },
     },
   };
   const T = STRINGS[LANG];
@@ -280,10 +310,18 @@
     { view: "work", label: T.menu.work, sub: T.nav.work, key: "w" },
     { view: "posts", label: T.menu.posts, sub: T.nav.posts, key: "p" },
     { view: "film", label: T.menu.film, sub: T.nav.film, key: "f" },
+    { view: "music", label: T.menu.music, sub: T.nav.music, key: "m" },
     { view: "online", label: T.menu.online, sub: T.nav.online, key: "o" },
   ];
   const LEAVE_LINKS = { services: "/services/", game: "/aggie-3a/" };
   const HINTS = T.hints;
+  const DESK_HINT = `${HINTS.desk}\n${HINTS.orbit}`;
+  /* 有实体键盘时按钮上补“ · ESC”；手机上没有 Esc 键，不显示。 */
+  const ESC = matches("(pointer: fine)") ? " · ESC" : "";
+  const BACK_KEYS = { work: "notepad", film: "eject", online: "hangup", calc: "calc" };
+  const backLabel = (id) => `${T.buttons[BACK_KEYS[id] || "back"]}${ESC}`;
+  /* 不贴在 3D 屏幕上、自己从下面升起来的面板。 */
+  const FLOATING = new Set(["work", "calc", "music"]);
   /* 老电脑底部的功能键，和首页导航同一套视图。 */
   const FKEYS = ["about", "online", "posts", "film", "work"];
   const ARCHIVES = [
@@ -637,6 +675,372 @@
     return pad;
   }
 
+  /* ---------------------------------------------------------------- 计算器
+     桌上那台计算器拿起来就是这一台：和真的口袋计算器一样按一个数、一个运算符、再一个数、等号；
+     连按运算符先算出中间结果，连按等号重复上一步。最多 10 位，超出或除以 0 显示 E，按 C 清掉。 */
+  const CALC_DIGITS = 10;
+  const OP_SYMBOLS = { divide: "÷", multiply: "×", minus: "−", plus: "+" };
+  const calc = { display: "0", stored: null, op: null, fresh: true, error: false, repeat: null };
+
+  function calcFormat(number) {
+    if (!Number.isFinite(number) || Math.abs(number) >= 10 ** CALC_DIGITS) return null;
+    const abs = Math.abs(number);
+    const whole = abs < 1 ? 1 : Math.floor(Math.log10(abs)) + 1;
+    let text = abs.toFixed(Math.max(0, CALC_DIGITS - whole));
+    if (text.includes(".")) text = text.replace(/0+$/, "").replace(/\.$/, "");
+    if (text.replace(".", "").length > CALC_DIGITS) return null;
+    if (/^0(\.0*)?$/.test(text)) return "0";
+    return number < 0 ? `-${text}` : text;
+  }
+
+  function calcApply(a, op, b) {
+    if (op === "plus") return a + b;
+    if (op === "minus") return a - b;
+    if (op === "multiply") return a * b;
+    if (op === "divide") return b === 0 ? Number.NaN : a / b;
+    return b;
+  }
+
+  function calcSet(number) {
+    const text = calcFormat(number);
+    if (text === null) Object.assign(calc, { display: "0", stored: null, op: null, fresh: true, error: true, repeat: null });
+    else calc.display = text;
+  }
+
+  function calcShow() {
+    const text = calc.error ? "E" : calc.display;
+    ui?.panels.calc?.show(text, calc.error ? "" : OP_SYMBOLS[calc.op] || "");
+    controller?.setCalcDisplay(calc.error ? "E." : text.includes(".") ? text : `${text}.`);
+  }
+
+  function calcPress(action) {
+    ui?.panels.calc?.flash?.(action);
+    if (action === "clear" || (calc.error && /^([0-9]|point)$/.test(action))) {
+      Object.assign(calc, { display: "0", stored: null, op: null, fresh: true, error: false, repeat: null });
+      if (action === "clear") {
+        calcShow();
+        return;
+      }
+    }
+    if (calc.error) {
+      calcShow();
+      return;
+    }
+    const value = Number(calc.display);
+    if (/^[0-9]$/.test(action)) {
+      if (calc.fresh) {
+        calc.display = action;
+        calc.fresh = false;
+      } else if (calc.display.replace(/[-.]/g, "").length < CALC_DIGITS) {
+        calc.display = calc.display === "0" ? action : calc.display === "-0" ? `-${action}` : calc.display + action;
+      }
+    } else if (action === "point") {
+      if (calc.fresh) {
+        calc.display = "0.";
+        calc.fresh = false;
+      } else if (!calc.display.includes(".")) {
+        calc.display += ".";
+      }
+    } else if (action === "back") {
+      if (!calc.fresh) {
+        calc.display = calc.display.slice(0, -1);
+        if (calc.display === "" || calc.display === "-") calc.display = "0";
+      }
+    } else if (action === "sign") {
+      if (calc.display !== "0") calc.display = calc.display.startsWith("-") ? calc.display.slice(1) : `-${calc.display}`;
+    } else if (action === "percent") {
+      const base = (calc.op === "plus" || calc.op === "minus") && calc.stored !== null ? calc.stored : 1;
+      calcSet((base * value) / 100);
+      calc.fresh = true;
+    } else if (OP_SYMBOLS[action]) {
+      if (calc.op && !calc.fresh && calc.stored !== null) calcSet(calcApply(calc.stored, calc.op, value));
+      if (!calc.error) {
+        calc.stored = Number(calc.display);
+        calc.op = action;
+        calc.fresh = true;
+        calc.repeat = null;
+      }
+    } else if (action === "equals") {
+      if (calc.op && calc.stored !== null) {
+        calc.repeat = { op: calc.op, b: value };
+        calcSet(calcApply(calc.stored, calc.op, value));
+        if (!calc.error) Object.assign(calc, { stored: null, op: null, fresh: true });
+      } else if (calc.repeat) {
+        calcSet(calcApply(value, calc.repeat.op, calc.repeat.b));
+        calc.fresh = true;
+      }
+    }
+    calcShow();
+  }
+
+  /* 实体键盘：数字、小数点、+ − × ÷（* / x）、% 、Enter / = 、Backspace、Delete / C。 */
+  const CALC_KEYS = {
+    ".": "point", ",": "point", "+": "plus", "-": "minus", "*": "multiply", x: "multiply", "/": "divide", ":": "divide",
+    "%": "percent", "=": "equals", enter: "equals", backspace: "back", delete: "clear", c: "clear", escape: null,
+  };
+
+  function buildCalc() {
+    const panel = element("aside", "room-calc");
+    panel.dataset.view = "calc";
+    panel.setAttribute("aria-label", T.calc.name);
+    const top = element("div", "calc-top");
+    const heading = element("h2", "calc-h", "HPY-80");
+    heading.tabIndex = -1;
+    heading.setAttribute("aria-label", T.calc.name);
+    const solar = element("span", "calc-solar");
+    solar.setAttribute("aria-hidden", "true");
+    top.append(heading, solar);
+    const screen = element("output", "calc-lcd");
+    screen.setAttribute("aria-label", T.calc.display);
+    screen.setAttribute("aria-live", "polite");
+    const op = element("span", "calc-op");
+    op.setAttribute("aria-hidden", "true");
+    const value = element("span", "calc-val", "0");
+    screen.append(op, value);
+    const keys = element("div", "calc-keys");
+    const layout = [
+      ["C", "clear", "fn"], ["±", "sign", "fn"], ["%", "percent", "fn"], ["÷", "divide", "op"],
+      ["7"], ["8"], ["9"], ["×", "multiply", "op"],
+      ["4"], ["5"], ["6"], ["−", "minus", "op"],
+      ["1"], ["2"], ["3"], ["+", "plus", "op"],
+      ["0"], [".", "point"], ["⌫", "back", "fn"], ["=", "equals", "eq"],
+    ];
+    for (const [label, action, kind] of layout) {
+      const key = element("button", kind ? `calc-key is-${kind}` : "calc-key", label);
+      key.type = "button";
+      key.dataset.calc = action || label;
+      if (action) key.setAttribute("aria-label", T.calc[action]);
+      keys.append(key);
+    }
+    keys.addEventListener("click", (event) => {
+      const key = event.target instanceof Element ? event.target.closest("[data-calc]") : null;
+      if (key) calcPress(key.dataset.calc);
+    });
+    panel.append(top, screen, keys);
+    /* 按下的键（鼠标、手指或实体键盘）都闪一下。 */
+    panel.flash = (action) => {
+      const key = keys.querySelector(`[data-calc="${action}"]`);
+      if (!key) return;
+      key.classList.remove("is-hit");
+      void key.offsetWidth;
+      key.classList.add("is-hit");
+    };
+    panel.show = (text, symbol) => {
+      value.textContent = text;
+      value.classList.toggle("has-point", text.includes(".") || text === "E");
+      op.textContent = symbol;
+    };
+    return panel;
+  }
+
+  /* ---------------------------------------------------------------- 音乐：录音机里的磁带
+     每盒磁带是首页 #music 里的一首（[data-music]：歌名 [data-music-title]、时长 [data-music-length]、<audio> 的地址），
+     不在脚本里写死；首页多一首，窗台上就多一盒。点哪盒就把哪盒放进录音机：
+     在这次点击的调用栈里 play()，浏览器才允许出声；磁带飞进卡座的动画随后补上。 */
+  const music = { tracks: [], index: -1, audio: null, state: "stopped", token: 0, note: "" };
+  const MUSIC_COLORS = ["#d9583a", "#3a7bd5", "#3aa86b", "#c9a227", "#8a4fd1"];
+
+  function collectMusic() {
+    return [...document.querySelectorAll("#music [data-music]")].map((item) => {
+      const audio = item.querySelector("audio");
+      return {
+        title: textOf(item.querySelector("[data-music-title]")),
+        length: textOf(item.querySelector("[data-music-length]")),
+        src: sameOrigin(audio?.querySelector("source")?.getAttribute("src") || audio?.getAttribute("src")),
+      };
+    }).filter((track) => track.src && track.title);
+  }
+
+  /* 书架上的作品书：首页 Work 区 Projects 分隔线之后的条目。 */
+  function collectWorks() {
+    const work = document.querySelector("#work");
+    const split = work?.querySelector(".pb-grp");
+    if (!work || !split) return [];
+    return [...work.querySelectorAll(".pb-item")]
+      .filter((node) => node.compareDocumentPosition(split) & Node.DOCUMENT_POSITION_PRECEDING)
+      .map((node) => ({ title: textOf(node.querySelector(".pb-hd .t")) }))
+      .filter((item) => item.title);
+  }
+
+  const clock = (seconds, round = false) => {
+    const total = Math.max(0, round ? Math.round(seconds || 0) : Math.floor(seconds || 0));
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+  };
+
+  function musicInfo(note) {
+    if (typeof note === "string") music.note = note;
+    const panel = ui?.panels.music;
+    if (!panel) return;
+    const audio = music.audio;
+    const duration = audio && Number.isFinite(audio.duration) ? audio.duration : 0;
+    panel.update({
+      index: music.index,
+      playing: music.state === "playing" || music.state === "loading",
+      note: music.note,
+      title: music.tracks[music.index]?.title || "",
+      state: music.state,
+      progress: duration ? (audio.currentTime || 0) / duration : 0,
+      time: music.index >= 0 ? `${clock(audio?.currentTime)} / ${duration ? clock(duration, true) : music.tracks[music.index]?.length || "--:--"}` : "",
+    });
+  }
+
+  function ensureAudio() {
+    if (music.audio) {
+      if (!music.audio.isConnected) (overlay || document.body).append(music.audio);
+      return music.audio;
+    }
+    const audio = document.createElement("audio");
+    audio.className = "room-tape-video";
+    audio.preload = "none";
+    audio.setAttribute("aria-hidden", "true");
+    audio.addEventListener("timeupdate", () => musicInfo());
+    audio.addEventListener("playing", () => {
+      music.state = "playing";
+      controller?.setDeckPlaying(true);
+      musicInfo("");
+    });
+    audio.addEventListener("pause", () => {
+      if (music.state === "playing" || music.state === "loading") music.state = "paused";
+      controller?.setDeckPlaying(false);
+      musicInfo();
+    });
+    audio.addEventListener("waiting", () => musicInfo(T.music.loading));
+    audio.addEventListener("ended", () => {
+      if (music.index + 1 < music.tracks.length) playTrack(music.index + 1);
+      else stopMusic(false);
+    });
+    audio.addEventListener("error", () => {
+      if (!audio.getAttribute("src")) return;
+      music.state = "stopped";
+      controller?.setDeckPlaying(false);
+      musicInfo(T.music.cantPlay);
+    });
+    (overlay || document.body).append(audio);
+    music.audio = audio;
+    return audio;
+  }
+
+  function playTrack(index) {
+    const track = music.tracks[index];
+    if (!track) return;
+    const audio = ensureAudio();
+    const token = (music.token += 1);
+    if (music.index !== index || !audio.getAttribute("src")) {
+      audio.src = track.src;
+      music.index = index;
+    }
+    music.state = "loading";
+    musicInfo(T.music.loading);
+    audio.play()?.catch?.((error) => {
+      if (token !== music.token) return;
+      music.state = "paused";
+      controller?.setDeckPlaying(false);
+      musicInfo(error?.name === "NotAllowedError" ? T.music.tapPlay : T.music.cantPlay);
+    });
+    controller?.insertCassette(index);
+  }
+
+  function toggleMusic() {
+    if (music.index < 0 || !music.audio) {
+      playTrack(0);
+      return;
+    }
+    if (music.audio.paused) playTrack(music.index);
+    else {
+      music.state = "paused";
+      music.audio.pause();
+    }
+  }
+
+  function stepMusic(direction) {
+    if (!music.tracks.length) return;
+    playTrack(music.index < 0 ? 0 : (music.index + direction + music.tracks.length) % music.tracks.length);
+  }
+
+  function stopMusic(eject = true) {
+    music.token += 1;
+    music.state = "stopped";
+    if (music.audio) {
+      music.audio.pause();
+      try {
+        music.audio.currentTime = 0;
+      } catch {
+        /* 还没加载时设不了进度，忽略。 */
+      }
+    }
+    controller?.setDeckPlaying(false);
+    if (eject && music.index >= 0) {
+      controller?.ejectCassette();
+      music.index = -1;
+      music.audio?.removeAttribute("src");
+      music.audio?.load();
+    }
+    musicInfo("");
+  }
+
+  /* MUSIC 面板：做成磁带封套（J 卡）的样子——曲目表、正在放的这一首和进度、四个走带键。 */
+  function buildMusic() {
+    music.tracks = collectMusic();
+    const panel = element("aside", "room-deck");
+    panel.dataset.view = "music";
+    panel.setAttribute("aria-label", T.nav.music);
+    const head = element("div", "deck-head");
+    const heading = element("h2", "deck-h", T.music.title);
+    heading.tabIndex = -1;
+    head.append(element("span", "deck-side", T.music.side), heading);
+    const list = element("ol", "deck-list");
+    music.tracks.forEach((track, index) => {
+      const item = element("li");
+      const button = element("button", "deck-track");
+      button.type = "button";
+      button.dataset.index = String(index);
+      button.append(element("span", "deck-n", String(index + 1).padStart(2, "0")), element("span", "deck-t", track.title), element("span", "deck-d", track.length));
+      button.addEventListener("click", () => playTrack(index));
+      item.append(button);
+      list.append(item);
+    });
+    const now = element("div", "deck-now");
+    const status = element("p", "deck-status", T.music.pick);
+    status.setAttribute("role", "status");
+    const bar = element("div", "deck-bar");
+    const fill = element("span", "deck-fill");
+    bar.append(fill);
+    const time = element("p", "deck-time");
+    now.append(status, bar, time);
+    const keys = element("div", "deck-keys");
+    const keyButtons = {};
+    for (const [label, action] of [["⏮︎", "prev"], ["▶︎", "play"], ["⏭︎", "next"], ["⏹︎", "stop"]]) {
+      const key = element("button", `deck-key is-${action}`, label);
+      key.type = "button";
+      key.dataset.deck = action;
+      key.setAttribute("aria-label", T.music[action]);
+      keys.append(key);
+      keyButtons[action] = key;
+    }
+    keys.addEventListener("click", (event) => {
+      const key = event.target instanceof Element ? event.target.closest("[data-deck]") : null;
+      if (!key) return;
+      const action = key.dataset.deck;
+      if (action === "prev") stepMusic(-1);
+      else if (action === "next") stepMusic(1);
+      else if (action === "play") toggleMusic();
+      else stopMusic();
+    });
+    panel.append(head, list, now, keys);
+    panel.update = ({ index, playing, note, title, state, progress, time: timeText }) => {
+      list.querySelectorAll(".deck-track").forEach((button) => {
+        if (Number(button.dataset.index) === index) button.setAttribute("aria-current", "true");
+        else button.removeAttribute("aria-current");
+      });
+      const mark = state === "playing" ? "▶︎" : state === "paused" ? "‖" : state === "loading" ? "…" : "■︎";
+      status.textContent = note || (title ? `${mark} ${title}` : T.music.pick);
+      fill.style.transform = `scaleX(${Math.max(0, Math.min(1, progress)).toFixed(4)})`;
+      time.textContent = timeText;
+      keyButtons.play.textContent = playing ? "⏸︎" : "▶︎";
+    };
+    return panel;
+  }
+
   /* ---------------------------------------------------------------- 录像带 */
   const media = { tapes: [], tape: -1, index: 0, video: null, timer: 0, paused: false, token: 0, failures: 0, feed: null, pendingTapes: false };
 
@@ -708,6 +1112,7 @@
     panel.setInfo(`${tape.label} ${tape.en} · ${counter}`, item?.title || "", status || "");
     if (ui.play) {
       ui.play.textContent = media.paused ? T.buttons.play : T.buttons.pause;
+      ui.play.classList.toggle("is-paused", media.paused);
       ui.play.setAttribute("aria-label", media.paused ? T.play : T.pause);
     }
     return counter;
@@ -953,7 +1358,6 @@
 
   function toggleSound(force) {
     setSound(typeof force === "boolean" ? force : !sound.on);
-    controller?.setRecorder(sound.on);
     if (ui?.sound) {
       ui.sound.textContent = sound.on ? T.buttons.soundOn : T.buttons.soundOff;
       ui.sound.setAttribute("aria-pressed", String(sound.on));
@@ -1006,6 +1410,7 @@
     nav.append(services);
 
     /* 语言菜单：换到对应语言的首页，并直接进房间。 */
+    const tools = element("div", "room-tools");
     const langMenu = element("details", "room-lang");
     const langSummary = element("summary", "room-nav-b", LANG_PAGES.find((page) => page.lang === LANG).short);
     langSummary.setAttribute("aria-label", T.language);
@@ -1021,8 +1426,8 @@
       langList.append(item);
     }
     langMenu.append(langSummary, langList);
-    nav.append(langMenu);
-    hud.append(name, nav);
+    tools.append(langMenu);
+    hud.append(name, nav, tools);
 
     const panels = {
       about: buildAbout(),
@@ -1030,6 +1435,8 @@
       film: buildFilm(),
       online: buildOnline(),
       work: buildWork(),
+      calc: buildCalc(),
+      music: buildMusic(),
     };
     for (const panel of Object.values(panels)) {
       panel.hidden = true;
@@ -1040,9 +1447,9 @@
     tip.setAttribute("aria-hidden", "true");
 
     const dock = element("div", "room-dock");
-    const keys = element("p", "room-keys", HINTS.desk);
+    const keys = element("p", "room-keys", DESK_HINT);
     const buttons = element("div", "room-btns");
-    const back = element("button", "room-btn room-back", T.buttons.back);
+    const back = element("button", "room-btn room-back", backLabel("desk"));
     back.type = "button";
     back.hidden = true;
     back.setAttribute("aria-label", T.back);
@@ -1064,13 +1471,28 @@
     soundButton.setAttribute("aria-pressed", "false");
     soundButton.setAttribute("aria-label", T.sound);
     soundButton.addEventListener("click", () => toggleSound());
+    const viewButton = element("button", "room-btn room-view", T.buttons.view);
+    viewButton.type = "button";
+    viewButton.setAttribute("aria-label", T.music.view);
+    viewButton.addEventListener("click", () => {
+      if (view !== "desk") openView("desk");
+      else controller?.cycleDeskView();
+    });
     const lofi = element("button", "room-btn room-lofi", T.buttons.lofi);
     lofi.type = "button";
     lofi.title = T.lofi;
     lofi.setAttribute("aria-label", `${T.buttons.lofi}: ${T.lofi}`);
     lofi.addEventListener("click", () => leave({ target: "#top", persist: true }));
-    buttons.append(back, play, next, credits, soundButton, lofi);
+    buttons.append(back, play, next, credits, viewButton, soundButton, lofi);
     dock.append(keys, buttons);
+    /* 窄屏照 Felix 手机版：声音和静态版挪到顶部右侧；宽屏放回右下角那一排。 */
+    const narrow = window.matchMedia ? window.matchMedia("(max-width: 719px)") : null;
+    const placeTools = () => {
+      if (narrow?.matches) tools.prepend(viewButton, soundButton, lofi);
+      else buttons.append(viewButton, soundButton, lofi);
+    };
+    placeTools();
+    narrow?.addEventListener?.("change", placeTools);
 
     const creditsPanel = element("div", "room-credits");
     creditsPanel.hidden = true;
@@ -1092,7 +1514,11 @@
     overlay.append(stage, ...Object.values(panels), hud, tip, creditsPanel, dock, status);
     overlay.addEventListener("keydown", onKey);
     document.body.append(overlay);
-    ui = { navButtons, panels, tip, keys, back, play, next, sound: soundButton, credits, creditsPanel };
+    ui = {
+      navButtons, panels, tip, keys, back, play, next, sound: soundButton, credits, creditsPanel,
+      unbind: () => narrow?.removeEventListener?.("change", placeTools),
+    };
+    calcShow();
     return overlay;
   }
 
@@ -1109,7 +1535,7 @@
   /* ---------------------------------------------------------------- 视图 */
   function placePanel(id) {
     const panel = ui?.panels[id];
-    if (!panel || !controller || id === "work") return;
+    if (!panel || !controller || FLOATING.has(id)) return;
     const rect = controller.screenRect(id);
     const stageWidth = stage.clientWidth;
     /* 太窄时，按物件真实大小投影出来的屏幕读不清：改成铺满中间的固定面板。 */
@@ -1159,9 +1585,9 @@
       if (id === next) button.setAttribute("aria-current", "true");
       else button.removeAttribute("aria-current");
     }
-    ui.keys.textContent = HINTS[next] || "";
+    ui.keys.textContent = next === "desk" ? DESK_HINT : HINTS[next] || "";
     ui.back.hidden = next === "desk";
-    ui.back.textContent = next === "work" ? T.buttons.notepad : next === "film" ? T.buttons.eject : next === "online" ? T.buttons.hangup : T.buttons.back;
+    ui.back.textContent = backLabel(next);
     ui.play.hidden = next !== "film";
     ui.next.hidden = next !== "film";
 
@@ -1177,8 +1603,8 @@
     }
 
     const panel = ui.panels[next];
-    if (panel && next === "work") {
-      /* 记事本不用等镜头：和镜头一起升起来。 */
+    if (panel && FLOATING.has(next)) {
+      /* 记事本和计算器不用等镜头：和镜头一起升起来。 */
       panel.hidden = false;
       panel.inert = false;
       requestAnimationFrame(() => panel.classList.add("is-open"));
@@ -1186,7 +1612,7 @@
     await controller.goTo(next);
     if (token !== viewToken || state !== "open") return;
 
-    if (panel && next !== "work") {
+    if (panel && !FLOATING.has(next)) {
       panel.updateClock?.();
       placePanel(next);
       panel.hidden = false;
@@ -1211,6 +1637,59 @@
       event.preventDefault();
       return;
     }
+    if (view === "calc" && key in CALC_KEYS && CALC_KEYS[key]) {
+      /* 焦点在计算器按键上时，Enter / 空格交给按键本身。 */
+      if (key === "enter" && event.target instanceof Element && event.target.closest(".calc-key")) return;
+      calcPress(CALC_KEYS[key]);
+      event.preventDefault();
+      return;
+    }
+    if (view === "calc" && /^[0-9]$/.test(key)) {
+      calcPress(key);
+      event.preventDefault();
+      return;
+    }
+    /* 焦点在面板按钮上时，空格和 Enter 交给按钮本身。 */
+    const onButton = event.target instanceof Element && Boolean(event.target.closest("button"));
+    if (view === "music" && !(onButton && (key === " " || key === "enter"))) {
+      let handled = true;
+      if (key === " " || key === "spacebar") toggleMusic();
+      else if (key === "arrowright") stepMusic(1);
+      else if (key === "arrowleft") stepMusic(-1);
+      else if (key === "s") stopMusic();
+      else if (/^[1-9]$/.test(key) && music.tracks[Number(key) - 1]) playTrack(Number(key) - 1);
+      else handled = false;
+      if (handled) {
+        event.preventDefault();
+        return;
+      }
+    }
+    if (view === "desk" && key === "v") {
+      controller?.cycleDeskView();
+      event.preventDefault();
+      return;
+    }
+    if (view === "desk" && key === "c") {
+      openView("calc");
+      event.preventDefault();
+      return;
+    }
+    if (view === "desk" && controller) {
+      const nudges = {
+        arrowleft: { yaw: 0.12 }, arrowright: { yaw: -0.12 }, arrowup: { pitch: 0.08 }, arrowdown: { pitch: -0.08 },
+        "+": { zoom: 0.88 }, "=": { zoom: 0.88 }, "-": { zoom: 1.14 },
+      };
+      if (nudges[key]) {
+        controller.nudge(nudges[key]);
+        event.preventDefault();
+        return;
+      }
+      if (key === "0") {
+        controller.resetOrbit();
+        event.preventDefault();
+        return;
+      }
+    }
     const nav = NAV.find((item) => item.key === key);
     if (nav) {
       openView(view === nav.view ? "desk" : nav.view);
@@ -1219,11 +1698,6 @@
     }
     if (key === "l" && view === "desk") {
       controller?.toggleLamp();
-      return;
-    }
-    if (key === "m") {
-      toggleSound();
-      event.preventDefault();
       return;
     }
     if (view === "film") {
@@ -1251,7 +1725,30 @@
 
   function onPick(id, detail = {}) {
     if (id === "tape") {
-      toggleSound();
+      openView("music");
+      return;
+    }
+    if (id === "cassette") {
+      /* 先在这次点击里开始放，再把镜头推过去。 */
+      playTrack(Number(detail.value) || 0);
+      openView("music");
+      return;
+    }
+    if (id === "book") {
+      openView("work");
+      return;
+    }
+    if (id.startsWith("deck")) {
+      if (id === "deckPlay") toggleMusic();
+      else if (id === "deckPause") {
+        if (music.audio && !music.audio.paused) toggleMusic();
+      } else if (id === "deckStop") stopMusic();
+      else if (id === "deckNext") stepMusic(1);
+      else if (id === "deckPrev") stepMusic(-1);
+      return;
+    }
+    if (id === "calc") {
+      openView("calc");
       return;
     }
     if (NAV.some((item) => item.view === id)) {
@@ -1275,8 +1772,18 @@
       tip.classList.remove("is-on");
       return;
     }
-    tip.textContent = `${info.label} · ${info.sub}${info.external ? " ↗" : ""}`;
-    tip.style.transform = `translate3d(${Math.round(info.x + 16)}px, ${Math.round(info.y + 18)}px, 0)`;
+    tip.replaceChildren(element("span", "room-tip-l", `${info.label} · ${info.sub}${info.external ? " ↗" : ""}`));
+    tip.classList.toggle("is-confirm", Boolean(info.confirm));
+    if (info.confirm) tip.append(element("span", "room-tip-again", T.tapAgain));
+    const bounds = overlay.getBoundingClientRect();
+    const tipWidth = tip.offsetWidth;
+    const tipHeight = tip.offsetHeight;
+    let x = info.confirm ? info.x - tipWidth / 2 : info.x + 16;
+    let y = info.confirm ? info.y - tipHeight - 18 : info.y + 18;
+    x = Math.max(8, Math.min(x, bounds.width - tipWidth - 8));
+    if (y < 56) y = info.y + 22;
+    y = Math.min(y, bounds.height - tipHeight - 8);
+    tip.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
     tip.classList.add("is-on");
   }
 
@@ -1295,6 +1802,12 @@
     controller?.dispose();
     controller = null;
     setSound(false);
+    music.token += 1;
+    music.audio?.pause();
+    music.audio?.removeAttribute("src");
+    music.index = -1;
+    music.state = "stopped";
+    ui?.unbind?.();
     overlay?.remove();
     overlay = null;
     stage = null;
@@ -1360,10 +1873,13 @@
       }
       controller = mounted;
       unLayout = controller.onLayout(() => {
-        if (view !== "desk" && view !== "work") placePanel(view);
+        if (view !== "desk" && !FLOATING.has(view)) placePanel(view);
       });
       if (!media.tapes.length) media.tapes = collectTapes();
       syncTapes();
+      controller.setCassettes(music.tracks.map((track, index) => ({ label: T.tapes.music, en: "MUSIC", color: MUSIC_COLORS[index % MUSIC_COLORS.length] })));
+      controller.setBooks(collectWorks());
+      musicInfo("");
       loadArchiveTapes();
     } catch {
       if (state === "opening") fail("load-failed");
@@ -1385,6 +1901,7 @@
     session.set(SEEN_KEY, "1");
     if (view === "film") stopMedia();
     toggleSound(false);
+    stopMusic(false);
     closePanels();
 
     setBackgroundInert(false);
@@ -1414,7 +1931,7 @@
         view = "desk";
         if (ui) {
           for (const button of Object.values(ui.navButtons)) button.removeAttribute("aria-current");
-          ui.keys.textContent = HINTS.desk;
+          ui.keys.textContent = DESK_HINT;
           ui.back.hidden = true;
           ui.play.hidden = true;
           ui.next.hidden = true;
@@ -1465,6 +1982,7 @@
       controller?.stop();
       if (view === "film") stopMedia();
       toggleSound(false);
+      if (music.audio && !music.audio.paused) music.audio.pause();
     });
 
     const preference = local.get(PREF_KEY);

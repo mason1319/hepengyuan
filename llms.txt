@@ -10,6 +10,7 @@
 - 常用名：HPY、TerraSol 明远
 - 官方网站：https://hepengyuan.com/
 - 个人宣传片：https://hepengyuan.com/#personal-film
+- 原创音乐：https://hepengyuan.com/#music
 - 主要语言：zh-CN
 - 其他语言版首页（由中文首页逐句翻译，事实以中文首页为准）：English https://hepengyuan.com/en/ · Deutsch https://hepengyuan.com/de/ · 한국어 https://hepengyuan.com/ko/
 - 资料最后校验：2026-10-03
@@ -81,6 +82,7 @@
 - [官方个人主页](https://hepengyuan.com/)：面向人类读者的完整公开介绍。
 - [机器可读个人资料](https://hepengyuan.com/profile.json)：结构化身份与主题信息。
 - [个人宣传片](https://hepengyuan.com/#personal-film)：何鹏远个人品牌宣传片与同源播放入口。
+- [原创音乐](https://hepengyuan.com/#music)：何鹏远原创音乐《来自高纬的你》（4 分 18 秒），同源播放入口。
 - [服务与交付方式](https://hepengyuan.com/services/)：服务方案、上门与远程部署流程、验收清单、能力与作品说明。
 - [旅行影像档案](https://hepengyuan.com/travel/)：本人确认公开的旅行照片与视频；无已发布内容时为空目录。
 - [学习视频档案](https://hepengyuan.com/learning/)：本人确认公开的学习、演示与复盘视频；无已发布内容时为空目录。

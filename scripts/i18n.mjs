@@ -17,8 +17,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://hepengyuan.com";
 export const LANGS = ["en", "de", "ko"];
 
-/* 译文里允许保留的中文：本人姓名、TerraSol 明远、品牌「Aggie 速记英语」里的中文部分，以及语言菜单里的「简体中文」。 */
-const ALLOWED_HAN = ["何鹏远", "明远", "速记英语", "简体中文"];
+/* 译文里允许保留的中文：本人姓名、TerraSol 明远、品牌「Aggie 速记英语」里的中文部分、语言菜单里的「简体中文」，
+   以及原创歌曲的歌名（专有名词，各语言都用原名）。 */
+const ALLOWED_HAN = ["何鹏远", "明远", "速记英语", "简体中文", "来自高纬的你"];
 const HAN = /[㐀-鿿　-〿＀-￯]/;
 
 function escapeAttr(value) {

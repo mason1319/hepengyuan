@@ -31,6 +31,10 @@ const CANONICAL_SITE = "https://hepengyuan.com";
 const REVOCABLE_PUBLIC_CACHE = "public, no-cache, max-age=0, must-revalidate";
 const PROMO_VIDEO_ROUTE = "/media/promo/pengyuan-personal-promo.mp4";
 const PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4";
+/* 首页 #music 的原创音乐：固定路由 → R2 固定键。新增一首时在这里加一行，并把文件传到对应的键。 */
+const MUSIC_ROUTES = new Map([
+  ["/media/music/lai-zi-gao-wei-de-ni.mp3", "public/music/lai-zi-gao-wei-de-ni.mp3"],
+]);
 const AGGIE_3A_ROUTE = "/aggie-3a/";
 const AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v6.html";
 
@@ -330,7 +334,7 @@ async function handleMediaFile(request, env, row) {
     "Content-Type": row.mime_type,
     "Accept-Ranges": "bytes",
     "Cache-Control": REVOCABLE_PUBLIC_CACHE,
-    "Content-Disposition": `inline; filename="${row.slug}.${row.mime_type === "video/quicktime" ? "mov" : row.mime_type.split("/")[1].replace("jpeg", "jpg")}"`,
+    "Content-Disposition": `inline; filename="${row.slug}.${row.mime_type === "video/quicktime" ? "mov" : row.mime_type === "audio/mpeg" ? "mp3" : row.mime_type.split("/")[1].replace("jpeg", "jpg")}"`,
     ...securityHeaders,
   });
   if (etag) headers.set("ETag", etag);
@@ -470,6 +474,14 @@ async function handlePublicDynamic(request, env, baseUrl) {
       slug: "pengyuan-personal-promo",
       mime_type: "video/mp4",
       object_key: PROMO_VIDEO_KEY,
+    });
+  }
+
+  if (MUSIC_ROUTES.has(path)) {
+    return handleMediaFile(request, env, {
+      slug: path.split("/").pop().replace(/\.mp3$/, ""),
+      mime_type: "audio/mpeg",
+      object_key: MUSIC_ROUTES.get(path),
     });
   }
 

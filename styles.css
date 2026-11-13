@@ -228,6 +228,11 @@ html[data-theme="dark"] .ph-warn{--warn:#ffb867}
 .button-game:hover{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .button-game::before{content:"\25B6\FE0E";margin-right:.7em;font-size:.85em}
 .pb-cta{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0}
+/* 原创音乐：每首一行，下面是播放器 */
+.mu-list{list-style:none;margin:6px 0 0;padding:0}
+.mu-item{padding:13px 0;border-bottom:1px solid var(--rule)}
+.mu-item audio{display:block;width:100%;max-width:560px;height:40px;margin-top:10px}
+.mu-note{margin:6px 0 0;font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--muted)}
 
 /* ---------------------------------------------------------------- Online / 联系 */
 .on-hd{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
@@ -322,7 +327,6 @@ main>#personal-film{margin-top:0}
 .room-lang-a{display:block;padding:7px 10px;border-radius:4px;font-family:var(--body);font-size:15px;color:#ece8dd;text-decoration:none;white-space:nowrap;text-shadow:none}
 .room-lang-a:hover,.room-lang-a:focus-visible{background:#f4efe4;color:#14110d;outline:none}
 .room-lang-a[aria-current="page"]::after{content:" \2713";color:#ffb45e}
-@media (max-width:719px){.room-lang-list{right:auto;left:0}}
 
 /* ---------------------------------------------------------------- hi-fi 房间
    可交互的 3D 版本盖在静态首页之上。<html data-room> 由 <head> 里的内联脚本
@@ -336,7 +340,7 @@ html[data-room="boot"] body::before{content:"";position:fixed;inset:0;z-index:20
   opacity:1;transition:opacity .45s ease;-webkit-user-select:none;user-select:none}
 .room[hidden]{display:none}
 html[data-room="leaving"] .room{opacity:0;pointer-events:none}
-.room-stage{position:absolute;inset:0;opacity:0;transition:opacity .7s ease}
+.room-stage{position:absolute;inset:0;opacity:0;transition:opacity .7s ease;touch-action:none;cursor:grab}
 html[data-room="on"] .room-stage,html[data-room="leaving"] .room-stage{opacity:1}
 .room-canvas{display:block;width:100%;height:100%}
 .room-stage::after{content:"";position:absolute;inset:0;pointer-events:none;
@@ -351,19 +355,23 @@ html[data-room="on"] .room-hud{opacity:1}
   text-shadow:0 1px 10px rgba(0,0,0,.45)}
 .room-name .cn{display:block;font-size:19px;letter-spacing:.14em;font-weight:800}
 .room-name .en{display:block;font-size:11px;letter-spacing:.24em;color:#cfc6b4;margin-top:2px}
-.room-nav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px clamp(10px,2.2vw,30px);pointer-events:auto}
+.room-nav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px clamp(10px,2.2vw,30px);margin-left:auto;pointer-events:auto}
+.room-tools{display:flex;align-items:flex-start;gap:8px;pointer-events:auto}
 .room-nav-b{appearance:none;cursor:pointer;font-family:var(--osd);font-size:clamp(24px,2.5vw,34px);letter-spacing:.08em;line-height:1.05;
   color:rgba(244,239,228,.78);background:none;border:0;border-radius:2px;padding:2px 8px 0;text-decoration:none;text-shadow:0 1px 10px rgba(0,0,0,.5)}
 .room-nav-b:hover{color:#fff}
 .room-nav-b[aria-current="true"]{background:#f4efe4;color:#14110d;text-shadow:none}
 .room-nav-b:focus-visible{outline:2px solid #ff7a5c;outline-offset:3px}
 .room-nav-ext::after{content:" ↗";font-size:.7em}
+/* 德文的栏目名长，宽屏上收小一点，免得折成两行。 */
+:root:lang(de) .room-nav{gap:4px clamp(8px,1.3vw,20px)}
+:root:lang(de) .room-nav-b{font-size:clamp(20px,2vw,29px)}
 
 /* 右下角：按键提示 + 一排药丸按钮。 */
 .room-dock{position:absolute;right:clamp(14px,2vw,28px);bottom:clamp(12px,1.8vw,22px);z-index:4;display:flex;flex-direction:column;align-items:flex-end;gap:10px;
   max-width:calc(100% - 28px);opacity:0;transition:opacity .5s ease .3s}
 html[data-room="on"] .room-dock{opacity:1}
-.room-keys{margin:0;font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:rgba(244,239,228,.82);text-align:right;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.room-keys{margin:0;font-family:var(--mono);font-size:12px;line-height:1.7;letter-spacing:.04em;white-space:pre-line;color:rgba(244,239,228,.82);text-align:right;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 .room-btns{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
 .room-btn{appearance:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:var(--osd);font-size:19px;letter-spacing:.08em;line-height:1;
   color:#f4efe4;background:rgba(14,11,8,.72);border:1px solid rgba(244,239,228,.3);border-radius:999px;padding:8px 15px 6px;
@@ -387,6 +395,10 @@ html[data-room="on"] .room-dock{opacity:1}
 .room-tip{position:absolute;left:0;top:0;z-index:6;margin:0;padding:4px 7px 3px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
   white-space:nowrap;color:#fff;background:#0b0a09;border:1px solid rgba(255,255,255,.18);border-radius:3px;pointer-events:none;opacity:0;transition:opacity .12s ease}
 .room-tip.is-on{opacity:1}
+.room-tip span{display:block}
+/* 手机上第一下点到物件：白底提示 + “再点一次”。 */
+.room-tip.is-confirm{padding:7px 11px 6px;text-align:center;color:#14110d;background:#f4efe4;border-color:rgba(20,17,13,.25);box-shadow:0 8px 22px rgba(0,0,0,.5)}
+.room-tip-again{margin-top:3px;font-size:9px;letter-spacing:.16em;opacity:.62}
 
 .room-status{position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0;font-family:var(--osd);font-size:22px;letter-spacing:.14em;color:#949085}
 html[data-room="on"] .room-status,html[data-room="leaving"] .room-status{display:none}
@@ -465,6 +477,7 @@ html[data-room="on"] .room-status,html[data-room="leaving"] .room-status{display
 /* 录像带视频元素：挂在页面里供电视取画面，自身不可见、不可点（不能用 display:none，iPhone 会不解码）。 */
 .room-tape-video{position:absolute;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1}
 .room-play::before{content:"\2016"}
+.room-play.is-paused::before{content:"\25B6\FE0E"}
 .room-next::before{content:"\23ED\FE0E"}
 
 /* WORK：从右下升起的黄色记事本 */
@@ -488,21 +501,104 @@ a.pad-t{text-decoration:underline;text-decoration-color:rgba(29,42,74,.35);text-
 a.pad-t:hover,a.pad-t:focus-visible{color:#b23b3b;outline:none;text-decoration-color:currentColor}
 .pad-y{font-family:var(--serif);font-style:italic;font-size:13px;color:#43506e;white-space:nowrap;text-align:right}
 
-/* 窄屏：导航落到名字下面，提示行收起，记事本从底部升起，屏幕面板铺满中间。 */
+/* CALC：从桌上拿起来的计算器，能真的算。宽屏从右下升起，窄屏在底部居中。 */
+.room-calc{position:absolute;z-index:2;right:clamp(16px,7vw,110px);bottom:clamp(90px,13vh,124px);width:min(300px,calc(100% - 32px));
+  padding:14px 16px 18px;border-radius:14px 14px 22px 22px;background:linear-gradient(#36363c,#27272c 55%,#1f1f23);color:#e9e6dd;
+  box-shadow:0 30px 60px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12),inset 0 -3px 0 rgba(0,0,0,.45);
+  transform:translateY(115vh) rotate(5deg);transition:transform .55s cubic-bezier(.2,.8,.25,1);-webkit-user-select:none;user-select:none}
+.room-calc[hidden]{display:none}
+.room-calc.is-open{transform:translateY(0) rotate(-2deg)}
+.calc-top{display:flex;justify-content:space-between;align-items:center;margin:0 2px 10px}
+.calc-h{margin:0;font-family:var(--display);font-size:13px;font-weight:800;font-stretch:125%;letter-spacing:.24em;color:#cfcac0}
+.calc-h:focus{outline:none}
+.calc-solar{width:78px;height:16px;border-radius:2px;background:repeating-linear-gradient(to right,#3d2b21 0 18px,#1b120e 18px 19px);box-shadow:inset 0 1px 3px rgba(0,0,0,.75),0 0 0 2px #1a1a1d}
+.calc-lcd{position:relative;display:flex;align-items:center;justify-content:flex-end;height:64px;margin:0 0 16px;padding:0 14px;border-radius:6px;overflow:hidden;
+  background:linear-gradient(#a9b795,#96a582);box-shadow:inset 0 2px 7px rgba(0,0,0,.45),0 0 0 4px #17171a;color:#1f2618;font-family:var(--osd);font-size:46px;line-height:1}
+.calc-op{position:absolute;left:12px;top:7px;font-size:22px;opacity:.75}
+.calc-val{white-space:nowrap}
+.calc-val:not(.has-point)::after{content:"."}
+.calc-keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.calc-key{appearance:none;cursor:pointer;height:48px;border:0;border-radius:9px;background:linear-gradient(#5f5f67,#4a4a51);color:#f3f0e9;
+  font-family:var(--osd);font-size:27px;line-height:1;box-shadow:0 3px 0 #18181b,0 5px 9px rgba(0,0,0,.35);touch-action:manipulation}
+.calc-key.is-op{background:linear-gradient(#9a9aa1,#80808a);color:#121215}
+.calc-key.is-fn{background:linear-gradient(#45454c,#37373d);color:#e2ded5}
+.calc-key.is-eq{background:linear-gradient(#ee7652,#d65b3b);color:#fff}
+.calc-key:active,.calc-key.is-hit{animation:calc-hit .16s ease}
+.calc-key:focus-visible{outline:2px solid #ffb45e;outline-offset:2px}
+@keyframes calc-hit{40%{transform:translateY(2px);box-shadow:0 1px 0 #18181b,0 2px 4px rgba(0,0,0,.35)}}
+
+/* MUSIC：磁带封套（J 卡）面板，从底部升起；录音机在上半个画面里。 */
+.room-deck{position:absolute;z-index:2;left:0;right:0;margin:0 auto;bottom:clamp(84px,12vh,118px);width:min(560px,calc(100% - 32px));max-height:min(46vh,380px);
+  display:flex;flex-direction:column;overflow:hidden;color:#1d2433;background:#f4efe2;border-radius:6px;
+  box-shadow:0 26px 50px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.08);
+  transform:translateY(115vh) rotate(-2deg);transition:transform .55s cubic-bezier(.2,.8,.25,1)}
+.room-deck[hidden]{display:none}
+.room-deck.is-open{transform:translateY(0) rotate(.5deg)}
+.deck-head{display:flex;align-items:baseline;gap:14px;padding:11px 18px 9px;color:#fff;
+  background:linear-gradient(90deg,#d9583a 0 25%,#c9a227 25% 50%,#3aa86b 50% 75%,#3a7bd5 75%)}
+.deck-side{font-family:var(--osd);font-size:20px;letter-spacing:.12em}
+.deck-h{margin:0;font-family:var(--display);font-size:19px;font-weight:800;font-stretch:125%;letter-spacing:.08em;text-transform:uppercase}
+.deck-h:focus{outline:none}
+.deck-list{list-style:none;margin:0;padding:6px 10px;overflow:auto;flex:1;min-height:0;-webkit-user-select:text;user-select:text}
+.deck-track{appearance:none;cursor:pointer;display:grid;grid-template-columns:2.4em minmax(0,1fr) auto;gap:10px;align-items:baseline;width:100%;padding:9px 8px 8px;
+  border:0;border-bottom:1px solid rgba(60,70,110,.25);background:none;text-align:left;font:inherit;color:inherit}
+.deck-track:hover,.deck-track:focus-visible{background:rgba(58,123,213,.1);outline:none}
+.deck-track[aria-current="true"]{background:#1d2433;color:#f4efe2}
+.deck-n,.deck-d{font-family:var(--mono);font-size:12px;opacity:.72}
+.deck-t{font-family:var(--serif);font-size:17px;font-weight:600}
+.deck-now{padding:8px 18px 2px}
+.deck-status{margin:0;min-height:1.4em;font-family:var(--mono);font-size:13px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deck-bar{height:4px;margin:6px 0 4px;border-radius:2px;overflow:hidden;background:rgba(29,36,51,.15)}
+.deck-fill{display:block;height:100%;background:#d9583a;transform-origin:left;transform:scaleX(0)}
+.deck-time{margin:0;min-height:1.3em;font-family:var(--mono);font-size:11px;opacity:.72;font-variant-numeric:tabular-nums}
+.deck-keys{display:flex;justify-content:center;gap:10px;padding:8px 18px 14px}
+.deck-key{appearance:none;cursor:pointer;width:54px;height:40px;border:0;border-radius:6px;background:linear-gradient(#cfd2d8,#a9adb6);color:#1d2433;font-size:17px;
+  box-shadow:0 3px 0 #6f737c,0 4px 8px rgba(0,0,0,.25);touch-action:manipulation}
+.deck-key:active{transform:translateY(2px);box-shadow:0 1px 0 #6f737c}
+.deck-key:focus-visible{outline:2px solid #3a7bd5;outline-offset:2px}
+.deck-key.is-stop{background:linear-gradient(#e6e0d1,#c9c1ad)}
+.room-view::before{content:"\25CE"}
+
+/* 窄屏照 Felix 手机版：顶部一行小字导航 + 右侧圆形图标（声音、静态版）和语言；
+   底部只留左下角一个很淡的“致谢”，进了某个视图右下角才出现返回按钮。 */
 @media (max-width:719px){
-  .room-hud{flex-direction:column;align-items:flex-start;padding-bottom:28px}
-  .room-nav{justify-content:flex-start;margin-left:-8px;gap:2px 10px}
-  .room-nav-b{font-size:22px}
+  .room-hud{flex-direction:row;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top)) 10px 28px 6px}
+  .room-name{display:none}
+  .room-nav{flex:1 1 auto;min-width:0;flex-wrap:nowrap;justify-content:flex-start;gap:2px;margin:0;overflow-x:auto;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(to right,#000 86%,transparent);mask-image:linear-gradient(to right,#000 86%,transparent)}
+  .room-nav::-webkit-scrollbar{display:none}
+  .room-nav-b{flex:none;font-family:var(--mono);font-size:12px;letter-spacing:.14em;line-height:1;text-transform:uppercase;padding:7px 7px 6px}
+  .room-tools{flex:none;align-items:center;gap:6px}
+  .room-tools .room-btn{width:32px;height:32px;padding:0;gap:0;justify-content:center;font-size:0;letter-spacing:0}
+  .room-tools .room-btn::before{font-size:15px}
+  .room-lang>summary.room-nav-b{font-size:11px;letter-spacing:.08em;padding:7px 2px 6px 4px}
   .room-keys{display:none}
-  .room-dock{left:12px;right:12px;bottom:12px;align-items:stretch}
-  .room-btns{justify-content:center;gap:6px}
-  .room-btn{font-size:16px;padding:7px 11px 5px}
-  .room-screen.is-fixed{top:118px;bottom:76px;left:10px;right:10px}
+  .room-dock{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));align-items:stretch}
+  .room-btns{flex-wrap:nowrap;justify-content:flex-end;align-items:center;gap:6px}
+  .room-btn{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:10px 14px 9px}
+  .room-back::before{content:none}
+  .room-credits-b{order:-1;margin-right:auto;padding:8px 2px;border:0;background:none;font-size:10px;letter-spacing:.18em;color:rgba(244,239,228,.42);
+    -webkit-backdrop-filter:none;backdrop-filter:none}
+  .room-credits-b::before{content:none}
+  .room-credits-b[aria-expanded="true"]{color:#f4efe4}
+  .room-play,.room-next{width:38px;height:38px;padding:0;gap:0;justify-content:center;font-size:0;letter-spacing:0}
+  .room-play::before,.room-next::before{font-size:15px}
+  .room-screen.is-fixed{top:calc(58px + env(safe-area-inset-top));bottom:70px;left:10px;right:10px}
   .room-pad{left:10px;right:10px;width:auto;top:auto;bottom:66px;height:min(66vh,560px)}
   .pad-body{padding:40px 16px 20px 60px}
   .pad-list li{grid-template-columns:2.2em minmax(0,1fr);padding-bottom:2px}
   .pad-y{grid-column:2;text-align:left;margin-top:-4px}
-  .room-credits{bottom:70px;right:12px}
+  .room-credits{bottom:calc(54px + env(safe-area-inset-bottom));left:12px;right:12px;width:auto}
+  .room-calc{left:0;right:0;margin:0 auto;bottom:calc(64px + env(safe-area-inset-bottom));width:min(320px,calc(100% - 24px))}
+  .room-deck{bottom:calc(62px + env(safe-area-inset-bottom));width:calc(100% - 20px);max-height:50vh}
+  .room-nav-b{letter-spacing:.1em;padding:7px 5px 6px}
+}
+@media (max-height:560px){
+  .room-calc{bottom:56px;padding:10px 12px 12px}
+  .calc-top{margin-bottom:6px}
+  .calc-lcd{height:46px;margin-bottom:10px;font-size:34px}
+  .calc-keys{gap:6px}
+  .calc-key{height:34px;font-size:22px}
 }
 @media (pointer:coarse){.room-keys{display:none}}
 
