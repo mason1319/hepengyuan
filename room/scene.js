@@ -3385,7 +3385,7 @@ export async function mount({
   function computePoses() {
     const v = (x, y, z) => new THREE.Vector3(x, y, z);
     deskPresets = [
-      { pos: v(lerp(-0.33, -0.5, narrow), lerp(1.36, 1.42, narrow), lerp(1.3, 2.3, narrow)), look: v(lerp(-0.36, -0.5, narrow), lerp(1.15, 1.12, narrow), -1.5) },
+      { pos: v(lerp(-0.33, -0.28, narrow), lerp(1.36, 1.4, narrow), lerp(1.3, 1.78, narrow)), look: v(lerp(-0.36, -0.28, narrow), lerp(1.15, 1.04, narrow), -1.5) },
       { pos: v(-0.6, 1.3, lerp(0.3, 0.95, narrow)), look: v(-0.96, 1.02, -1.3) },
       { pos: v(lerp(-1.42, -1.5, narrow), 1.24, lerp(0.35, 0.95, narrow)), look: v(-1.64, 1.0, -1.45) },
       { pos: v(0.66, 1.34, lerp(-0.3, 0.25, narrow)), look: v(0.68, 1.1, -1.62) },
@@ -3458,8 +3458,8 @@ export async function mount({
     const baseVertical = 40;
     const minHorizontal = 60;
     const horizontal = deg(2 * Math.atan(Math.tan(rad(baseVertical) / 2) * aspect));
-    /* 竖屏手机放宽到 84°，全景才能从书架一直看到窗台上的录音机和右边的电话。 */
-    const maxVertical = aspect < 0.75 ? 84 : 70;
+    /* 竖屏手机放宽到 76°：两张书桌、电视和录音机都在画面里，书架和电话靠左右拖动（首次进入会自动平移一遍）。 */
+    const maxVertical = aspect < 0.75 ? 76 : 70;
     camera.fov = horizontal >= minHorizontal
       ? baseVertical
       : Math.min(maxVertical, deg(2 * Math.atan(Math.tan(rad(minHorizontal) / 2) / aspect)));
@@ -3567,7 +3567,7 @@ export async function mount({
   /* 书桌视角的旋转、平移、缩放：goal 是手指要去的地方，当前值每帧平滑地追过去。 */
   const ORBIT_KEYS = ["yaw", "pitch", "zoom", "panX", "panY"];
   const orbit = { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0, goal: { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 } };
-  const LIMIT = { yaw: 0.62, pitchDown: -0.14, pitchUp: 0.34, zoomIn: 0.42, zoomOut: 1.2, panX: 0.42, panY: 0.2 };
+  const LIMIT = { yaw: 0.62, pitchDown: -0.14, pitchUp: 0.34, zoomIn: 0.42, zoomOut: 1.2, panX: 0.65, panY: 0.2 };
   let pivotDistance = 2;
   const pivot = new THREE.Vector3();
   const orbitDir = new THREE.Vector3();
@@ -3585,6 +3585,28 @@ export async function mount({
     goal.zoom = clamp(goal.zoom, LIMIT.zoomIn, LIMIT.zoomOut);
     goal.panX = clamp(goal.panX, -LIMIT.panX, LIMIT.panX);
     goal.panY = clamp(goal.panY, -LIMIT.panY, LIMIT.panY);
+  }
+
+  /* 竖屏手机第一次进来时，镜头慢慢往左、往右各平移一次再回到中间，让人知道两边还有东西。手一碰就停。 */
+  let orbitSpeed = 12;
+  let introTimers = [];
+  function stopIntro() {
+    for (const timer of introTimers) window.clearTimeout(timer);
+    introTimers = [];
+    orbitSpeed = 12;
+  }
+  function introPan() {
+    if (reducedMotion || current !== "desk") return;
+    stopIntro();
+    orbitSpeed = 1.5;
+    for (const [at, panX] of [[400, -0.6], [2900, 0.55], [5400, 0]]) {
+      introTimers.push(window.setTimeout(() => {
+        if (current === "desk") orbit.goal.panX = panX;
+      }, at));
+    }
+    introTimers.push(window.setTimeout(() => {
+      orbitSpeed = 12;
+    }, 7600));
   }
 
   function resetOrbit(instant = false) {
@@ -3632,6 +3654,7 @@ export async function mount({
 
   function onPointerDown(event) {
     if (event.pointerType === "mouse" && event.button !== 0 && event.button !== 2) return;
+    if (introTimers.length) stopIntro();
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     try {
       stage.setPointerCapture(event.pointerId);
@@ -3799,6 +3822,7 @@ export async function mount({
 
   function onWheel(event) {
     if (!canOrbit()) return;
+    if (introTimers.length) stopIntro();
     event.preventDefault();
     const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
     orbit.goal.zoom *= Math.exp(delta * (event.ctrlKey ? 0.01 : 0.0012));
@@ -3900,6 +3924,7 @@ export async function mount({
     if (!poses[target]) return Promise.resolve();
     if (flight) finishFlight();
     if (current === "desk") {
+      stopIntro();
       orbitPose(view, orbitPos, orbitLook);
       view.pos.copy(orbitPos);
       view.look.copy(orbitLook);
@@ -4054,7 +4079,7 @@ export async function mount({
     sideways.subVectors(view.look, view.pos).cross(camera.up).normalize();
     offset.copy(sideways).multiplyScalar((parallax.x * 0.1 + sway) * parallax.weight);
     offset.y += (parallax.y * 0.045 + (reducedMotion ? 0 : Math.sin(time * 0.19) * 0.004)) * parallax.weight;
-    const ease = reducedMotion ? 1 : 1 - Math.exp(-dt * 12);
+    const ease = reducedMotion ? 1 : 1 - Math.exp(-dt * orbitSpeed);
     for (const key of ORBIT_KEYS) orbit[key] = lerp(orbit[key], orbit.goal[key], ease);
     if (atDesk) {
       orbitPose(view, orbitPos, orbitLook);
@@ -4167,6 +4192,7 @@ export async function mount({
     document.removeEventListener("visibilitychange", onVisibility);
     canvas.removeEventListener("webglcontextlost", onContextLost);
     window.clearTimeout(armTimer);
+    stopIntro();
     stage.removeEventListener("pointerdown", onPointerDown);
     stage.removeEventListener("pointermove", onPointerMove);
     stage.removeEventListener("pointerup", onPointerUp);
@@ -4226,6 +4252,7 @@ export async function mount({
       clampOrbit();
     },
     resetOrbit: () => resetOrbit(),
+    introPan,
     setTapes: (list) => built.setTapes(list),
     insertTape: (index) => built.moveTape(index, true, reducedMotion),
     ejectTape: () => (built.loadedTape >= 0 ? built.moveTape(built.loadedTape, false, reducedMotion) : Promise.resolve()),
