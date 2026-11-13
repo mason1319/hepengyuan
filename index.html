@@ -83,7 +83,7 @@
     <link rel="preload" href="/assets/fonts/fira-sans-400-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles.css?v=20261112-room">
     <script src="/script.js?v=20261112-room" defer></script>
-    <script src="/room/boot.js?v=20261113-menu" defer></script>
+    <script src="/room/boot.js?v=20261113-room90" defer></script>
 
     <script type="application/ld+json">
       {
@@ -157,6 +157,24 @@
             "uploadDate": "2026-10-03",
             "inLanguage": "zh-CN",
             "publisher": {"@id": "https://hepengyuan.com/#person"}
+          },
+          {
+            "@type": "MusicRecording",
+            "@id": "https://hepengyuan.com/#music-lai-zi-gao-wei-de-ni",
+            "name": "来自高纬的你",
+            "url": "https://hepengyuan.com/#music",
+            "duration": "PT4M18S",
+            "recordingOf": {
+              "@type": "MusicComposition",
+              "name": "来自高纬的你",
+              "composer": {"@id": "https://hepengyuan.com/#person"}
+            },
+            "audio": {
+              "@type": "AudioObject",
+              "contentUrl": "https://hepengyuan.com/media/music/lai-zi-gao-wei-de-ni.mp3",
+              "encodingFormat": "audio/mpeg",
+              "duration": "PT4M18S"
+            }
           }
         ]
       }
@@ -232,6 +250,20 @@
             <a class="button button-game" href="/aggie-3a/">进入 Aggie 3A 互动演示</a>
             <a class="button" href="#contact">找到我</a>
           </p>
+        </section>
+
+        <section id="music" aria-labelledby="music-title">
+          <h2 id="music-title">Music <span class="h2z">原创音乐</span></h2>
+          <ol class="mu-list">
+            <li class="mu-item" data-music>
+              <div class="pb-hd"><span class="t" data-music-title>来自高纬的你</span><span class="y" data-music-length>4:18</span></div>
+              <audio controls preload="none" aria-label="《来自高纬的你》，何鹏远原创音乐，时长 4 分 18 秒">
+                <source src="/media/music/lai-zi-gao-wei-de-ni.mp3" type="audio/mpeg">
+                当前浏览器不支持直接播放音频。
+              </audio>
+              <p class="mu-note">何鹏远原创音乐。</p>
+            </li>
+          </ol>
         </section>
 
 

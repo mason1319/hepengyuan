@@ -37,7 +37,22 @@ export const HOTSPOTS = [
 /* 不是导航、只在房间里起作用的物件。 */
 const ACTIONS = {
   lamp: { label: "LAMP", sub: "开关台灯" },
-  tape: { label: "TAPE", sub: "录音机 · 雨声" },
+  tape: { label: "MUSIC", sub: "录音机 · 放磁带听音乐" },
+  cassette: { label: "CASSETTE", sub: "放进录音机" },
+  book: { label: "WORK", sub: "作品" },
+  deckPlay: { label: "PLAY", sub: "播放 / 暂停" },
+  deckPause: { label: "PAUSE", sub: "暂停" },
+  deckStop: { label: "STOP/EJ", sub: "停止 · 退出磁带" },
+  deckNext: { label: "FF", sub: "下一首" },
+  deckPrev: { label: "REW", sub: "上一首" },
+  deckRec: { label: "REC", sub: "录音键（按着玩）" },
+  calc: { label: "CALC", sub: "计算器 · 拿起来用" },
+  tvPower: { label: "POWER", sub: "电视开关" },
+  tvPreset: { label: "CH", sub: "预选台 1–6" },
+  tvChannel: { label: "TUNE", sub: "换台" },
+  tvVolume: { label: "VOL", sub: "音量" },
+  pcPower: { label: "POWER", sub: "电脑开关" },
+  pcBright: { label: "BRIGHT", sub: "屏幕亮度" },
 };
 
 /* 与首页 Work 区保持逐字一致。改履历时两处一起改。 */
@@ -348,6 +363,10 @@ function scanlines(g, W, H, alpha = 0.2) {
 
 /* 老电脑的绿色单色显示器。推近之后真正可读、可点的内容由启动器用 HTML 盖上来。 */
 function drawComputer(g, W, H, s) {
+  if (s.power === false) {
+    drawPowerOff(g, W, H, performance.now() - s.powerAt);
+    return;
+  }
   g.save();
   g.fillStyle = "#03110a";
   g.fillRect(0, 0, W, H);
@@ -415,24 +434,98 @@ function drawComputer(g, W, H, s) {
   });
   g.restore();
   scanlines(g, W, H);
+  if (s.powerAt) drawWarmUp(g, W, H, performance.now() - s.powerAt);
 }
 
-/* 老电视：测试卡、图文电视、雪花、正在播放的录像带。 */
+/* 关机：画面先压成一条亮线，再缩成一个亮点慢慢熄灭。 */
+function drawPowerOff(g, W, H, ms) {
+  g.fillStyle = "#000";
+  g.fillRect(0, 0, W, H);
+  if (ms < 150) {
+    const k = ms / 150;
+    const h = Math.max(3, H * (1 - k) * 0.6);
+    g.fillStyle = `rgba(235,245,255,${0.45 + 0.5 * k})`;
+    g.fillRect(W * 0.04 * k, (H - h) / 2, W * (1 - 0.08 * k), h);
+  } else if (ms < 620) {
+    const k = 1 - (ms - 150) / 470;
+    const r = 6 + 34 * k;
+    const dot = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, r * 2.6);
+    dot.addColorStop(0, `rgba(255,255,255,${k})`);
+    dot.addColorStop(0.35, `rgba(200,225,255,${0.5 * k})`);
+    dot.addColorStop(1, "rgba(200,225,255,0)");
+    g.fillStyle = dot;
+    g.fillRect(0, 0, W, H);
+  }
+}
+
+/* 开机：显像管预热，从黑慢慢亮起来。 */
+function drawWarmUp(g, W, H, ms) {
+  if (ms >= 750) return;
+  g.fillStyle = `rgba(0,0,0,${1 - ms / 750})`;
+  g.fillRect(0, 0, W, H);
+}
+
+/* 老电视：测试卡、图文电视、雪花、正在播放的录像带；平时按面板上的 1–6 换台。 */
 const BARS = ["#c0c0c0", "#c0c000", "#00c0c0", "#00c000", "#c000c0", "#c00000", "#0000c0", "#101010"];
+
+function tvShowsNoise(s) {
+  return s.power !== false && (s.mode === "noise" || (s.mode === "idle" && (s.channel === 2 || s.channel === 5)));
+}
+
+function drawTeletextPage(g, W) {
+  g.fillStyle = "#000";
+  g.fillRect(0, 0, W, W);
+  g.fillStyle = "#1f34d8";
+  g.fillRect(0, 40, W, 60);
+  g.fillStyle = "#ffe14d";
+  g.font = `44px ${OSD}`;
+  g.textBaseline = "top";
+  g.fillText("HPY TELETEXT   P100", 36, 48);
+  g.fillStyle = "#55e3ff";
+  for (let i = 0; i < 6; i += 1) g.fillRect(36, 140 + i * 62, 220 + ((i * 97) % 330), 20);
+}
+
+function drawTestCard(g, W, H, s) {
+  const barH = H * 0.66;
+  BARS.forEach((color, index) => {
+    g.fillStyle = color;
+    g.fillRect((index * W) / BARS.length, 0, W / BARS.length + 1, barH);
+  });
+  const ramp = g.createLinearGradient(0, 0, W, 0);
+  ramp.addColorStop(0, "#000");
+  ramp.addColorStop(1, "#fff");
+  g.fillStyle = ramp;
+  g.fillRect(0, barH, W, H * 0.12);
+  g.fillStyle = "#101010";
+  g.fillRect(0, barH + H * 0.12, W, H);
+  g.strokeStyle = "#fff";
+  g.lineWidth = 4;
+  g.beginPath();
+  g.arc(W / 2, H * 0.42, H * 0.3, 0, TAU);
+  g.stroke();
+  g.fillStyle = "#000";
+  g.fillRect(W / 2 - 150, H * 0.31, 300, 112);
+  g.fillStyle = "#fff";
+  g.textAlign = "center";
+  g.textBaseline = "top";
+  g.font = `52px ${OSD}`;
+  g.fillText("HPY TV", W / 2, H * 0.31 + 8);
+  g.font = `40px ${OSD}`;
+  g.fillText(s.clock, W / 2, H * 0.31 + 62);
+  g.font = `28px ${SANS}`;
+  g.fillText(s.insertText || "放入录像带 · FILM", W / 2, barH + H * 0.15);
+}
+
 function drawTv(g, W, H, s, noise) {
+  const now = performance.now();
+  if (s.power === false) {
+    drawPowerOff(g, W, H, now - s.powerAt);
+    return;
+  }
   g.save();
   if (s.mode === "teletext") {
-    g.fillStyle = "#000";
-    g.fillRect(0, 0, W, H);
-    g.fillStyle = "#1f34d8";
-    g.fillRect(0, 40, W, 60);
-    g.fillStyle = "#ffe14d";
-    g.font = `44px ${OSD}`;
-    g.textBaseline = "top";
-    g.fillText("HPY TELETEXT   P100", 36, 48);
-    g.fillStyle = "#55e3ff";
-    for (let i = 0; i < 6; i += 1) g.fillRect(36, 140 + i * 62, 220 + ((i * 97) % 330), 20);
-  } else if (s.mode === "noise") {
+    drawTeletextPage(g, W);
+  } else if (tvShowsNoise(s)) {
     g.imageSmoothingEnabled = false;
     g.drawImage(noise, 0, 0, W, H);
   } else if (s.mode === "media" && s.element) {
@@ -457,44 +550,55 @@ function drawTv(g, W, H, s, noise) {
     g.shadowBlur = 6;
     g.fillStyle = "#e9fff2";
     if (s.osd && (s.osdHold || s.blink)) g.fillText(s.osd, 32, 28);
-  } else {
-    /* 测试卡 + 当前时间 */
-    const barH = H * 0.66;
-    BARS.forEach((color, index) => {
+  } else if (s.channel === 3) {
+    /* AV 输入：录像机没放带时的蓝屏 */
+    g.fillStyle = "#1736c9";
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = "#e9eeff";
+    g.font = `48px ${OSD}`;
+    g.textBaseline = "top";
+    g.fillText("AV-1  VIDEO", 40, 36);
+    g.textAlign = "center";
+    g.font = `92px ${OSD}`;
+    g.fillText(s.clock, W / 2, H / 2 - 50);
+  } else if (s.channel === 4) {
+    drawTeletextPage(g, W);
+  } else if (s.channel === 6) {
+    BARS.slice(0, 7).forEach((color, index) => {
       g.fillStyle = color;
-      g.fillRect((index * W) / BARS.length, 0, W / BARS.length + 1, barH);
+      g.fillRect((index * W) / 7, 0, W / 7 + 1, H);
     });
-    const ramp = g.createLinearGradient(0, 0, W, 0);
-    ramp.addColorStop(0, "#000");
-    ramp.addColorStop(1, "#fff");
-    g.fillStyle = ramp;
-    g.fillRect(0, barH, W, H * 0.12);
-    g.fillStyle = "#101010";
-    g.fillRect(0, barH + H * 0.12, W, H);
-    g.strokeStyle = "#fff";
-    g.lineWidth = 4;
-    g.beginPath();
-    g.arc(W / 2, H * 0.42, H * 0.3, 0, TAU);
-    g.stroke();
     g.fillStyle = "#000";
-    g.fillRect(W / 2 - 150, H * 0.31, 300, 112);
+    g.fillRect(W / 2 - 130, H / 2 - 40, 260, 80);
     g.fillStyle = "#fff";
     g.textAlign = "center";
-    g.textBaseline = "top";
-    g.font = `52px ${OSD}`;
-    g.fillText("HPY TV", W / 2, H * 0.31 + 8);
-    g.font = `40px ${OSD}`;
-    g.fillText(s.clock, W / 2, H * 0.31 + 62);
-    g.font = `28px ${SANS}`;
-    g.fillText(s.insertText || "放入录像带 · FILM", W / 2, barH + H * 0.15);
+    g.textBaseline = "middle";
+    g.font = `56px ${OSD}`;
+    g.fillText("HPY TV", W / 2, H / 2 + 2);
+  } else {
+    drawTestCard(g, W, H, s);
   }
   g.restore();
+  /* 面板上换台、调音量时的绿色屏显 */
+  if (s.panelOsd && now < s.panelOsdUntil) {
+    g.save();
+    g.font = `52px ${OSD}`;
+    g.textBaseline = "top";
+    g.textAlign = s.panelOsd.startsWith("VOL") ? "left" : "right";
+    g.shadowColor = "rgba(0,0,0,.9)";
+    g.shadowBlur = 8;
+    g.fillStyle = "#6dff7a";
+    if (s.panelOsd.startsWith("VOL")) g.fillText(s.panelOsd, 40, H - 110);
+    else g.fillText(s.panelOsd, W - 40, 30);
+    g.restore();
+  }
   scanlines(g, W, H, 0.22);
   const vignette = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, W * 0.62);
   vignette.addColorStop(0, "rgba(0,0,0,0)");
   vignette.addColorStop(1, "rgba(0,0,0,.45)");
   g.fillStyle = vignette;
   g.fillRect(0, 0, W, H);
+  if (s.powerAt) drawWarmUp(g, W, H, now - s.powerAt);
 }
 
 /* 录像机的荧光显示屏（VFD）：平时显示时间，放带时显示 PLAY。 */
@@ -658,15 +762,53 @@ function grilleTexture() {
   });
 }
 
+function drawLcd(g, w, h, text) {
+  g.fillStyle = "#9fae8c";
+  g.fillRect(0, 0, w, h);
+  g.fillStyle = "#1f2618";
+  g.textAlign = "right";
+  g.textBaseline = "middle";
+  g.font = `60px ${OSD}`;
+  const room = w - 24;
+  const measured = g.measureText(text).width;
+  if (measured > room) g.font = `${Math.floor((60 * room) / measured)}px ${OSD}`;
+  g.fillText(text, w - 12, h / 2 + 3);
+}
+
 function lcdTexture(text) {
-  return canvasTexture(256, 80, (g, w, h) => {
-    g.fillStyle = "#9fae8c";
-    g.fillRect(0, 0, w, h);
-    g.fillStyle = "#1f2618";
-    g.font = `60px ${OSD}`;
-    g.textAlign = "right";
+  return canvasTexture(256, 80, (g, w, h) => drawLcd(g, w, h, text));
+}
+
+/* 铭牌、面板上的小字。 */
+function labelTexture(text, { width, height, color, bg, font, spacing = 0 }) {
+  return canvasTexture(width, height, (g, w, h) => {
+    if (bg) {
+      g.fillStyle = bg;
+      g.fillRect(0, 0, w, h);
+    }
+    g.fillStyle = color;
+    g.font = font;
+    g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(text, w - 14, h / 2 + 3);
+    if (spacing && "letterSpacing" in g) g.letterSpacing = `${spacing}px`;
+    g.fillText(text, w / 2, h / 2 + 2);
+  });
+}
+
+/* 显像管玻璃上的斜向高光（叠加混合，很淡）。 */
+function sheenTexture() {
+  return canvasTexture(256, 192, (g, w, h) => {
+    const band = g.createLinearGradient(0, 0, w * 0.75, h);
+    band.addColorStop(0, "rgba(255,255,255,0.30)");
+    band.addColorStop(0.32, "rgba(255,255,255,0.06)");
+    band.addColorStop(0.33, "rgba(255,255,255,0)");
+    g.fillStyle = band;
+    g.fillRect(0, 0, w, h);
+    const spot = g.createRadialGradient(w * 0.22, h * 0.18, 2, w * 0.22, h * 0.18, w * 0.32);
+    spot.addColorStop(0, "rgba(255,255,255,0.22)");
+    spot.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = spot;
+    g.fillRect(0, 0, w, h);
   });
 }
 
@@ -692,6 +834,267 @@ class CoilCurve extends THREE.Curve {
       .addScaledVector(this.v, Math.sin(angle) * this.radius)
       .add(new THREE.Vector3(0, sag, 0));
   }
+}
+
+/* 电视下沿的扬声器网罩：密密的小孔。 */
+function perforatedTexture() {
+  return canvasTexture(512, 96, (g, w, h) => {
+    g.fillStyle = "#1a1b1f";
+    g.fillRect(0, 0, w, h);
+    for (let y = 6; y < h; y += 9) {
+      for (let x = 6 + ((y / 9) % 2) * 4.5; x < w; x += 9) {
+        g.fillStyle = "#08080a";
+        g.beginPath();
+        g.arc(x, y, 2.6, 0, TAU);
+        g.fill();
+      }
+    }
+  });
+}
+
+/* 面板上印的小字：items 是 [文字, 物件坐标 x]，[x0, x1] 是这块贴片覆盖的物件坐标范围。 */
+function panelLabelTexture(items = [], x0 = 0, x1 = 1) {
+  return canvasTexture(1024, 36, (g, w, h) => {
+    g.fillStyle = "#a3a4aa";
+    g.font = `600 22px ${SANS}`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    for (const [text, x] of items) g.fillText(text, ((x - x0) / (x1 - x0)) * w, h / 2);
+  });
+}
+
+/* 磁带：烟灰色外壳、贴纸、中间的小窗和两只带齿的轴；userData.reels 给录音机转动用。 */
+function cassetteLabelTexture(color, en, label) {
+  return canvasTexture(256, 104, (g, w, h) => {
+    g.fillStyle = "#f3eee2";
+    g.fillRect(0, 0, w, h);
+    if (!en) {
+      g.strokeStyle = "rgba(60,70,110,.35)";
+      g.lineWidth = 2;
+      for (let y = 30; y < h; y += 18) {
+        g.beginPath();
+        g.moveTo(14, y);
+        g.lineTo(w - 14, y);
+        g.stroke();
+      }
+      return;
+    }
+    g.fillStyle = color;
+    g.fillRect(0, 0, w, 30);
+    g.fillStyle = "#fff";
+    g.font = `26px ${OSD}`;
+    g.textBaseline = "middle";
+    g.fillText(`A  ${en}`, 12, 16);
+    g.fillStyle = "#1d2433";
+    g.font = `600 30px ${SANS}`;
+    g.fillText(label, 14, 60);
+    g.strokeStyle = "rgba(60,70,110,.35)";
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(14, 86);
+    g.lineTo(w - 14, 86);
+    g.stroke();
+  });
+}
+
+function cassetteMesh(color, en, label) {
+  const group = new THREE.Group();
+  const shell = std(0x2b2c31, 0.35, 0.25);
+  group.add(box(0.1, 0.064, 0.012, shell));
+  const labelMaterial = new THREE.MeshStandardMaterial({ map: cassetteLabelTexture(color, en, label), roughness: 0.8 });
+  const sticker = new THREE.Mesh(new THREE.PlaneGeometry(0.088, 0.036), labelMaterial);
+  sticker.position.set(0, 0.009, 0.0062);
+  group.add(sticker);
+  const pane = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.014), new THREE.MeshStandardMaterial({ color: 0x14100c, roughness: 0.2 }));
+  pane.position.set(0, -0.009, 0.0064);
+  group.add(pane);
+  const reels = [];
+  for (const x of [-0.017, 0.017]) {
+    const reel = new THREE.Group();
+    reel.position.set(x, -0.009, 0.0066);
+    const hub = new THREE.Mesh(new THREE.CircleGeometry(0.0055, 6), new THREE.MeshBasicMaterial({ color: 0xf2efe8 }));
+    reel.add(hub);
+    const core = new THREE.Mesh(new THREE.CircleGeometry(0.0024, 12), new THREE.MeshBasicMaterial({ color: 0x14100c }));
+    core.position.z = 0.0002;
+    reel.add(core);
+    group.add(reel);
+    reels.push(reel);
+  }
+  group.add(box(0.07, 0.008, 0.003, std(0x3a3b41, 0.4), 0, -0.027, 0.006));
+  group.userData.reels = reels;
+  group.userData.labelMaterial = labelMaterial;
+  return group;
+}
+
+/* 录音机显示屏：收音机刻度、TAPE 指示、7 段均衡器。 */
+function drawDeckDisplay(g, W, H, deck) {
+  g.fillStyle = "#0c100e";
+  g.fillRect(0, 0, W, H);
+  g.font = `22px ${OSD}`;
+  g.textBaseline = "middle";
+  g.fillStyle = "#ffb45e";
+  const left = 18;
+  const right = 300;
+  g.fillText("FM", left, 22);
+  [88, 92, 96, 100, 104, 108].forEach((mhz, index) => {
+    const x = left + 40 + (index * (right - left - 50)) / 5;
+    g.fillText(String(mhz), x - 10, 22);
+    g.fillRect(x, 40, 2, 14);
+  });
+  g.fillRect(left + 40, 54, right - left - 46, 2);
+  g.fillStyle = "#ff4a2e";
+  g.fillRect(left + 40 + ((98.6 - 88) / 20) * (right - left - 50), 34, 3, 28);
+  g.fillStyle = deck.loaded >= 0 ? "#7dff8a" : "#23402a";
+  g.fillText(deck.playing ? "▶ TAPE" : "TAPE", left, 84);
+  g.fillStyle = "#3a4a3e";
+  g.fillText("STEREO", left + 110, 84);
+  const bars = deck.level.length;
+  for (let i = 0; i < bars; i += 1) {
+    const x = 330 + i * 24;
+    for (let s = 0; s < 8; s += 1) {
+      const lit = deck.level[i] * 8 > s;
+      const color = s > 5 ? "#ff4a2e" : s > 3 ? "#ffb45e" : "#7dff8a";
+      g.fillStyle = lit ? color : "#16201a";
+      g.fillRect(x, H - 14 - s * 11, 16, 8);
+    }
+  }
+}
+
+/* 书脊：中文竖排一字一行，西文转 90 度横着写；太长就截断。 */
+function spineTexture(title, color) {
+  return canvasTexture(64, 512, (g, w, h) => {
+    g.fillStyle = color;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "rgba(230,200,120,.85)";
+    g.fillRect(6, 22, w - 12, 3);
+    g.fillRect(6, h - 26, w - 12, 3);
+    g.fillStyle = "#f3e7c4";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    const text = String(title || "").trim();
+    if (/[㐀-鿿]/.test(text)) {
+      const chars = [...text.replace(/\s+/g, "")].slice(0, 12);
+      const size = Math.min(34, Math.floor((h - 80) / Math.max(chars.length, 1)) - 2);
+      g.font = `600 ${size}px ${SERIF}`;
+      chars.forEach((char, index) => g.fillText(char, w / 2, 48 + size / 2 + index * (size + 2)));
+    } else {
+      g.save();
+      g.translate(w / 2, h / 2);
+      g.rotate(Math.PI / 2);
+      let size = 30;
+      g.font = `600 ${size}px ${SERIF}`;
+      while (size > 14 && g.measureText(text).width > h - 70) {
+        size -= 2;
+        g.font = `600 ${size}px ${SERIF}`;
+      }
+      g.fillText(text, 0, 2);
+      g.restore();
+    }
+  });
+}
+
+/* 八卦镜的八卦图：红底金色卦爻，中间留给小圆镜。 */
+function baguaTexture() {
+  return canvasTexture(256, 256, (g, w, h) => {
+    g.fillStyle = "#a8281a";
+    g.fillRect(0, 0, w, h);
+    g.translate(w / 2, h / 2);
+    g.fillStyle = "#e9c25a";
+    [7, 3, 5, 1, 6, 2, 4, 0].forEach((bits, index) => {
+      g.save();
+      g.rotate((index / 8) * TAU);
+      for (let line = 0; line < 3; line += 1) {
+        const y = -100 + line * 14;
+        if (bits & (1 << line)) g.fillRect(-26, y, 52, 8);
+        else {
+          g.fillRect(-26, y, 21, 8);
+          g.fillRect(5, y, 21, 8);
+        }
+      }
+      g.restore();
+    });
+    g.strokeStyle = "#e9c25a";
+    g.lineWidth = 3;
+    g.beginPath();
+    g.arc(0, 0, 50, 0, TAU);
+    g.stroke();
+  });
+}
+
+/* 图腾柱的三张脸：木色底、深色刻痕、红和青绿的彩绘。 */
+function totemTexture() {
+  const face = (variant) => canvasTexture(128, 192, (g, w, h) => {
+    g.fillStyle = "#8a5a32";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "#3b2312";
+    g.fillRect(0, 0, w, 10);
+    g.fillRect(0, h - 10, w, 10);
+    const paint = ["#b3261d", "#1f7a74", "#c98a2a"][variant];
+    g.fillStyle = paint;
+    g.beginPath();
+    g.ellipse(36, 70, 22, 16, 0, 0, TAU);
+    g.ellipse(92, 70, 22, 16, 0, 0, TAU);
+    g.fill();
+    g.fillStyle = "#f2e6c8";
+    g.beginPath();
+    g.arc(36, 70, 8, 0, TAU);
+    g.arc(92, 70, 8, 0, TAU);
+    g.fill();
+    g.fillStyle = "#1a0f08";
+    g.beginPath();
+    g.arc(36, 70, 4, 0, TAU);
+    g.arc(92, 70, 4, 0, TAU);
+    g.fill();
+    g.fillStyle = "#3b2312";
+    g.fillRect(56, 82, 16, 34);
+    g.fillStyle = paint;
+    if (variant === 1) g.fillRect(28, 132, 72, 18);
+    else {
+      g.beginPath();
+      g.moveTo(26, 128);
+      g.quadraticCurveTo(64, 170, 102, 128);
+      g.lineTo(26, 128);
+      g.fill();
+    }
+    g.fillStyle = "#3b2312";
+    for (let x = 34; x < 100; x += 10) g.fillRect(x, 134, 4, 10);
+  });
+  return [face(0), face(1), face(2)];
+}
+
+/* 符箓：黄纸、朱砂红边框，上面竖写“敕令”，中间一笔连写的符纹，下面竖写四个字。 */
+function talismanTexture(top, bottom, seed) {
+  return canvasTexture(128, 416, (g, w, h) => {
+    g.fillStyle = "#efc83c";
+    g.fillRect(0, 0, w, h);
+    const rnd = makeRng(90 + seed);
+    for (let i = 0; i < 260; i += 1) {
+      g.fillStyle = `rgba(150,110,20,${0.05 + rnd() * 0.08})`;
+      g.fillRect(rnd() * w, rnd() * h, 2, 2);
+    }
+    g.strokeStyle = "#b8231b";
+    g.lineWidth = 3;
+    g.strokeRect(7, 7, w - 14, h - 14);
+    g.fillStyle = "#b8231b";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = `800 36px ${SERIF}`;
+    [...top].forEach((char, index) => g.fillText(char, w / 2, 40 + index * 40));
+    g.lineWidth = 5;
+    g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(w / 2, 110);
+    for (let i = 0; i < 6; i += 1) {
+      const y = 122 + i * 16;
+      g.quadraticCurveTo(i % 2 ? 22 : w - 22, y + 4, w / 2 + (rnd() - 0.5) * 20, y + 12);
+    }
+    g.stroke();
+    g.beginPath();
+    g.arc(w / 2, 232, 12, 0, TAU);
+    g.stroke();
+    g.font = `800 30px ${SERIF}`;
+    [...bottom].forEach((char, index) => g.fillText(char, w / 2, 274 + index * 34));
+  });
 }
 
 /* ------------------------------------------------------------------ 场景 */
@@ -796,23 +1199,251 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   radiator.add(box(1.06, 0.03, 0.06, radiatorMat, 0.255, 0.13, BACK + 0.07));
   scene.add(radiator);
 
-  /* ---- 书桌：四条腿 + 前横档，桌下能看到暖气片 */
+  /* ---- 两张桌子：窗下的主书桌（电视、台灯、记事本、计算器、电话），左边单独一张 90 年代电脑桌。 */
   const deskWood = std(0xffffff, 0.5, 0, { map: woodTexture("#7a5236", "#3d2616", "#a87a52", 11) });
   deskWood.map.anisotropy = anisotropy;
   const deskDark = std(0x3a2618, 0.6);
   const desk = new THREE.Group();
-  desk.add(slab(-1.08, 1.1, DESK_TOP - 0.04, DESK_TOP, -1.585, -0.76, deskWood));
-  for (const [x, z] of [[-1.04, -1.55], [1.06, -1.55], [-1.04, -0.8], [1.06, -0.8]]) {
+  desk.add(slab(-0.48, 1.1, DESK_TOP - 0.04, DESK_TOP, -1.585, -0.76, deskWood));
+  for (const [x, z] of [[-0.44, -1.55], [1.06, -1.55], [-0.44, -0.8], [1.06, -0.8]]) {
     desk.add(slab(x - 0.025, x + 0.025, 0, DESK_TOP - 0.04, z - 0.025, z + 0.025, deskDark));
   }
-  desk.add(slab(-1.02, 1.04, DESK_TOP - 0.12, DESK_TOP - 0.04, -0.81, -0.785, deskDark));
+  desk.add(slab(-0.42, 1.04, DESK_TOP - 0.12, DESK_TOP - 0.04, -0.81, -0.785, deskDark));
   scene.add(desk);
+
+  /* 电脑桌：浅灰台面 + 黑色钢架，桌面下有一层放主机线和软盘盒的搁板。 */
+  const pcDeskTop = std(0xd8d4ca, 0.55);
+  const steel = std(0x232428, 0.45, 0.6);
+  const pcDesk = new THREE.Group();
+  pcDesk.add(slab(-1.32, -0.52, DESK_TOP - 0.035, DESK_TOP, -1.585, -0.84, pcDeskTop));
+  pcDesk.add(slab(-1.32, -0.52, DESK_TOP - 0.04, DESK_TOP - 0.035, -1.585, -0.84, std(0x9a958a, 0.6)));
+  for (const x of [-1.29, -0.55]) {
+    pcDesk.add(slab(x - 0.018, x + 0.018, 0, DESK_TOP - 0.04, -1.56, -1.52, steel));
+    pcDesk.add(slab(x - 0.018, x + 0.018, 0, DESK_TOP - 0.04, -0.9, -0.86, steel));
+    pcDesk.add(slab(x - 0.018, x + 0.018, 0.02, 0.05, -1.56, -0.86, steel));
+  }
+  pcDesk.add(slab(-1.3, -0.54, 0.3, 0.32, -1.56, -1.1, pcDeskTop));
+  scene.add(pcDesk);
+
+  /* ---- 书架（左墙角）：五层。第二层左边是“作品书”——启动器从首页 Work 区的 Projects 读出来，
+     以后首页多一个作品，书架上就多一本；其余是普通的书、录像带盒，加上风水摆件、图腾和符箓。 */
+  const shelfWood = std(0xffffff, 0.6, 0, { map: woodTexture("#5d3b24", "#2c1a0e", "#7f5634", 29) });
+  shelfWood.map.anisotropy = anisotropy;
+  const SHELF = { x0: -1.93, x1: -1.37, z0: BACK + 0.005, z1: BACK + 0.31, top: 1.86 };
+  const SHELF_LEVELS = [0.06, 0.42, 0.78, 1.14, 1.5];
+  const bookshelf = new THREE.Group();
+  bookshelf.add(slab(SHELF.x0, SHELF.x0 + 0.022, 0, SHELF.top, SHELF.z0, SHELF.z1, shelfWood));
+  bookshelf.add(slab(SHELF.x1 - 0.022, SHELF.x1, 0, SHELF.top, SHELF.z0, SHELF.z1, shelfWood));
+  bookshelf.add(slab(SHELF.x0, SHELF.x1, SHELF.top - 0.025, SHELF.top, SHELF.z0, SHELF.z1 + 0.01, shelfWood));
+  bookshelf.add(slab(SHELF.x0 + 0.02, SHELF.x1 - 0.02, 0, SHELF.top, SHELF.z0, SHELF.z0 + 0.008, std(0x3a2616, 0.8)));
+  for (const y of SHELF_LEVELS) bookshelf.add(slab(SHELF.x0 + 0.02, SHELF.x1 - 0.02, y - 0.022, y, SHELF.z0, SHELF.z1, shelfWood));
+  bookshelf.add(slab(SHELF.x0, SHELF.x1, 0, 0.04, SHELF.z1 - 0.02, SHELF.z1, shelfWood));
+  scene.add(bookshelf);
+
+  /* 普通的书：按层随机排，颜色偏旧。 */
+  const BOOK_COLORS = [0x6b2b2b, 0x24395c, 0x3f5b3a, 0xb58a3a, 0xe6dcc4, 0x2f5f63, 0x5a3d61, 0x8c4a2f, 0x1f2328, 0xc9b98f];
+  const books = new THREE.Group();
+  const bookGeometry = new THREE.BoxGeometry(1, 1, 1);
+  const bookMaterial = std(0xffffff, 0.75);
+  const bookRng = makeRng(61);
+  const bookSlots = [];
+  /* 每层可以放书的区间：[层号, 起点, 终点]（相对书架内侧左边）。中间留出摆件的位置。 */
+  const ranges = [[0, 0, 0.3], [1, 0.24, 0.52], [2, 0, 0.14], [3, 0.3, 0.52], [4, 0, 0.36]];
+  for (const [level, from, to] of ranges) {
+    let x = SHELF.x0 + 0.024 + from;
+    while (x < SHELF.x0 + 0.024 + to) {
+      const w = 0.018 + bookRng() * 0.026;
+      const h = 0.19 + bookRng() * 0.11 - (level === 0 ? 0 : 0.02);
+      const d = 0.15 + bookRng() * 0.07;
+      const lean = bookRng() < 0.08 ? 0.12 : 0;
+      bookSlots.push({ x: x + w / 2, y: SHELF_LEVELS[level], w, h, d, lean, color: BOOK_COLORS[Math.floor(bookRng() * BOOK_COLORS.length)] });
+      x += w + 0.002;
+    }
+  }
+  const plainBooks = new THREE.InstancedMesh(bookGeometry, bookMaterial, bookSlots.length);
+  const bookMatrix = new THREE.Matrix4();
+  const bookQuat = new THREE.Quaternion();
+  const bookColor = new THREE.Color();
+  bookSlots.forEach((slot, index) => {
+    bookQuat.setFromEuler(new THREE.Euler(0, 0, slot.lean));
+    bookMatrix.compose(new THREE.Vector3(slot.x, slot.y + slot.h / 2, SHELF.z0 + 0.02 + slot.d / 2), bookQuat, new THREE.Vector3(slot.w, slot.h, slot.d));
+    plainBooks.setMatrixAt(index, bookMatrix);
+    plainBooks.setColorAt(index, bookColor.set(slot.color));
+  });
+  plainBooks.instanceMatrix.needsUpdate = true;
+  plainBooks.instanceColor.needsUpdate = true;
+  plainBooks.castShadow = true;
+  books.add(plainBooks);
+  scene.add(books);
+  tag("posts", books);
+
+  /* 作品书：第二层左边，从左往右排；书脊上竖排作品名。 */
+  const workBooks = new THREE.Group();
+  workBooks.userData.action = "book";
+  scene.add(workBooks);
+  const WORK_COLORS = ["#7d2a22", "#1d3a5f", "#2f5634", "#8a6420", "#43305a", "#1f5560", "#5c2a3e", "#3b3b3b"];
+  const setBooks = (list) => {
+    for (const child of [...workBooks.children]) {
+      workBooks.remove(child);
+      child.traverse((node) => {
+        node.geometry?.dispose?.();
+        if (node.material?.map) node.material.map.dispose();
+      });
+    }
+    let x = SHELF.x0 + 0.03;
+    list.slice(0, 7).forEach((item, index) => {
+      const w = 0.032;
+      const h = 0.25 - (index % 3) * 0.012;
+      const color = WORK_COLORS[index % WORK_COLORS.length];
+      const spine = new THREE.MeshStandardMaterial({ map: spineTexture(item.title, color), roughness: 0.7 });
+      const cover = std(new THREE.Color(color).getHex(), 0.7);
+      const book = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), [cover, cover, cover, cover, spine, cover]);
+      book.position.set(x + w / 2, SHELF_LEVELS[1] + h / 2, SHELF.z0 + 0.12);
+      book.castShadow = true;
+      book.userData.action = "book";
+      book.userData.value = index;
+      workBooks.add(book);
+      x += w + 0.003;
+    });
+  };
+
+  /* 风水摆件（第三层）：八卦镜、水晶球、金蟾；第四层：葫芦、图腾柱；顶上：香炉。 */
+  const gold = std(0xd2a03c, 0.28, 0.9);
+  const brass = std(0xb7893a, 0.32, 0.85);
+  const redWood = std(0x7a2318, 0.55);
+  const ornaments = new THREE.Group();
+  const shelfX = (offset) => SHELF.x0 + 0.024 + offset;
+  /* 八卦镜：红木八角框 + 八卦图 + 中间的小圆镜，靠在小支架上 */
+  const bagua = new THREE.Group();
+  bagua.position.set(shelfX(0.22), SHELF_LEVELS[2] + 0.075, SHELF.z0 + 0.1);
+  bagua.rotation.x = -0.18;
+  const baguaFrame = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.068, 0.012, 8), redWood);
+  baguaFrame.rotation.x = Math.PI / 2;
+  baguaFrame.rotation.y = Math.PI / 8;
+  bagua.add(baguaFrame);
+  const baguaFace = new THREE.Mesh(new THREE.CircleGeometry(0.06, 8), new THREE.MeshStandardMaterial({ map: baguaTexture(), roughness: 0.5 }));
+  baguaFace.rotation.z = Math.PI / 8;
+  baguaFace.position.z = 0.0065;
+  bagua.add(baguaFace);
+  const mirror = new THREE.Mesh(new THREE.CircleGeometry(0.019, 28), std(0xe8eef5, 0.05, 1));
+  mirror.position.z = 0.0072;
+  bagua.add(mirror);
+  bagua.add(box(0.012, 0.07, 0.012, redWood, 0, -0.04, -0.03));
+  ornaments.add(bagua);
+  /* 水晶球：木座上一颗通透的球 */
+  const crystal = new THREE.Group();
+  crystal.position.set(shelfX(0.37), SHELF_LEVELS[2], SHELF.z0 + 0.15);
+  const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.032, 0.022, 20), redWood);
+  stand.position.y = 0.011;
+  crystal.add(stand);
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.036, 28, 20), new THREE.MeshStandardMaterial({
+    color: 0xd9ecff, roughness: 0.04, metalness: 0.1, transparent: true, opacity: 0.55, emissive: 0x24384f, emissiveIntensity: 0.4,
+  }));
+  ball.position.y = 0.056;
+  crystal.add(ball);
+  ornaments.add(crystal);
+  /* 三脚金蟾：趴在一叠铜钱上，嘴里衔着一枚 */
+  const toad = new THREE.Group();
+  toad.position.set(shelfX(0.47), SHELF_LEVELS[2], SHELF.z0 + 0.14);
+  toad.rotation.y = -0.5;
+  const coinsPile = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.042, 0.012, 24), gold);
+  coinsPile.position.y = 0.006;
+  toad.add(coinsPile);
+  const toadBody = new THREE.Mesh(new THREE.SphereGeometry(0.03, 20, 14), gold);
+  toadBody.scale.set(1.15, 0.7, 1);
+  toadBody.position.set(0, 0.03, 0);
+  toad.add(toadBody);
+  const toadHead = new THREE.Mesh(new THREE.SphereGeometry(0.019, 16, 12), gold);
+  toadHead.scale.set(1.2, 0.8, 1);
+  toadHead.position.set(0, 0.043, 0.022);
+  toad.add(toadHead);
+  for (const x of [-0.01, 0.01]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.005, 10, 8), std(0x7a1b12, 0.3, 0.2));
+    eye.position.set(x, 0.056, 0.026);
+    toad.add(eye);
+  }
+  const mouthCoin = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.002, 18), brass);
+  mouthCoin.rotation.x = Math.PI / 2;
+  mouthCoin.position.set(0, 0.036, 0.042);
+  toad.add(mouthCoin);
+  ornaments.add(toad);
+  /* 铜葫芦，系红穗子 */
+  const gourd = new THREE.Group();
+  gourd.position.set(shelfX(0.05), SHELF_LEVELS[3], SHELF.z0 + 0.14);
+  const gourdLow = new THREE.Mesh(new THREE.SphereGeometry(0.036, 20, 14), brass);
+  gourdLow.position.y = 0.035;
+  gourd.add(gourdLow);
+  const gourdHigh = new THREE.Mesh(new THREE.SphereGeometry(0.024, 18, 12), brass);
+  gourdHigh.position.y = 0.084;
+  gourd.add(gourdHigh);
+  const gourdNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.008, 0.024, 10), brass);
+  gourdNeck.position.y = 0.114;
+  gourd.add(gourdNeck);
+  gourd.add(rod(new THREE.Vector3(0.006, 0.062, 0.02), new THREE.Vector3(0.012, 0.0, 0.03), 0.004, std(0xb3261d, 0.7)));
+  ornaments.add(gourd);
+  /* 图腾柱：三节木雕，上面一对展开的翅膀 */
+  const totem = new THREE.Group();
+  totem.position.set(shelfX(0.17), SHELF_LEVELS[3], SHELF.z0 + 0.15);
+  const totemFaces = totemTexture();
+  [[0.05, 0.075, 0], [0.046, 0.07, 1], [0.042, 0.065, 2]].forEach(([w, h, index], level) => {
+    const material = new THREE.MeshStandardMaterial({ map: totemFaces[index], roughness: 0.8 });
+    const segment = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.9), [std(0x6b4423, 0.85), std(0x6b4423, 0.85), std(0x6b4423, 0.85), std(0x6b4423, 0.85), material, std(0x6b4423, 0.85)]);
+    segment.position.y = [0.0375, 0.11, 0.1775][level];
+    totem.add(segment);
+  });
+  for (const side of [-1, 1]) {
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.016, 0.008), std(0x8f2f1c, 0.7));
+    wing.position.set(side * 0.042, 0.2, 0);
+    wing.rotation.z = side * 0.35;
+    totem.add(wing);
+  }
+  ornaments.add(totem);
+  /* 一串铜钱挂在第四层边上 */
+  for (let i = 0; i < 3; i += 1) {
+    const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.002, 18), brass);
+    coin.rotation.x = Math.PI / 2;
+    coin.position.set(shelfX(0.27), SHELF_LEVELS[3] - 0.035 - i * 0.028, SHELF.z1 + 0.003);
+    ornaments.add(coin);
+  }
+  ornaments.add(rod(new THREE.Vector3(shelfX(0.27), SHELF_LEVELS[3] - 0.005, SHELF.z1 + 0.002), new THREE.Vector3(shelfX(0.27), SHELF_LEVELS[3] - 0.11, SHELF.z1 + 0.002), 0.0012, std(0xb3261d, 0.7)));
+  /* 顶上：三足香炉，插三炷香 */
+  const burner = new THREE.Group();
+  burner.position.set(shelfX(0.38), SHELF.top, SHELF.z0 + 0.16);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.035, 0.04, 24), std(0x6d5b3a, 0.4, 0.8));
+  bowl.position.y = 0.036;
+  burner.add(bowl);
+  for (let i = 0; i < 3; i += 1) {
+    const angle = (i / 3) * TAU;
+    burner.add(rod(new THREE.Vector3(Math.cos(angle) * 0.03, 0.02, Math.sin(angle) * 0.03), new THREE.Vector3(Math.cos(angle) * 0.036, 0, Math.sin(angle) * 0.036), 0.004, std(0x6d5b3a, 0.4, 0.8)));
+    const stick = rod(new THREE.Vector3((i - 1) * 0.012, 0.05, 0), new THREE.Vector3((i - 1) * 0.022, 0.17, 0.004), 0.0016, std(0x9b3a22, 0.8));
+    burner.add(stick);
+    const ember = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff7a3a }));
+    ember.position.set((i - 1) * 0.022, 0.171, 0.004);
+    burner.add(ember);
+  }
+  ornaments.add(burner);
+  /* 符箓：三张黄纸朱砂符，贴在书架朝外的那块侧板上 */
+  [["敕令", "镇宅平安"], ["敕令", "招财进宝"], ["敕令", "文昌开智"]].forEach(([top, bottom], index) => {
+    const charm = new THREE.Mesh(new THREE.PlaneGeometry(0.058, 0.19), new THREE.MeshStandardMaterial({ map: talismanTexture(top, bottom, index), roughness: 0.9, side: THREE.DoubleSide }));
+    charm.position.set(SHELF.x1 + 0.0015, 1.45 - index * 0.012, SHELF.z0 + 0.08 + index * 0.075);
+    charm.rotation.y = Math.PI / 2;
+    charm.rotation.x = (index - 1) * 0.04;
+    ornaments.add(charm);
+  });
+  ornaments.traverse((node) => {
+    if (node.isMesh) node.castShadow = true;
+  });
+  scene.add(ornaments);
+  /* 书架上方一盏暖色小射灯，照亮书和摆件。 */
+  const shelfLight = new THREE.PointLight(0xffc68a, 0.9, 2.4, 2);
+  shelfLight.position.set(-1.5, 2.05, -0.95);
+  scene.add(shelfLight);
 
   /* ---- 椅子（左前景） */
   const chairMat = std(0xd8cfbd, 0.7);
   const chair = new THREE.Group();
-  chair.position.set(-0.98, 0, -0.42);
-  chair.rotation.y = 0.5;
+  chair.position.set(-0.86, 0, -0.6);
+  chair.rotation.y = 0.12;
   chair.add(box(0.44, 0.035, 0.42, chairMat, 0, 0.46, 0));
   for (const [x, z] of [[-0.19, -0.18], [0.19, -0.18], [-0.19, 0.18], [0.19, 0.18]]) chair.add(box(0.03, 0.46, 0.03, chairMat, x, 0.23, z));
   chair.add(box(0.03, 0.5, 0.03, chairMat, -0.19, 0.73, 0.19));
@@ -821,42 +1452,84 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   for (let i = 0; i < 4; i += 1) chair.add(box(0.018, 0.4, 0.018, chairMat, -0.12 + i * 0.08, 0.7, 0.19));
   scene.add(chair);
 
-  /* ================================================================ 80 年代的书桌
-     左：老电脑（主机 + 绿色显示器 + 键盘 + 软盘）；中：老电视放在录像机上，前面是遥控器；
-     右：录像带、记事本、计算器、电话叠在调制解调器上；窗台上放着一台手提录音机。 */
+  /* ================================================================ 90 年代的房间
+     左墙角：书架（作品书、风水摆件、图腾、符箓）；左：电脑桌（铂金色电脑、键盘、鼠标、软盘）；
+     中：主书桌，大彩电放在录像机上，前面是遥控器；右：录像带、记事本、计算器、电话叠在调制解调器上；
+     窗台上：手提录音机和一摞磁带。 */
 
   const beigeShell = std(0xd2c8ae, 0.62);
   const beigeDark = std(0xb3a98f, 0.7);
   const slotDark = std(0x111216, 0.6);
   const silver = std(0xc9c9c4, 0.35, 0.7);
 
-  /* ---- 老电脑（ABOUT / ONLINE） */
-  const computer = new THREE.Group();
-  computer.position.set(-0.72, DESK_TOP, -1.3);
-  computer.rotation.y = 0.12;
-  computer.add(roundedBox(0.44, 0.13, 0.38, 0.012, beigeShell, 0, 0.065, 0));
-  for (let i = 0; i < 2; i += 1) {
-    const y = 0.088 - i * 0.046;
-    computer.add(box(0.17, 0.036, 0.006, beigeDark, 0.105, y, 0.19));
-    computer.add(box(0.13, 0.006, 0.004, slotDark, 0.1, y + 0.004, 0.194));
-    computer.add(box(0.016, 0.022, 0.006, silver, 0.17, y, 0.195));
-  }
-  computer.add(box(0.06, 0.014, 0.004, slotDark, -0.15, 0.04, 0.192));
-  const computerLed = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.008, 0.004), new THREE.MeshBasicMaterial({ color: 0x7dff8a }));
-  computerLed.position.set(-0.17, 0.08, 0.192);
-  computer.add(computerLed);
-  const monitorBody = new THREE.Group();
-  monitorBody.position.set(0, 0.13, -0.01);
-  monitorBody.add(roundedBox(0.36, 0.3, 0.32, 0.03, beigeShell, 0, 0.15, 0));
-  monitorBody.add(roundedBox(0.22, 0.18, 0.12, 0.03, beigeShell, 0, 0.15, -0.2));
-  monitorBody.add(roundedBox(0.31, 0.235, 0.012, 0.01, std(0x17181c, 0.5), 0, 0.165, 0.158));
-  const computerCanvas = document.createElement("canvas");
-  computerCanvas.width = 1024;
-  computerCanvas.height = 768;
-  const computerContext = computerCanvas.getContext("2d");
-  const computerTexture = new THREE.CanvasTexture(computerCanvas);
-  computerTexture.colorSpace = THREE.SRGBColorSpace;
-  computerTexture.anisotropy = anisotropy;
+  /* ---- 能按、能拧、能扳的开关。
+     button：按下去再弹回；latch：一组里选中的那个保持按下（电视预选台）；toggle：按一下锁住、再按弹起（电源键）；
+     knob：旋钮转一格（有白色刻线，看得出转了）。axis / sign 决定往哪个方向按（顶上的琴键是往下按）。 */
+  const controls = [];
+  const control = (mesh, action, { kind = "button", value = null, travel = 0.003, step = Math.PI / 4, hit = null, group = null, axis = "z", sign = -1 } = {}) => {
+    if (action) mesh.userData.action = action;
+    if (value !== null) mesh.userData.value = value;
+    if (hit) mesh.add(hitBox(...hit));
+    const entry = { mesh, kind, travel, step, group, axis, sign, rest: mesh.position[axis], t: 1, turn: 0, turnGoal: 0, on: false, depth: 0, latched: false };
+    mesh.userData.control = entry;
+    controls.push(entry);
+    return mesh;
+  };
+  const actuate = (mesh) => {
+    const entry = mesh?.userData.control;
+    if (!entry) return;
+    if (entry.kind === "button") entry.t = 0;
+    else if (entry.kind === "knob") entry.turnGoal -= entry.step;
+    else if (entry.kind === "toggle") entry.on = !entry.on;
+  };
+  const latch = (group, value) => {
+    for (const entry of controls) if (entry.group === group) entry.latched = entry.mesh.userData.value === value;
+  };
+  tickers.push((time, dt, realDt = dt) => {
+    const step = Math.min(realDt, 0.1);
+    for (const entry of controls) {
+      const { mesh } = entry;
+      if (entry.kind === "button") {
+        if (entry.t >= 1) continue;
+        entry.t = Math.min(1, entry.t + step / 0.24);
+        mesh.position[entry.axis] = entry.rest + entry.sign * entry.travel * Math.sin(Math.PI * entry.t);
+      } else if (entry.kind === "latch" || entry.kind === "toggle") {
+        const goal = (entry.kind === "latch" ? entry.latched : entry.on) ? entry.travel : 0;
+        if (Math.abs(entry.depth - goal) < 1e-5) continue;
+        entry.depth = lerp(entry.depth, goal, 1 - Math.exp(-step * 22));
+        mesh.position[entry.axis] = entry.rest + entry.sign * entry.depth;
+      } else if (entry.kind === "knob") {
+        if (Math.abs(entry.turnGoal - entry.turn) < 1e-4) continue;
+        entry.turn = lerp(entry.turn, entry.turnGoal, 1 - Math.exp(-step * 14));
+        mesh.rotation.y = entry.turn;
+      }
+    }
+  });
+
+  /* 旋钮：圆柱轴线朝前，正面有一道白色刻线。 */
+  const knobMesh = (radius, depth, material) => {
+    const knob = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 1.06, depth, 28), material);
+    knob.rotation.x = Math.PI / 2;
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.78, radius * 0.78, 0.0012, 24), std(0x2a2a2e, 0.35, 0.5));
+    cap.position.y = depth / 2;
+    knob.add(cap);
+    const tick = new THREE.Mesh(new THREE.BoxGeometry(radius * 0.16, 0.0016, radius * 0.62), new THREE.MeshBasicMaterial({ color: 0xf2efe6 }));
+    tick.position.set(0, depth / 2 + 0.0004, -radius * 0.42);
+    knob.add(tick);
+    return knob;
+  };
+  /* 圆形按钮：圆柱轴线朝前。 */
+  const roundButton = (radius, depth, material) => {
+    const button = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, depth, 24), material);
+    button.rotation.x = Math.PI / 2;
+    return button;
+  };
+  const led = (w, h, color) => new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.003), new THREE.MeshBasicMaterial({ color }));
+
+  /* 显像管玻璃上的斜向高光，让屏幕看起来是凸出来的玻璃。 */
+  const sheenMaterial = new THREE.MeshBasicMaterial({
+    map: sheenTexture(), transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  });
   const curved = (w, h, depth) => {
     const geometry = new THREE.PlaneGeometry(w, h, 24, 18);
     const position = geometry.attributes.position;
@@ -868,36 +1541,125 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     geometry.computeVertexNormals();
     return geometry;
   };
-  /* 屏幕是外凸的玻璃：四角最低处也必须在黑色凹框（前表面 z≈0.164）前面，否则只露出中间一个椭圆。 */
-  const computerScreen = new THREE.Mesh(curved(0.27, 0.2, 0.004), new THREE.MeshBasicMaterial({ map: computerTexture, toneMapped: false }));
-  computerScreen.position.set(0, 0.168, 0.176);
-  computerScreen.userData.size = [0.27, 0.2];
+  const sheenFor = (screen, w, h) => {
+    const sheen = noPick(new THREE.Mesh(curved(w, h, 0.004), sheenMaterial));
+    sheen.position.copy(screen.position);
+    sheen.position.z += 0.0014;
+    sheen.renderOrder = 2;
+    return sheen;
+  };
+  const badge = (text, w, h, options, x, y, z) => {
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: labelTexture(text, options), transparent: !options.bg }));
+    plate.position.set(x, y, z);
+    return plate;
+  };
+
+  /* ---- 90 年代的个人电脑（ABOUT / ONLINE）：铂金色卧式主机 + 15 英寸彩显，显示器坐在可转的底座上。
+     主机正面：方形电源键（按下锁住）、复位键、电源 / 硬盘 / TURBO 指示灯、光驱、3.5 英寸软驱。
+     显示器下沿：圆形电源键、两个亮度旋钮。整台点下去打开 ABOUT。 */
+  const platinum = std(0xe8e0cb, 0.55);
+  const platinumDark = std(0xcbc5b4, 0.6);
+  const computer = new THREE.Group();
+  computer.position.set(-0.78, DESK_TOP, -1.28);
+  computer.rotation.y = 0.12;
+  computer.add(roundedBox(0.46, 0.13, 0.42, 0.01, platinum, 0, 0.065, 0));
+  computer.add(box(0.452, 0.122, 0.004, platinumDark, 0, 0.065, 0.2105));
+  computer.add(box(0.44, 0.112, 0.003, platinum, 0, 0.065, 0.213));
+  computer.add(badge("HPY  486DX2", 0.09, 0.016, { width: 512, height: 92, color: "#3e3b34", bg: "#e3ded0", font: `700 54px ${SANS}`, spacing: 6 }, -0.15, 0.1, 0.2148));
+  const pcLeds = [];
+  [[0x37d65a, "POWER"], [0xffa53a, "HDD"], [0xffd23a, "TURBO"]].forEach(([color], index) => {
+    const light = led(0.007, 0.004, 0x1d1d1d);
+    light.position.set(-0.19 + index * 0.022, 0.078, 0.2152);
+    light.userData.on = color;
+    computer.add(light);
+    pcLeds.push(light);
+  });
+  computer.add(box(0.04, 0.04, 0.003, platinumDark, -0.175, 0.037, 0.2147));
+  const pcPowerButton = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.012), std(0xd8d2c2, 0.5));
+  pcPowerButton.position.set(-0.175, 0.037, 0.219);
+  control(pcPowerButton, "pcPower", { kind: "toggle", travel: 0.0045, hit: [0.042, 0.042, 0.03, 0, 0, 0] });
+  computer.add(pcPowerButton);
+  const resetButton = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.008, 0.008), platinumDark);
+  resetButton.position.set(-0.13, 0.03, 0.217);
+  computer.add(resetButton);
+  /* 光驱 */
+  computer.add(box(0.21, 0.044, 0.004, platinumDark, 0.1, 0.087, 0.2152));
+  computer.add(box(0.18, 0.004, 0.003, slotDark, 0.09, 0.089, 0.2172));
+  computer.add(box(0.016, 0.006, 0.006, platinum, 0.185, 0.074, 0.2172));
+  const cdLed = led(0.006, 0.003, 0x3a1f08);
+  cdLed.position.set(0.16, 0.074, 0.2172);
+  computer.add(cdLed);
+  computer.add(badge("COMPACT DISC", 0.04, 0.006, { width: 256, height: 40, color: "#5c574b", bg: "#cbc5b4", font: `600 26px ${SANS}`, spacing: 2 }, 0.03, 0.074, 0.2173));
+  /* 3.5 英寸软驱 */
+  computer.add(box(0.14, 0.03, 0.004, platinumDark, 0.135, 0.034, 0.2152));
+  computer.add(box(0.095, 0.004, 0.003, slotDark, 0.125, 0.038, 0.2172));
+  computer.add(box(0.012, 0.006, 0.006, platinum, 0.19, 0.027, 0.2172));
+  const fddLed = led(0.006, 0.003, 0x0f2a12);
+  fddLed.position.set(0.08, 0.027, 0.2172);
+  computer.add(fddLed);
+  for (let i = 0; i < 6; i += 1) computer.add(box(0.003, 0.05, 0.003, slotDark, -0.07 + i * 0.008, 0.06, 0.2152));
+
+  /* 显示器底座（能转的圆盘）+ 显示器 */
+  const swivel = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.125, 0.018, 36), platinum);
+  swivel.position.set(0, 0.139, 0.0);
+  computer.add(shadowed(swivel));
+  const monitorBody = new THREE.Group();
+  monitorBody.position.set(0, 0.148, -0.02);
+  monitorBody.add(roundedBox(0.44, 0.38, 0.07, 0.03, platinum, 0, 0.19, 0.165));
+  monitorBody.add(roundedBox(0.4, 0.34, 0.2, 0.05, platinum, 0, 0.19, 0.04));
+  monitorBody.add(roundedBox(0.28, 0.24, 0.14, 0.05, platinumDark, 0, 0.185, -0.11));
+  monitorBody.add(roundedBox(0.375, 0.29, 0.01, 0.014, std(0x121316, 0.5), 0, 0.212, 0.198));
+  for (const [w, h, x, y] of [[0.395, 0.01, 0, 0.362], [0.395, 0.012, 0, 0.061], [0.01, 0.31, -0.192, 0.212], [0.01, 0.31, 0.192, 0.212]]) {
+    monitorBody.add(box(w, h, 0.004, platinumDark, x, y, 0.2015));
+  }
+  for (let i = 0; i < 10; i += 1) monitorBody.add(box(0.24, 0.0015, 0.008, slotDark, 0, 0.3605, -0.07 + i * 0.016));
+  const computerCanvas = document.createElement("canvas");
+  computerCanvas.width = 1024;
+  computerCanvas.height = 768;
+  const computerContext = computerCanvas.getContext("2d");
+  const computerTexture = new THREE.CanvasTexture(computerCanvas);
+  computerTexture.colorSpace = THREE.SRGBColorSpace;
+  computerTexture.anisotropy = anisotropy;
+  /* 屏幕是外凸的玻璃：四角最低处（中心减两倍凸度）也必须在黑色凹框前表面（z≈0.203）前面，否则只露出中间一个椭圆。 */
+  const computerScreen = new THREE.Mesh(curved(0.35, 0.2625, 0.004), new THREE.MeshBasicMaterial({ map: computerTexture, toneMapped: false }));
+  computerScreen.position.set(0, 0.212, 0.2125);
+  computerScreen.userData.size = [0.35, 0.2625];
   monitorBody.add(computerScreen);
-  for (const x of [0.11, 0.14]) {
-    const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.008, 16), beigeDark);
-    knob.rotation.x = Math.PI / 2;
-    knob.position.set(x, 0.027, 0.162);
+  monitorBody.add(sheenFor(computerScreen, 0.35, 0.2625));
+  monitorBody.add(badge("HPY  SVGA 1024", 0.08, 0.011, { width: 512, height: 70, color: "#57524a", bg: "#e3ded0", font: `700 44px ${SANS}`, spacing: 6 }, -0.13, 0.03, 0.2005));
+  const monitorPower = roundButton(0.0085, 0.008, std(0xd8d2c2, 0.5));
+  monitorPower.position.set(0.175, 0.03, 0.203);
+  control(monitorPower, "pcPower", { kind: "toggle", travel: 0.003, hit: [0.026, 0.02, 0.026, 0, 0, 0] });
+  monitorBody.add(monitorPower);
+  const monitorLed = led(0.006, 0.004, 0x37d65a);
+  monitorLed.position.set(0.152, 0.03, 0.2005);
+  monitorBody.add(monitorLed);
+  for (const x of [0.085, 0.112]) {
+    const knob = knobMesh(0.0075, 0.009, platinumDark);
+    knob.position.set(x, 0.03, 0.203);
+    control(knob, "pcBright", { kind: "knob", step: Math.PI / 3, hit: [0.024, 0.02, 0.024, 0, 0, 0] });
     monitorBody.add(knob);
   }
   computer.add(monitorBody);
-  const computerGlow = new THREE.PointLight(0x6dff9a, 0.12, 1.6, 2);
-  computerGlow.position.set(0, 0.32, 0.4);
+  const computerGlow = new THREE.PointLight(0x6dff9a, 0.05, 1.2, 2);
+  computerGlow.position.set(0, 0.36, 0.45);
   computer.add(computerGlow);
   moodLights.push(computerGlow);
   scene.add(computer);
   tag("about", computer);
 
-  const computerState = { mode: "desk", hover: null, blink: true, clock: clockText() };
+  const computerState = { mode: "desk", hover: null, blink: true, clock: clockText(), power: true, powerAt: 0 };
   const redrawComputer = () => {
     drawComputer(computerContext, 1024, 768, computerState);
     computerTexture.needsUpdate = true;
   };
 
-  /* 键盘 */
+  /* 键盘与鼠标 */
   const keyboard = new THREE.Group();
-  keyboard.position.set(-0.68, DESK_TOP, -0.92);
+  keyboard.position.set(-0.74, DESK_TOP, -0.9);
   keyboard.rotation.y = 0.1;
-  const board = roundedBox(0.44, 0.024, 0.17, 0.008, beigeShell, 0, 0.012, 0);
+  keyboard.scale.setScalar(1.1);
+  const board = roundedBox(0.44, 0.024, 0.17, 0.008, platinum, 0, 0.012, 0);
   board.rotation.x = 0.06;
   keyboard.add(board);
   const keys = new THREE.InstancedMesh(new THREE.BoxGeometry(0.0235, 0.01, 0.021), std(0xffffff, 0.6), 75);
@@ -909,7 +1671,7 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
       const z = (row - 2) * 0.0265;
       keyMatrix.makeTranslation((col - 7) * 0.0272, 0.029 - z * 0.06, z);
       keys.setMatrixAt(keyIndex, keyMatrix);
-      keyColor.set(col > 12 || row === 0 ? 0xb8ae96 : 0xe4dccb);
+      keyColor.set(col > 12 || row === 0 ? 0xbdb6a3 : 0xece7da);
       keys.setColorAt(keyIndex, keyColor);
       keyIndex += 1;
     }
@@ -920,11 +1682,21 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   keyboard.add(keys);
   scene.add(keyboard);
   tag("about", keyboard);
+  const mouse = new THREE.Group();
+  mouse.position.set(-0.43, DESK_TOP, -0.86);
+  mouse.rotation.y = 0.2;
+  mouse.add(box(0.13, 0.002, 0.11, std(0x2b3346, 0.9), 0, 0.001, 0));
+  const mouseBody = roundedBox(0.058, 0.028, 0.095, 0.02, platinum, 0, 0.016, 0);
+  mouse.add(mouseBody);
+  mouse.add(box(0.001, 0.003, 0.035, slotDark, 0, 0.0305, -0.025));
+  mouse.add(rod(new THREE.Vector3(0, 0.012, -0.048), new THREE.Vector3(-0.05, 0.003, -0.2), 0.0018, platinumDark));
+  scene.add(mouse);
+  tag("about", mouse);
 
   /* 软盘（标签空白：不在场景里写任何未确认的内容） */
   [[0x2b4d8a, 0.0, 0.3], [0x1f1f24, 0.004, -0.25]].forEach(([color, lift, turn], index) => {
     const disk = new THREE.Group();
-    disk.position.set(-1.0 + index * 0.02, DESK_TOP + 0.0017 + lift, -1.05 + index * 0.03);
+    disk.position.set(-1.0 + index * 0.02, DESK_TOP + 0.0017 + lift, -0.98 + index * 0.03);
     disk.rotation.y = turn;
     disk.add(box(0.09, 0.0034, 0.094, std(color, 0.5)));
     disk.add(box(0.05, 0.0036, 0.03, silver, 0.008, 0.0002, -0.032));
@@ -932,14 +1704,17 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     scene.add(disk);
   });
 
-  /* ---- 录像机 + 老电视（FILM / POSTS） */
+  /* ---- 90 年代的银色录像机 + 黑色大彩电（FILM / POSTS）。
+     电视下沿：左边一条扬声器网罩，右边 1–6 预选台（选中的保持按下）、CH ▲、VOL +、圆形电源键和电源灯。 */
+  const AV_X = 0.12;
   const vcr = new THREE.Group();
-  vcr.position.set(0.03, DESK_TOP, -1.3);
+  vcr.position.set(AV_X, DESK_TOP, -1.3);
   vcr.rotation.y = -0.03;
-  vcr.add(roundedBox(0.43, 0.085, 0.32, 0.006, std(0x1d1d22, 0.5, 0.2), 0, 0.0425, 0));
-  vcr.add(box(0.42, 0.075, 0.004, std(0x27272d, 0.45, 0.3), 0, 0.043, 0.16));
-  vcr.add(box(0.2, 0.03, 0.004, slotDark, -0.085, 0.055, 0.162));
-  vcr.add(box(0.2, 0.003, 0.004, std(0x3a3a42, 0.4, 0.4), -0.085, 0.041, 0.163));
+  vcr.add(roundedBox(0.46, 0.09, 0.32, 0.008, std(0xa8abb2, 0.4, 0.55), 0, 0.045, 0));
+  vcr.add(box(0.44, 0.07, 0.004, std(0x16161a, 0.3, 0.3), 0, 0.045, 0.1605));
+  vcr.add(box(0.2, 0.03, 0.004, std(0x26262c, 0.4, 0.3), -0.09, 0.056, 0.1625));
+  vcr.add(box(0.2, 0.002, 0.004, std(0x55555c, 0.4, 0.5), -0.09, 0.0425, 0.1635));
+  vcr.add(badge("HPY VIDEO · HQ · 4 HEAD", 0.12, 0.009, { width: 768, height: 58, color: "#c9cbd1", bg: "#16161a", font: `600 36px ${SANS}`, spacing: 4 }, 0.11, 0.074, 0.1632));
   const vfdCanvas = document.createElement("canvas");
   vfdCanvas.width = 256;
   vfdCanvas.height = 64;
@@ -947,23 +1722,30 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   const vfdTexture = new THREE.CanvasTexture(vfdCanvas);
   vfdTexture.colorSpace = THREE.SRGBColorSpace;
   const vfd = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.0275), new THREE.MeshBasicMaterial({ map: vfdTexture, toneMapped: false }));
-  vfd.position.set(0.115, 0.056, 0.1625);
+  vfd.position.set(0.115, 0.048, 0.1632);
   vcr.add(vfd);
-  for (let i = 0; i < 5; i += 1) vcr.add(box(0.022, 0.009, 0.006, silver, -0.17 + i * 0.03, 0.018, 0.163));
+  for (let i = 0; i < 5; i += 1) vcr.add(box(0.024, 0.008, 0.006, silver, -0.17 + i * 0.032, 0.02, 0.163));
   const vcrSlot = new THREE.Object3D();
-  vcrSlot.position.set(-0.085, 0.055, 0.16);
+  vcrSlot.position.set(-0.09, 0.056, 0.16);
   vcr.add(vcrSlot);
   scene.add(vcr);
   tag("film", vcr);
 
   const tv = new THREE.Group();
-  tv.position.set(0.03, DESK_TOP + 0.085, -1.3);
+  tv.position.set(AV_X, DESK_TOP + 0.09, -1.3);
   tv.rotation.y = -0.03;
-  const tvShell = std(0x26262b, 0.5, 0.15);
-  tv.add(roundedBox(0.4, 0.34, 0.34, 0.025, tvShell, 0, 0.17, 0));
-  tv.add(roundedBox(0.3, 0.26, 0.16, 0.03, tvShell, 0, 0.17, -0.22));
-  tv.add(roundedBox(0.37, 0.31, 0.012, 0.012, std(0x1a1a1e, 0.45, 0.2), 0, 0.172, 0.168));
-  tv.add(box(0.3, 0.23, 0.006, slotDark, 0, 0.198, 0.17));
+  const tvShell = std(0x1c1d21, 0.42, 0.18);
+  tv.add(roundedBox(0.54, 0.42, 0.36, 0.05, tvShell, 0, 0.21, 0.01));
+  tv.add(roundedBox(0.42, 0.32, 0.18, 0.06, tvShell, 0, 0.215, -0.24));
+  tv.add(roundedBox(0.525, 0.405, 0.014, 0.045, std(0x232429, 0.35, 0.25), 0, 0.21, 0.186));
+  tv.add(roundedBox(0.425, 0.322, 0.008, 0.018, std(0x0b0b0d, 0.5), 0, 0.236, 0.192));
+  for (const [w, h, x, y] of [[0.44, 0.006, 0, 0.4], [0.44, 0.006, 0, 0.072], [0.006, 0.334, -0.219, 0.236], [0.006, 0.334, 0.219, 0.236]]) {
+    tv.add(box(w, h, 0.003, std(0x2e2f35, 0.3, 0.45), x, y, 0.1935));
+  }
+  /* 两侧和背后的散热槽 */
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 10; i += 1) tv.add(box(0.0015, 0.005, 0.18, slotDark, side * 0.2705, 0.33 - i * 0.016, 0.02));
+  }
   const tvCanvas = document.createElement("canvas");
   tvCanvas.width = 768;
   tvCanvas.height = 576;
@@ -971,46 +1753,65 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   const tvTexture = new THREE.CanvasTexture(tvCanvas);
   tvTexture.colorSpace = THREE.SRGBColorSpace;
   tvTexture.anisotropy = anisotropy;
-  /* 同理：凹框前表面 z≈0.173，屏幕四角在 0.175。 */
-  const tvScreen = new THREE.Mesh(curved(0.27, 0.2, 0.004), new THREE.MeshBasicMaterial({ map: tvTexture, toneMapped: false }));
-  tvScreen.position.set(0, 0.198, 0.183);
-  tvScreen.userData.size = [0.27, 0.2];
+  /* 同理：凹框前表面 z≈0.196，屏幕四角在 0.1985。 */
+  const tvScreen = new THREE.Mesh(curved(0.4, 0.3, 0.004), new THREE.MeshBasicMaterial({ map: tvTexture, toneMapped: false }));
+  tvScreen.position.set(0, 0.236, 0.2065);
+  tvScreen.userData.size = [0.4, 0.3];
   tv.add(tvScreen);
-  tv.add(box(0.33, 0.04, 0.004, std(0x141417, 0.5), 0, 0.052, 0.175));
-  for (let i = 0; i < 6; i += 1) tv.add(box(0.02, 0.012, 0.006, silver, -0.14 + i * 0.03, 0.052, 0.177));
-  for (const x of [0.08, 0.13]) {
-    const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.013, 0.012, 20), silver);
-    knob.rotation.x = Math.PI / 2;
-    knob.position.set(x, 0.052, 0.18);
-    tv.add(knob);
+  tv.add(sheenFor(tvScreen, 0.4, 0.3));
+  tv.add(badge("HPY VISION", 0.08, 0.011, { width: 512, height: 70, color: "#d6d7dc", font: `italic 800 50px ${SANS}`, spacing: 8 }, 0, 0.392, 0.1932));
+  /* 下沿：扬声器网罩 + 控制区 */
+  const grille = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.04), new THREE.MeshBasicMaterial({ map: perforatedTexture(), toneMapped: true }));
+  grille.position.set(-0.1, 0.042, 0.1934);
+  tv.add(grille);
+  const panelLabels = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.008), new THREE.MeshBasicMaterial({ map: panelLabelTexture(), transparent: true }));
+  panelLabels.position.set(0.13, 0.062, 0.1934);
+  tv.add(panelLabels);
+  const presets = [];
+  for (let i = 0; i < 6; i += 1) {
+    const preset = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.01, 0.007), std(0x3a3b41, 0.4, 0.4));
+    preset.position.set(0.042 + i * 0.02, 0.048, 0.1965);
+    control(preset, "tvPreset", { kind: "latch", value: i + 1, group: "tv", travel: 0.0028, hit: [0.02, 0.018, 0.02, 0, 0, 0] });
+    tv.add(preset);
+    presets.push(preset);
   }
-  const tvLed = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.006, 0.004), new THREE.MeshBasicMaterial({ color: 0xff3b2e }));
-  tvLed.position.set(0.16, 0.052, 0.178);
+  const channelButton = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.01, 0.007), std(0x9a9ca3, 0.35, 0.6));
+  channelButton.position.set(0.05, 0.028, 0.1965);
+  control(channelButton, "tvChannel", { hit: [0.024, 0.016, 0.02, 0, 0, 0] });
+  tv.add(channelButton);
+  const volumeButton = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.01, 0.007), std(0x9a9ca3, 0.35, 0.6));
+  volumeButton.position.set(0.09, 0.028, 0.1965);
+  control(volumeButton, "tvVolume", { hit: [0.024, 0.016, 0.02, 0, 0, 0] });
+  tv.add(volumeButton);
+  const tvPowerButton = roundButton(0.011, 0.01, std(0x9a9ca3, 0.35, 0.6));
+  tvPowerButton.position.set(0.225, 0.042, 0.197);
+  control(tvPowerButton, "tvPower", { kind: "toggle", travel: 0.003, hit: [0.03, 0.03, 0.026, 0, 0, 0] });
+  tv.add(tvPowerButton);
+  tvPowerButton.userData.control.on = true;
+  const tvLedMaterial = new THREE.MeshBasicMaterial({ color: 0x3dff6a });
+  const tvLed = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.004, 0.003), tvLedMaterial);
+  tvLed.position.set(0.2, 0.042, 0.1945);
   tv.add(tvLed);
+  for (const x of [-0.2, 0.2]) tv.add(box(0.06, 0.008, 0.2, std(0x111114, 0.6), x, -0.004, 0.02));
   const antennaMat = std(0xd0d0cc, 0.3, 0.8);
-  for (const [x1, y1, z1] of [[-0.19, 0.6, -0.2], [0.21, 0.58, -0.22]]) {
-    const from = new THREE.Vector3(Math.sign(x1) * 0.04, 0.34, -0.12);
-    const to = new THREE.Vector3(x1, y1, z1);
-    tv.add(rod(from, to, 0.0025, antennaMat));
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.006, 10, 8), antennaMat);
-    tip.position.copy(to);
-    tv.add(tip);
-  }
-  tv.add(roundedBox(0.06, 0.02, 0.05, 0.008, antennaMat, 0, 0.345, -0.12));
-  const tvGlow = new THREE.PointLight(0x9fc4ff, 0.18, 1.8, 2);
-  tvGlow.position.set(0, 0.2, 0.42);
+  const tvGlow = new THREE.PointLight(0x9fc4ff, 0.2, 2, 2);
+  tvGlow.position.set(0, 0.24, 0.5);
   tv.add(tvGlow);
   scene.add(tv);
   tag("film", tv);
 
-  const tvState = { mode: "idle", element: null, osd: "", osdHold: true, blink: true, clock: clockText(true) };
+  const tvState = {
+    mode: "idle", element: null, osd: "", osdHold: true, blink: true, clock: clockText(true),
+    power: true, powerAt: 0, channel: 1, volume: 6, panelOsd: "", panelOsdUntil: 0,
+  };
+  latch("tv", tvState.channel);
   const noiseCanvas = document.createElement("canvas");
   noiseCanvas.width = 192;
   noiseCanvas.height = 144;
   const noiseContext = noiseCanvas.getContext("2d");
   const noiseImage = noiseContext.createImageData(192, 144);
   const redrawTv = () => {
-    if (tvState.mode === "noise") {
+    if (tvShowsNoise(tvState)) {
       const data = noiseImage.data;
       for (let i = 0; i < data.length; i += 4) {
         const v = Math.random() * 255;
@@ -1030,9 +1831,81 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     vfdTexture.needsUpdate = true;
   };
 
+  /* 开关的效果：电视和电脑的电源、换台、音量、亮度。 */
+  const BRIGHTNESS = [1, 0.82, 0.64, 0.46];
+  let brightness = 0;
+  const showPanelOsd = (text) => {
+    tvState.panelOsd = text;
+    tvState.panelOsdUntil = performance.now() + 1800;
+  };
+  const setTvPower = (on) => {
+    tvPowerButton.userData.control.on = on;
+    if (tvState.power === on) return;
+    tvState.power = on;
+    tvState.powerAt = performance.now();
+    tvLedMaterial.color.set(on ? 0x3dff6a : 0xff3b2e);
+    redrawTv();
+  };
+  const setComputerPower = (on) => {
+    pcPowerButton.userData.control.on = on;
+    monitorPower.userData.control.on = on;
+    if (computerState.power === on) return;
+    computerState.power = on;
+    computerState.powerAt = performance.now();
+    pcLeds.forEach((light, index) => light.material.color.set(on && index !== 1 ? light.userData.on : 0x1d1d1d));
+    monitorLed.material.color.set(on ? 0x37d65a : 0x2a1a08);
+    redrawComputer();
+  };
+  pcPowerButton.userData.control.on = true;
+  monitorPower.userData.control.on = true;
+  pcLeds.forEach((light, index) => light.material.color.set(index !== 1 ? light.userData.on : 0x1d1d1d));
+  /* 硬盘灯偶尔闪一下，像机器在干活。 */
+  tickers.push((time) => {
+    if (!computerState.power) return;
+    const busy = Math.sin(time * 7.3) * Math.sin(time * 2.1) > 0.72;
+    pcLeds[1].material.color.set(busy ? pcLeds[1].userData.on : 0x1d1d1d);
+  });
+  const operate = (action, value) => {
+    if (action === "tvPower") {
+      setTvPower(!tvState.power);
+    } else if (action === "tvPreset" || action === "tvChannel") {
+      if (action === "tvChannel") actuate(channelButton);
+      if (!tvState.power) return;
+      tvState.channel = action === "tvPreset" ? value : (tvState.channel % 6) + 1;
+      latch("tv", tvState.channel);
+      showPanelOsd(`CH ${String(tvState.channel).padStart(2, "0")}`);
+      redrawTv();
+    } else if (action === "tvVolume") {
+      actuate(volumeButton);
+      if (!tvState.power) return;
+      tvState.volume = (tvState.volume + 1) % 11;
+      showPanelOsd(`VOL ${"▮".repeat(tvState.volume)}${"▯".repeat(10 - tvState.volume)}`);
+      redrawTv();
+    } else if (action === "pcPower") {
+      setComputerPower(!computerState.power);
+    } else if (action === "pcBright") {
+      for (const entry of controls) if (entry.mesh.userData.action === "pcBright") actuate(entry.mesh);
+      brightness = (brightness + 1) % BRIGHTNESS.length;
+      computerScreen.material.color.setScalar(BRIGHTNESS[brightness]);
+    }
+  };
+  /* 进 POSTS / FILM / ABOUT / ONLINE 时，对应的屏幕必须是开着的。 */
+  const powerFor = (view) => {
+    if (view === "posts" || view === "film") setTvPower(true);
+    if (view === "about" || view === "online") setComputerPower(true);
+  };
+  /* 正在开关机、显示面板屏显或雪花时，屏幕每一帧都要重画。 */
+  const screensBusy = () => {
+    const now = performance.now();
+    return {
+      tv: tvShowsNoise(tvState) || tvState.mode === "media" || now - tvState.powerAt < 900 || now < tvState.panelOsdUntil + 100,
+      computer: now - computerState.powerAt < 900,
+    };
+  };
+
   /* ---- 录像带（FILM）：由启动器根据首页与公开影像动态生成 */
   const tapeStack = new THREE.Group();
-  tapeStack.position.set(0.45, DESK_TOP, -1.33);
+  tapeStack.position.set(0.5, DESK_TOP, -1.36);
   tapeStack.rotation.y = -0.12;
   scene.add(tapeStack);
   tag("film", tapeStack);
@@ -1201,12 +2074,16 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   scene.add(pad);
   tag("work", pad);
 
-  /* ---- 计算器（装饰） */
+  /* ---- 计算器：点一下拿起来用（启动器里是一台真的能算的计算器），放下后液晶屏留着最后的结果 */
   const calculator = new THREE.Group();
-  calculator.position.set(0.52, DESK_TOP, -0.92);
+  calculator.userData.action = "calc";
+  const calcHome = new THREE.Vector3(0.52, DESK_TOP, -0.92);
+  calculator.position.copy(calcHome);
   calculator.rotation.y = -0.28;
   calculator.add(roundedBox(0.085, 0.012, 0.14, 0.006, std(0x2b2b30, 0.5), 0, 0.006, 0));
-  const lcd = new THREE.Mesh(new THREE.PlaneGeometry(0.066, 0.02), new THREE.MeshBasicMaterial({ map: lcdTexture("0."), toneMapped: false }));
+  calculator.add(box(0.036, 0.0008, 0.008, std(0x3b2a20, 0.25, 0.5), -0.016, 0.0124, -0.062));
+  const lcdMap = lcdTexture("0.");
+  const lcd = new THREE.Mesh(new THREE.PlaneGeometry(0.066, 0.02), new THREE.MeshBasicMaterial({ map: lcdMap, toneMapped: false }));
   lcd.rotation.x = -Math.PI / 2;
   lcd.position.set(0, 0.0125, -0.045);
   calculator.add(lcd);
@@ -1221,7 +2098,35 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   calcKeys.instanceMatrix.needsUpdate = true;
   calcKeys.instanceColor.needsUpdate = true;
   calculator.add(calcKeys);
+  calculator.add(hitBox(0.1, 0.03, 0.16, 0, 0.012, 0));
   scene.add(calculator);
+
+  /* 拿起来：离开桌面、朝镜头翻过来，然后交给屏幕上的计算器；放下时反过来。 */
+  let calcLift = 0;
+  let calcGoal = 0;
+  const placeCalculator = () => {
+    const k = easeInOut(calcLift);
+    calculator.position.set(calcHome.x - 0.06 * k, calcHome.y + 0.24 * k, calcHome.z + 0.34 * k);
+    calculator.rotation.x = 1.05 * k;
+    calculator.visible = calcLift < 0.97;
+  };
+  tickers.push((time, dt, realDt = dt) => {
+    if (calcLift === calcGoal) return;
+    const step = Math.min(realDt, 0.1) / 0.5;
+    calcLift = calcGoal > calcLift ? Math.min(calcGoal, calcLift + step) : Math.max(calcGoal, calcLift - step);
+    placeCalculator();
+  });
+  const liftCalculator = (up, instant = false) => {
+    calcGoal = up ? 1 : 0;
+    if (instant) {
+      calcLift = calcGoal;
+      placeCalculator();
+    }
+  };
+  const setCalcDisplay = (text) => {
+    drawLcd(lcdMap.image.getContext("2d"), lcdMap.image.width, lcdMap.image.height, text);
+    lcdMap.needsUpdate = true;
+  };
 
   /* ---- 调制解调器（SERVICES） + 叠在上面的按键电话（ONLINE） */
   const modem = new THREE.Group();
@@ -1284,58 +2189,251 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   scene.add(phone);
   tag("online", phone);
 
-  /* ---- 窗台上的手提录音机：点一下播放 / 停止雨声，放的时候磁带轴会转 */
+  /* ---- 窗台上的 90 年代手提录音机：双喇叭、中间卡座、顶上一排琴键、提手和拉杆天线。
+     点机身打开 MUSIC：卡座门弹开，从旁边那摞磁带里取一盒放进去，关门、PLAY 键按下去，磁带转起来，均衡器跟着跳。
+     磁带侧标只写栏目名（音乐 MUSIC），歌名只在播放时由启动器显示。 */
   const recorder = new THREE.Group();
   recorder.userData.action = "tape";
-  recorder.position.set(0.62, WIN.y0, BACK + 0.04);
-  recorder.rotation.y = -0.1;
-  const recorderShell = std(0x3a3c43, 0.45, 0.25);
-  recorder.add(roundedBox(0.3, 0.15, 0.075, 0.012, recorderShell, 0, 0.075, 0));
-  const speaker = new THREE.Mesh(new THREE.CircleGeometry(0.05, 32), std(0xffffff, 0.8, 0, { map: grilleTexture() }));
-  speaker.position.set(-0.075, 0.07, 0.0385);
-  recorder.add(speaker);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.051, 0.004, 8, 40), silver);
-  ring.position.set(-0.075, 0.07, 0.038);
-  recorder.add(ring);
-  recorder.add(box(0.12, 0.07, 0.004, std(0x0e0f12, 0.3, 0.2), 0.07, 0.078, 0.037));
-  recorder.add(box(0.1, 0.03, 0.002, std(0xe8dfc6, 0.8), 0.07, 0.092, 0.0395));
-  const reels = [];
-  for (const x of [0.042, 0.098]) {
-    const reel = new THREE.Group();
-    reel.position.set(x, 0.072, 0.0405);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.004, 6), std(0xf2efe8, 0.5));
-    hub.rotation.x = Math.PI / 2;
-    reel.add(hub);
-    for (let i = 0; i < 3; i += 1) {
-      const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.009, 0.005), std(0x2a2a2e, 0.5));
-      tooth.rotation.z = (i / 3) * Math.PI;
-      reel.add(tooth);
-    }
-    recorder.add(reel);
-    reels.push(reel);
+  recorder.position.set(0.6, WIN.y0, BACK + 0.035);
+  recorder.rotation.y = -0.08;
+  const boomBody = std(0x2a2c31, 0.42, 0.3);
+  const boomSilver = std(0xb9bdc5, 0.32, 0.65);
+  const chrome = std(0xe4e6ea, 0.18, 0.95);
+  recorder.add(roundedBox(0.42, 0.19, 0.1, 0.03, boomBody, 0, 0.095, 0));
+  recorder.add(roundedBox(0.404, 0.172, 0.006, 0.024, boomSilver, 0, 0.094, 0.048));
+  /* 两只喇叭 */
+  for (const x of [-0.14, 0.14]) {
+    const well = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.062, 0.006, 40), std(0x141518, 0.6));
+    well.rotation.x = Math.PI / 2;
+    well.position.set(x, 0.088, 0.0515);
+    recorder.add(well);
+    const grilleFace = new THREE.Mesh(new THREE.CircleGeometry(0.057, 40), std(0xffffff, 0.75, 0, { map: grilleTexture() }));
+    grilleFace.position.set(x, 0.088, 0.0552);
+    recorder.add(grilleFace);
+    const speakerRing = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.0042, 10, 48), chrome);
+    speakerRing.position.set(x, 0.088, 0.0552);
+    recorder.add(speakerRing);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.015, 18, 12), std(0x26272c, 0.3, 0.4));
+    dome.scale.z = 0.45;
+    dome.position.set(x, 0.088, 0.0556);
+    recorder.add(dome);
   }
-  ["0xd23a2a", "", "", "", "", ""].forEach((accent, index) => {
-    recorder.add(box(0.03, 0.012, 0.026, accent ? std(0xd23a2a, 0.4) : silver, -0.0 + index * 0.033, 0.156, 0.012));
+  /* 中间的卡座凹槽、门和装进去的磁带 */
+  recorder.add(box(0.126, 0.086, 0.004, slotDark, 0, 0.071, 0.0516));
+  const deckCassette = cassetteMesh("#d9583a", "MUSIC", "", false);
+  deckCassette.position.set(0, 0.071, 0.0485);
+  deckCassette.visible = false;
+  recorder.add(deckCassette);
+  const door = new THREE.Group();
+  door.position.set(0, 0.028, 0.0545);
+  const doorFrame = std(0x33353b, 0.35, 0.4);
+  for (const [w, h, x, y] of [[0.126, 0.012, 0, 0.08], [0.126, 0.014, 0, 0.007], [0.012, 0.086, -0.057, 0.043], [0.012, 0.086, 0.057, 0.043]]) {
+    door.add(box(w, h, 0.004, doorFrame, x, y, 0));
+  }
+  const doorGlass = new THREE.Mesh(new THREE.PlaneGeometry(0.104, 0.06), new THREE.MeshStandardMaterial({
+    color: 0x2e3440, roughness: 0.12, metalness: 0.3, transparent: true, opacity: 0.32, depthWrite: false,
+  }));
+  doorGlass.position.set(0, 0.044, 0.0005);
+  door.add(doorGlass);
+  door.add(badge("AUTO REVERSE", 0.05, 0.006, { width: 256, height: 32, color: "#c9ccd3", font: `600 22px ${SANS}`, spacing: 3 }, 0, 0.007, 0.0022));
+  recorder.add(door);
+  /* 调谐刻度 + 均衡器 */
+  const deckCanvas = document.createElement("canvas");
+  deckCanvas.width = 512;
+  deckCanvas.height = 112;
+  const deckContext = deckCanvas.getContext("2d");
+  const deckTexture = new THREE.CanvasTexture(deckCanvas);
+  deckTexture.colorSpace = THREE.SRGBColorSpace;
+  const deckDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.0285), new THREE.MeshBasicMaterial({ map: deckTexture, toneMapped: false }));
+  deckDisplay.position.set(0, 0.142, 0.0515);
+  recorder.add(deckDisplay);
+  recorder.add(badge("HPY  STEREO RADIO CASSETTE", 0.12, 0.008, { width: 768, height: 52, color: "#2b2d33", font: `700 32px ${SANS}`, spacing: 5 }, -0.13, 0.166, 0.0512));
+  recorder.add(badge("REC   PLAY   REW   FF   STOP/EJ   PAUSE", 0.19, 0.007, { width: 1024, height: 38, color: "#2b2d33", font: `700 24px ${SANS}`, spacing: 2 }, 0, 0.1745, 0.0512));
+  /* 顶上的琴键：REC、PLAY（放的时候保持按下）、REW、FF、STOP/EJ、PAUSE */
+  const DECK_KEYS = [["deckRec", 0xc23a2c], ["deckPlay", 0xc7cad1], ["deckPrev", 0xc7cad1], ["deckNext", 0xc7cad1], ["deckStop", 0xc7cad1], ["deckPause", 0xc7cad1]];
+  const deckKeys = {};
+  DECK_KEYS.forEach(([id, color], index) => {
+    const key = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.012, 0.034), std(color, 0.35, color === 0xc23a2c ? 0.1 : 0.6));
+    key.position.set(-0.0825 + index * 0.033, 0.192, 0.016);
+    control(key, id, { kind: id === "deckPlay" ? "toggle" : "button", axis: "y", sign: -1, travel: 0.006, hit: [0.032, 0.03, 0.04, 0, 0.004, 0] });
+    recorder.add(key);
+    deckKeys[id] = key;
   });
-  recorder.add(rod(new THREE.Vector3(-0.13, 0.15, 0), new THREE.Vector3(-0.13, 0.2, 0), 0.005, silver));
-  recorder.add(rod(new THREE.Vector3(-0.03, 0.15, 0), new THREE.Vector3(-0.03, 0.2, 0), 0.005, silver));
-  recorder.add(rod(new THREE.Vector3(-0.13, 0.2, 0), new THREE.Vector3(-0.03, 0.2, 0), 0.006, silver));
-  recorder.add(rod(new THREE.Vector3(0.13, 0.15, -0.02), new THREE.Vector3(0.02, 0.36, -0.06), 0.0022, antennaMat));
-  const recLed = new THREE.Mesh(new THREE.BoxGeometry(0.007, 0.007, 0.003), new THREE.MeshBasicMaterial({ color: 0x3a0d0a }));
-  recLed.position.set(0.135, 0.13, 0.0385);
+  /* 提手和拉杆天线 */
+  for (const x of [-0.16, 0.16]) recorder.add(rod(new THREE.Vector3(x, 0.185, -0.012), new THREE.Vector3(x, 0.245, -0.02), 0.0055, chrome));
+  recorder.add(rod(new THREE.Vector3(-0.16, 0.245, -0.02), new THREE.Vector3(0.16, 0.245, -0.02), 0.0065, chrome));
+  recorder.add(rod(new THREE.Vector3(-0.07, 0.245, -0.02), new THREE.Vector3(0.07, 0.245, -0.02), 0.011, std(0x1b1c20, 0.8)));
+  recorder.add(rod(new THREE.Vector3(0.19, 0.18, -0.035), new THREE.Vector3(0.07, 0.44, -0.08), 0.0022, antennaMat));
+  const recLed = led(0.006, 0.004, 0x3a0d0a);
+  recLed.position.set(0.075, 0.142, 0.052);
   recorder.add(recLed);
-  recorder.add(hitBox(0.32, 0.22, 0.1, 0, 0.1, 0));
+  /* 拉近 MUSIC 视角时要框住的面：录音机正面 */
+  const deckFace = new THREE.Object3D();
+  deckFace.position.set(0, 0.11, 0.06);
+  deckFace.userData.size = [0.44, 0.27];
+  recorder.add(deckFace);
+  recorder.add(hitBox(0.44, 0.27, 0.12, 0, 0.12, 0));
   scene.add(recorder);
-  let recorderPlaying = false;
-  const setRecorder = (playing) => {
-    recorderPlaying = playing;
-    recLed.material.color.set(playing ? 0xff3b2e : 0x3a0d0a);
+
+  /* 旁边那摞磁带（也在窗台上）。能放的磁带点了直接放；空白磁带点了打开录音机。 */
+  const cassetteStack = new THREE.Group();
+  cassetteStack.userData.action = "tape";
+  cassetteStack.position.set(0.905, WIN.y0, BACK + 0.04);
+  cassetteStack.rotation.y = -0.35;
+  scene.add(cassetteStack);
+  let cassettes = [];
+  const deck = { open: 0, openGoal: 0, loaded: -1, playing: false, busy: Promise.resolve(), level: new Array(7).fill(0) };
+  const setCassettes = (list) => {
+    for (const entry of cassettes) {
+      cassetteStack.remove(entry.object);
+      entry.object.traverse((node) => node.geometry?.dispose?.());
+    }
+    const all = [...list.map((item, index) => ({ ...item, index })), { blank: true }, { blank: true }];
+    cassettes = all.map((item, slot) => {
+      const object = cassetteMesh(item.blank ? "#e8e2d2" : item.color, item.blank ? "" : item.en, item.blank ? "" : item.label, true);
+      object.rotation.set(-Math.PI / 2, 0, ((slot * 37) % 9 - 4) * 0.035);
+      object.position.set(((slot * 5) % 3 - 1) * 0.004, 0.0065 + slot * 0.0135, 0);
+      if (!item.blank) {
+        object.userData.action = "cassette";
+        object.userData.value = item.index;
+      }
+      cassetteStack.add(object);
+      return { object, index: item.blank ? -1 : item.index, home: { position: object.position.clone(), quaternion: object.quaternion.clone() } };
+    });
   };
-  tickers.push((time, dt) => {
-    if (!recorderPlaying) return;
-    reels[0].rotation.z -= dt * 3.2;
-    reels[1].rotation.z -= dt * 2.4;
+
+  /* 卡座门：角度追着目标走。 */
+  tickers.push((time, dt, realDt = dt) => {
+    const step = Math.min(realDt, 0.1);
+    if (Math.abs(deck.open - deck.openGoal) > 1e-4) {
+      deck.open = lerp(deck.open, deck.openGoal, 1 - Math.exp(-step * 12));
+      door.rotation.x = deck.open * 0.9;
+    }
+    if (deck.playing) {
+      for (const reel of deckCassette.userData.reels) reel.rotation.z -= step * 4.2;
+    }
   });
+
+  /* 磁带在空中飞：和录像带一样按真实时间走，再加一个兜底定时器。 */
+  const flights = new Set();
+  const fly = (object, keys, seconds) => new Promise((resolve) => {
+    const flight = { object, keys, t: 0, seconds, done: false };
+    const finish = () => {
+      if (flight.done) return;
+      flight.done = true;
+      flights.delete(flight);
+      const last = keys[keys.length - 1];
+      object.position.copy(last.position);
+      object.quaternion.copy(last.quaternion);
+      window.clearTimeout(flight.timer);
+      resolve();
+    };
+    flight.finish = finish;
+    flight.timer = window.setTimeout(finish, seconds * 1000 + 700);
+    flights.add(flight);
+  });
+  tickers.push((time, dt, realDt = dt) => {
+    for (const flight of flights) {
+      flight.t = Math.min(1, flight.t + Math.min(realDt, 0.1) / flight.seconds);
+      const segments = flight.keys.length - 1;
+      const scaled = flight.t * segments;
+      const index = Math.min(segments - 1, Math.floor(scaled));
+      const local = scaled - index;
+      const k = local * local * (3 - 2 * local);
+      flight.object.position.lerpVectors(flight.keys[index].position, flight.keys[index + 1].position, k);
+      flight.object.quaternion.slerpQuaternions(flight.keys[index].quaternion, flight.keys[index + 1].quaternion, k);
+      if (flight.t >= 1) flight.finish();
+    }
+  });
+  const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+  const poseOf = (object) => ({ position: object.getWorldPosition(new THREE.Vector3()), quaternion: object.getWorldQuaternion(new THREE.Quaternion()) });
+  const setDeckColor = (entry) => {
+    const source = entry.object.userData.labelMaterial;
+    deckCassette.userData.labelMaterial.map = source.map;
+    deckCassette.userData.labelMaterial.needsUpdate = true;
+  };
+
+  /* 放进去：开门 → 从那摞里飞到卡座前 → 推进去 → 关门。动作排队执行，不会互相打架。 */
+  const insertCassette = (index, instant = false) => {
+    deck.busy = deck.busy.then(async () => {
+      if (deck.loaded === index) return;
+      if (deck.loaded >= 0) await ejectNow(instant);
+      const entry = cassettes.find((item) => item.index === index);
+      if (!entry) return;
+      deck.openGoal = 1;
+      if (!instant) await wait(320);
+      scene.updateMatrixWorld();
+      const slot = poseOf(deckCassette);
+      const front = { position: slot.position.clone().add(new THREE.Vector3(0, 0.02, 0.12).applyQuaternion(slot.quaternion)), quaternion: slot.quaternion };
+      const start = poseOf(entry.object);
+      const lift = { position: start.position.clone().add(new THREE.Vector3(-0.06, 0.12, 0.1)), quaternion: slot.quaternion };
+      scene.attach(entry.object);
+      if (!instant) await fly(entry.object, [start, lift, front, slot], 0.95);
+      entry.object.visible = false;
+      setDeckColor(entry);
+      deckCassette.visible = true;
+      deck.loaded = index;
+      deck.openGoal = 0;
+      if (!instant) await wait(260);
+    });
+    return deck.busy;
+  };
+  async function ejectNow(instant) {
+    const entry = cassettes.find((item) => item.index === deck.loaded);
+    deck.openGoal = 1;
+    if (!instant) await wait(320);
+    deckCassette.visible = false;
+    deck.loaded = -1;
+    if (!entry) return;
+    scene.updateMatrixWorld();
+    const slot = poseOf(deckCassette);
+    const front = { position: slot.position.clone().add(new THREE.Vector3(0, 0.02, 0.12).applyQuaternion(slot.quaternion)), quaternion: slot.quaternion };
+    cassetteStack.updateMatrixWorld();
+    const home = {
+      position: entry.home.position.clone().applyMatrix4(cassetteStack.matrixWorld),
+      quaternion: cassetteStack.getWorldQuaternion(new THREE.Quaternion()).multiply(entry.home.quaternion),
+    };
+    const lift = { position: home.position.clone().add(new THREE.Vector3(-0.06, 0.12, 0.1)), quaternion: home.quaternion };
+    entry.object.visible = true;
+    entry.object.position.copy(slot.position);
+    entry.object.quaternion.copy(slot.quaternion);
+    if (!instant) await fly(entry.object, [slot, front, lift, home], 0.85);
+    cassetteStack.attach(entry.object);
+    entry.object.position.copy(entry.home.position);
+    entry.object.quaternion.copy(entry.home.quaternion);
+    deck.openGoal = 0;
+  }
+  const ejectCassette = (instant = false) => {
+    deck.busy = deck.busy.then(() => (deck.loaded >= 0 ? ejectNow(instant) : null)).then(() => {
+      deck.openGoal = 0;
+    });
+    return deck.busy;
+  };
+  const setDeckOpen = (open) => {
+    if (deck.loaded < 0) deck.openGoal = open ? 1 : 0;
+  };
+  const setDeckPlaying = (playing) => {
+    deck.playing = playing;
+    deckKeys.deckPlay.userData.control.on = playing;
+    recLed.material.color.set(playing ? 0xff4a2e : 0x3a0d0a);
+  };
+  const pressDeckKey = (id) => {
+    if (id !== "deckPlay") actuate(deckKeys[id]);
+  };
+  /* 显示屏：收音机刻度、TAPE 指示、7 段均衡器；放音乐时每帧跳动。 */
+  let deckDrawAt = 0;
+  tickers.push((time) => {
+    if (time - deckDrawAt < 1 / 20) return;
+    deckDrawAt = time;
+    for (let i = 0; i < deck.level.length; i += 1) {
+      const goal = deck.playing ? 0.25 + 0.75 * Math.abs(Math.sin(time * (2.1 + i * 0.73) + i * 1.7) * Math.sin(time * (0.9 + i * 0.31))) : 0;
+      deck.level[i] = lerp(deck.level[i], goal, deck.playing ? 0.55 : 0.2);
+    }
+    drawDeckDisplay(deckContext, 512, 112, deck);
+    deckTexture.needsUpdate = true;
+  });
+  drawDeckDisplay(deckContext, 512, 112, deck);
+  deckTexture.needsUpdate = true;
 
   /* ---- 掌机（GAME） */
   const handheld = new THREE.Group();
@@ -1364,7 +2462,7 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
 
   /* ---- 马克杯 */
   const mug = new THREE.Group();
-  mug.position.set(-0.2, DESK_TOP, -1.08);
+  mug.position.set(-0.25, DESK_TOP, -1.06);
   const mugProfile = [[0, 0], [0.036, 0], [0.04, 0.005], [0.04, 0.086], [0.0365, 0.086], [0.0365, 0.008], [0, 0.008]]
     .map(([x, y]) => new THREE.Vector2(x, y));
   mug.add(shadowed(new THREE.Mesh(new THREE.LatheGeometry(mugProfile, 28), std(0xe9e2d0, 0.4, 0, { side: THREE.DoubleSide }))));
@@ -1508,8 +2606,8 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   const cards = new THREE.Group();
   const stringY = 1.5;
   const cardZ = BACK + 0.012;
-  const spanStart = -1.4;
-  const spanEnd = -0.78;
+  const spanStart = -1.28;
+  const spanEnd = -0.66;
   const sag = (x) => stringY - 0.024 * Math.sin(((x - spanStart) / (spanEnd - spanStart)) * Math.PI);
   const stringCurve = new THREE.CatmullRomCurve3(
     Array.from({ length: 9 }, (_, index) => {
@@ -1646,8 +2744,8 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   tickers.push((time) => {
     rain.uniforms.uTime.value = time;
     /* 显像管的微弱闪烁 */
-    computerGlow.intensity = 0.12 * (0.965 + 0.035 * Math.sin(time * 13.0));
-    tvGlow.intensity = 0.18 * (0.95 + 0.05 * Math.sin(time * 9.0 + 1.3));
+    computerGlow.intensity = computerState.power ? 0.05 * BRIGHTNESS[brightness] * (0.965 + 0.035 * Math.sin(time * 13.0)) : 0;
+    tvGlow.intensity = tvState.power ? 0.18 * (0.95 + 0.05 * Math.sin(time * 9.0 + 1.3)) : 0;
   });
 
   return {
@@ -1655,6 +2753,13 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     tickers,
     lamp,
     recorder,
+    calculator,
+    calcAnchor: calcHome.clone(),
+    liftCalculator,
+    setCalcDisplay,
+    operate,
+    powerFor,
+    screensBusy,
     toggleLamp,
     spot,
     setMood,
@@ -1668,7 +2773,19 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     redrawVfd,
     setTapes,
     moveTape,
-    setRecorder,
+    cassetteStack,
+    workBooks,
+    deckFace,
+    setCassettes,
+    insertCassette,
+    ejectCassette,
+    setDeckOpen,
+    setDeckPlaying,
+    pressDeckKey,
+    setBooks,
+    get loadedCassette() {
+      return deck.loaded;
+    },
     get loadedTape() {
       return loadedTape;
     },
@@ -1713,7 +2830,7 @@ export async function mount({
   try {
     renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: quality === "high",
+      antialias: true,
       alpha: false,
       powerPreference: "high-performance",
       failIfMajorPerformanceCaveat: !forced,
@@ -1723,8 +2840,10 @@ export async function mount({
     throw error;
   }
 
-  const pixelRatioFor = (level) => Math.min(window.devicePixelRatio || 1, level === "high" ? 2 : 1.25);
-  renderer.setPixelRatio(pixelRatioFor(quality));
+  /* 手机屏幕像素密度高，按 1.25 倍渲染会发虚：起步就用 2 倍，帧率看门狗跑不动时再降。 */
+  let pixelCap = 2;
+  const applyPixelRatio = () => renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelCap));
+  applyPixelRatio();
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = quality === "high";
@@ -1741,7 +2860,7 @@ export async function mount({
   built.computerState.subs = subs;
   built.tvState.insertText = labels.tvInsert || "";
   const byId = Object.fromEntries(HOTSPOTS.map((hotspot) => [hotspot.id, hotspot]));
-  const pickRoots = [...Object.values(built.hotspots).flatMap((entry) => entry.groups), built.lamp, built.recorder];
+  const pickRoots = [...Object.values(built.hotspots).flatMap((entry) => entry.groups), built.lamp, built.recorder, built.calculator, built.cassetteStack, built.workBooks];
 
   /* 悬停时给受光材质一点暖色自发光。 */
   const highlight = new THREE.Color(CORAL);
@@ -1771,7 +2890,9 @@ export async function mount({
   /* 让某块屏幕在画面里占满 fill 的比例，正对屏幕法线。 */
   function fitScreen(mesh, fill) {
     mesh.updateWorldMatrix(true, false);
-    const [w, h] = mesh.userData.size;
+    const worldScale = mesh.getWorldScale(new THREE.Vector3());
+    const w = mesh.userData.size[0] * worldScale.x;
+    const h = mesh.userData.size[1] * worldScale.y;
     const center = mesh.getWorldPosition(new THREE.Vector3());
     mesh.getWorldDirection(normal);
     const distance = Math.max(
@@ -1781,15 +2902,51 @@ export async function mount({
     return { pos: center.clone().addScaledVector(normal, distance), look: center };
   }
 
+  /* 书桌视角的五个机位（“视角”按钮 / V 键轮流切换）：全景、电脑桌、书架、窗台录音机、电视。 */
+  let deskIndex = 0;
+  let deskPresets = [];
   function computePoses() {
-    poses.desk = {
-      pos: new THREE.Vector3(lerp(0.02, -0.08, narrow), lerp(1.33, 1.4, narrow), lerp(1.12, 1.9, narrow)),
-      look: new THREE.Vector3(lerp(-0.06, -0.1, narrow), lerp(1.16, 1.26, narrow), -1.5),
-    };
+    const v = (x, y, z) => new THREE.Vector3(x, y, z);
+    deskPresets = [
+      { pos: v(lerp(-0.33, -0.3, narrow), lerp(1.36, 1.4, narrow), lerp(1.3, 1.2, narrow)), look: v(lerp(-0.36, -0.32, narrow), lerp(1.15, 1.02, narrow), -1.5) },
+      { pos: v(-0.6, 1.3, lerp(0.3, 0.95, narrow)), look: v(-0.96, 1.02, -1.3) },
+      { pos: v(lerp(-1.42, -1.5, narrow), 1.24, lerp(0.35, 0.95, narrow)), look: v(-1.64, 1.0, -1.45) },
+      { pos: v(0.66, 1.34, lerp(-0.3, 0.25, narrow)), look: v(0.68, 1.1, -1.62) },
+      { pos: v(0.14, 1.3, lerp(0.35, 1.05, narrow)), look: v(0.16, 1.06, -1.35) },
+    ];
+    poses.desk = deskPresets[deskIndex];
     poses.about = fitScreen(built.screens.computer, 0.8);
     poses.online = poses.about;
     poses.posts = fitScreen(built.screens.tv, 0.8);
     poses.film = poses.posts;
+
+    /* 书桌视角绕着画面中心那件东西转：全景是电视屏幕，其它机位是它对准的那一点。 */
+    if (deskIndex === 0) {
+      const deskDirection = scratch.subVectors(poses.desk.look, poses.desk.pos).normalize().clone();
+      const tvCenter = built.screens.tv.getWorldPosition(new THREE.Vector3());
+      pivotDistance = clamp(deskDirection.dot(tvCenter.sub(poses.desk.pos)), 1, 4);
+    } else {
+      pivotDistance = clamp(poses.desk.pos.distanceTo(poses.desk.look), 0.6, 4);
+    }
+
+    /* 计算器：从全景机位往右下角的计算器靠过去一点。 */
+    const overview = deskPresets[0];
+    const anchor = built.calcAnchor;
+    poses.calc = {
+      pos: overview.pos.clone().lerp(new THREE.Vector3(anchor.x - 0.08, anchor.y + 0.55, anchor.z + 1.05), 0.45),
+      look: overview.look.clone().lerp(anchor, 0.5),
+    };
+
+    /* MUSIC：正对录音机，录音机放在画面上半部分，下面留给磁带封套面板。 */
+    const deckPose = fitScreen(built.deckFace, width >= 720 ? 0.56 : 0.92);
+    /* 宽屏时左边的电视会挡一点，机位往右挪；竖屏不挪。 */
+    if (width >= 720) {
+      deckPose.pos.x += 0.1;
+      deckPose.look.x += 0.04;
+    }
+    const halfHeight = deckPose.pos.distanceTo(deckPose.look) * Math.tan(rad(camera.fov) / 2);
+    const drop = new THREE.Vector3(0, -halfHeight * (width >= 720 ? 0.3 : 0.42), 0);
+    poses.music = { pos: deckPose.pos.add(drop), look: deckPose.look.clone().add(drop) };
 
     /* WORK：宽屏把卡片放在左边，右边留给记事本；窄屏卡片在上，记事本从下面升起。 */
     const c = built.cardsCenter;
@@ -1862,7 +3019,9 @@ export async function mount({
     return { left, top, width: right - left, height: bottom - top };
   }
 
-  /* ---- 指针 */
+  /* ---- 指针
+     电脑：悬停出提示，点一下打开。手机：第一下只出提示（“再点一次”），第二下才打开。
+     书桌视角下：拖动转视角，右键 / Shift 拖动或双指拖动平移，滚轮或双指捏合缩放，双击空白处复位。 */
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   const pointerPx = { x: 0, y: 0 };
@@ -1870,8 +3029,9 @@ export async function mount({
   let pointerActive = false;
   let pointerMoved = false;
   let hoverId = null;
-
-  const plainClick = (event) => event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+  const CONTROL_ACTIONS = new Set(["tvPower", "tvPreset", "tvChannel", "tvVolume", "pcPower", "pcBright"]);
+  /* 手机上可以连着按的东西：开关、旋钮、录音机琴键。 */
+  const REPEATABLE = (id) => CONTROL_ACTIONS.has(id) || id.startsWith("deck");
 
   function toNdc(event) {
     const rect = stage.getBoundingClientRect();
@@ -1880,7 +3040,7 @@ export async function mount({
     pointer.set((pointerPx.x / rect.width) * 2 - 1, -(pointerPx.y / rect.height) * 2 + 1);
   }
 
-  /* 返回命中的热点或动作；点在某盒录像带上时顺带返回带子的序号。 */
+  /* 返回命中的热点或动作；点在某盒录像带上时带上带子的序号，点在预选台按键上时带上台号。 */
   function pick() {
     raycaster.setFromCamera(pointer, camera);
     for (const hit of raycaster.intersectObjects(pickRoots, true)) {
@@ -1888,15 +3048,15 @@ export async function mount({
       let tape = null;
       while (node) {
         if (Number.isInteger(node.userData.tape)) tape = node.userData.tape;
-        if (node.userData.hotspot) return { id: node.userData.hotspot, tape };
-        if (node.userData.action) return { id: node.userData.action, tape: null };
+        if (node.userData.hotspot) return { id: node.userData.hotspot, tape, value: null };
+        if (node.userData.action) return { id: node.userData.action, tape: null, value: node.userData.value ?? null };
         node = node.parent;
       }
     }
     return null;
   }
 
-  function setHover(id) {
+  function setHover(id, { confirm = false, value = null } = {}) {
     if (hoverId !== id) {
       hoverId = id;
       built.computerState.hover = byId[id] ? id : null;
@@ -1909,25 +3069,227 @@ export async function mount({
     const hotspot = byId[id] || ACTIONS[id];
     onHover({
       id,
-      label: hotspot.label,
+      label: id === "tvPreset" && value ? `CH ${value}` : hotspot.label,
       sub: subs[id] || hotspot.sub,
       external: Boolean(hotspot?.href && !hotspot.href.startsWith("#")),
       x: pointerPx.x,
       y: pointerPx.y,
+      confirm,
     });
+  }
+
+  /* 书桌视角的旋转、平移、缩放：goal 是手指要去的地方，当前值每帧平滑地追过去。 */
+  const ORBIT_KEYS = ["yaw", "pitch", "zoom", "panX", "panY"];
+  const orbit = { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0, goal: { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 } };
+  const LIMIT = { yaw: 0.62, pitchDown: -0.14, pitchUp: 0.34, zoomIn: 0.42, zoomOut: 1.2, panX: 0.42, panY: 0.2 };
+  let pivotDistance = 2;
+  const pivot = new THREE.Vector3();
+  const orbitDir = new THREE.Vector3();
+  const orbitRight = new THREE.Vector3();
+  const orbitUp = new THREE.Vector3();
+  const orbitOffset = new THREE.Vector3();
+  const orbitPos = new THREE.Vector3();
+  const orbitLook = new THREE.Vector3();
+  const spherical = new THREE.Spherical();
+
+  function clampOrbit() {
+    const goal = orbit.goal;
+    goal.yaw = clamp(goal.yaw, -LIMIT.yaw, LIMIT.yaw);
+    goal.pitch = clamp(goal.pitch, LIMIT.pitchDown, LIMIT.pitchUp);
+    goal.zoom = clamp(goal.zoom, LIMIT.zoomIn, LIMIT.zoomOut);
+    goal.panX = clamp(goal.panX, -LIMIT.panX, LIMIT.panX);
+    goal.panY = clamp(goal.panY, -LIMIT.panY, LIMIT.panY);
+  }
+
+  function resetOrbit(instant = false) {
+    Object.assign(orbit.goal, { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 });
+    if (instant) for (const key of ORBIT_KEYS) orbit[key] = orbit.goal[key];
+  }
+
+  /* 从某个机位出发，套上当前的旋转 / 平移 / 缩放。归零时结果就是原机位。 */
+  function orbitPose(source, outPos, outLook) {
+    orbitDir.subVectors(source.look, source.pos).normalize();
+    orbitRight.crossVectors(orbitDir, camera.up).normalize();
+    orbitUp.crossVectors(orbitRight, orbitDir).normalize();
+    pivot.copy(source.pos).addScaledVector(orbitDir, pivotDistance)
+      .addScaledVector(orbitRight, orbit.panX)
+      .addScaledVector(orbitUp, orbit.panY);
+    orbitOffset.copy(orbitDir).multiplyScalar(-pivotDistance);
+    spherical.setFromVector3(orbitOffset);
+    spherical.theta += orbit.yaw;
+    spherical.phi = clamp(spherical.phi - orbit.pitch, 0.25, Math.PI - 0.25);
+    spherical.radius *= orbit.zoom;
+    orbitOffset.setFromSpherical(spherical);
+    outPos.copy(pivot).add(orbitOffset);
+    outLook.copy(pivot);
+  }
+
+  const canOrbit = () => current === "desk" && !flight;
+  const pointers = new Map();
+  let gesture = null;
+  let lastEmptyTap = 0;
+  let armed = null;
+  let armTimer = 0;
+
+  function disarm() {
+    if (!armed) return;
+    armed = null;
+    window.clearTimeout(armTimer);
+    setHover(null);
+  }
+
+  function panBy(dx, dy, size) {
+    const metres = 1.1 * orbit.goal.zoom;
+    orbit.goal.panX -= (dx / size) * metres;
+    orbit.goal.panY += (dy / size) * metres;
+  }
+
+  function onPointerDown(event) {
+    if (event.pointerType === "mouse" && event.button !== 0 && event.button !== 2) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    try {
+      stage.setPointerCapture(event.pointerId);
+    } catch {
+      /* 捕获失败也能用，只是拖出窗口后收不到抬起。 */
+    }
+    if (pointers.size === 1) {
+      gesture = {
+        type: event.pointerType,
+        button: event.button,
+        pan: event.button === 2 || event.shiftKey,
+        moved: false,
+        multi: false,
+        startX: event.clientX,
+        startY: event.clientY,
+        startTime: performance.now(),
+        pinch: 0,
+        pinchZoom: orbit.goal.zoom,
+      };
+    } else if (gesture) {
+      gesture.multi = true;
+      gesture.moved = true;
+      disarm();
+      const [a, b] = [...pointers.values()];
+      gesture.pinch = Math.hypot(a.x - b.x, a.y - b.y);
+      gesture.pinchZoom = orbit.goal.zoom;
+    }
   }
 
   function onPointerMove(event) {
     toNdc(event);
-    pointerActive = true;
-    pointerMoved = true;
-    if (!reducedMotion) {
-      parallax.targetX = pointer.x;
-      parallax.targetY = pointer.y;
+    const mouse = event.pointerType === "mouse";
+    if (mouse) {
+      pointerActive = true;
+      pointerMoved = true;
+      if (!reducedMotion) {
+        parallax.targetX = pointer.x;
+        parallax.targetY = pointer.y;
+      }
+    }
+    const tracked = pointers.get(event.pointerId);
+    if (!tracked || !gesture) return;
+    const dx = event.clientX - tracked.x;
+    const dy = event.clientY - tracked.y;
+    tracked.x = event.clientX;
+    tracked.y = event.clientY;
+    if (!gesture.moved && Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) > (mouse ? 4 : 9)) {
+      gesture.moved = true;
+      disarm();
+      if (mouse && canOrbit()) stage.style.cursor = "grabbing";
+    }
+    if (!gesture.moved || !canOrbit()) return;
+    const size = Math.max(320, Math.min(width, height));
+    if (pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      const distance = Math.hypot(a.x - b.x, a.y - b.y);
+      if (gesture.pinch > 0 && distance > 0) orbit.goal.zoom = gesture.pinchZoom * (gesture.pinch / distance);
+      panBy(dx / 2, dy / 2, size);
+    } else if (gesture.pan) {
+      panBy(dx, dy, size);
+    } else {
+      orbit.goal.yaw -= (dx / size) * 1.7;
+      orbit.goal.pitch += (dy / size) * 1.2;
+    }
+    clampOrbit();
+  }
+
+  function onPointerUp(event) {
+    if (!pointers.delete(event.pointerId)) return;
+    if (pointers.size) return;
+    const finished = gesture;
+    gesture = null;
+    if (finished?.type === "mouse") stage.style.cursor = "";
+    if (!finished || finished.moved || finished.multi || event.type === "pointercancel") return;
+    if (performance.now() - finished.startTime > 650) return;
+    if (finished.type === "mouse" && (finished.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
+    tap(event, finished.type);
+  }
+
+  function activate(hit) {
+    if (hit.id === "lamp") built.toggleLamp();
+    else if (CONTROL_ACTIONS.has(hit.id)) built.operate(hit.id, hit.value);
+    else {
+      /* 录音机的琴键先在场景里按下去，播放逻辑交给启动器。 */
+      if (hit.id.startsWith("deck")) built.pressDeckKey(hit.id);
+      onPick(hit.id, { tape: hit.tape, value: hit.value });
     }
   }
 
-  function onPointerLeave() {
+  function tap(event, type) {
+    if (!canOrbit()) return;
+    toNdc(event);
+    const hit = pick();
+    const touch = type !== "mouse";
+    if (!hit) {
+      const now = performance.now();
+      if (now - lastEmptyTap < 380) {
+        resetOrbit();
+        lastEmptyTap = 0;
+      } else {
+        lastEmptyTap = now;
+      }
+      if (touch) disarm();
+      return;
+    }
+    lastEmptyTap = 0;
+    if (touch) {
+      const key = `${hit.id}:${hit.value ?? ""}`;
+      const control = REPEATABLE(hit.id);
+      if (armed !== key) {
+        armed = key;
+        window.clearTimeout(armTimer);
+        armTimer = window.setTimeout(() => {
+          armed = null;
+          setHover(null);
+        }, 4500);
+        setHover(hit.id, { confirm: true, value: hit.value });
+        return;
+      }
+      /* 开关、旋钮可以连着按；其它物件第二下打开后提示就收起。 */
+      window.clearTimeout(armTimer);
+      if (control) {
+        armTimer = window.setTimeout(() => {
+          armed = null;
+          setHover(null);
+        }, 4500);
+      } else {
+        armed = null;
+        setHover(null);
+      }
+    }
+    activate(hit);
+  }
+
+  function onWheel(event) {
+    if (!canOrbit()) return;
+    event.preventDefault();
+    const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+    orbit.goal.zoom *= Math.exp(delta * (event.ctrlKey ? 0.01 : 0.0012));
+    clampOrbit();
+  }
+
+  function onPointerLeave(event) {
+    if (event.pointerType !== "mouse") return;
     pointerActive = false;
     parallax.targetX = 0;
     parallax.targetY = 0;
@@ -1935,18 +3297,17 @@ export async function mount({
     setHover(null);
   }
 
-  function onClick(event) {
-    if (current !== "desk" || flight || !plainClick(event)) return;
-    toNdc(event);
-    const hit = pick();
-    if (!hit) return;
-    if (hit.id === "lamp") built.toggleLamp();
-    else onPick(hit.id, { tape: hit.tape });
-  }
-
+  const stopDefault = (event) => event.preventDefault();
+  stage.addEventListener("pointerdown", onPointerDown);
   stage.addEventListener("pointermove", onPointerMove);
+  stage.addEventListener("pointerup", onPointerUp);
+  stage.addEventListener("pointercancel", onPointerUp);
   stage.addEventListener("pointerleave", onPointerLeave);
-  stage.addEventListener("click", onClick);
+  stage.addEventListener("wheel", onWheel, { passive: false });
+  stage.addEventListener("contextmenu", stopDefault);
+  /* iOS Safari 的双指缩放会缩放整页，这里拦下来交给房间。 */
+  stage.addEventListener("gesturestart", stopDefault);
+  stage.addEventListener("gesturechange", stopDefault);
 
   /* ---- 镜头 */
   const view = { pos: new THREE.Vector3(), look: new THREE.Vector3() };
@@ -1968,9 +3329,20 @@ export async function mount({
   function goTo(target, { instant = false } = {}) {
     if (!poses[target]) return Promise.resolve();
     if (flight) finishFlight();
+    if (current === "desk") {
+      orbitPose(view, orbitPos, orbitLook);
+      view.pos.copy(orbitPos);
+      view.look.copy(orbitLook);
+      resetOrbit(true);
+    }
     current = target;
+    armed = null;
+    window.clearTimeout(armTimer);
     setHover(null);
-    stage.style.cursor = "";
+    stage.style.cursor = target === "desk" ? "" : "default";
+    built.powerFor(target);
+    built.liftCalculator(target === "calc", reducedMotion);
+    built.setDeckOpen(target === "music");
     built.computerState.mode = target === "about" || target === "online" ? target : "desk";
     built.redrawComputer();
     if (target === "posts") tv({ mode: "teletext" });
@@ -2008,9 +3380,14 @@ export async function mount({
     current = "desk";
     built.computerState.mode = "desk";
     built.redrawComputer();
+    deskIndex = 0;
+    computePoses();
     view.pos.copy(poses.desk.pos);
     view.look.copy(poses.desk.look);
     parallax.weight = 1;
+    resetOrbit(true);
+    built.liftCalculator(false, true);
+    stage.style.cursor = "";
     setHover(null);
   }
 
@@ -2054,8 +3431,13 @@ export async function mount({
       watch.done = true;
       return;
     }
-    if (quality === "high") {
-      setQuality("low");
+    if (quality === "high" || pixelCap > 1.25) {
+      if (quality === "high") setQuality("low");
+      else {
+        pixelCap = 1.25;
+        applyPixelRatio();
+        renderer.setSize(width, height, false);
+      }
       watch.settle = 0.8;
       watch.elapsed = 0;
       watch.frames = 0;
@@ -2067,7 +3449,8 @@ export async function mount({
 
   function setQuality(level) {
     quality = level;
-    renderer.setPixelRatio(pixelRatioFor(level));
+    if (level === "low") pixelCap = Math.min(pixelCap, 1.5);
+    applyPixelRatio();
     renderer.shadowMap.enabled = level === "high";
     built.spot.castShadow = level === "high";
     built.setMood(level === "high");
@@ -2100,10 +3483,18 @@ export async function mount({
     sideways.subVectors(view.look, view.pos).cross(camera.up).normalize();
     offset.copy(sideways).multiplyScalar((parallax.x * 0.1 + sway) * parallax.weight);
     offset.y += (parallax.y * 0.045 + (reducedMotion ? 0 : Math.sin(time * 0.19) * 0.004)) * parallax.weight;
-    camera.position.copy(view.pos).add(offset);
-    camera.lookAt(view.look);
+    const ease = reducedMotion ? 1 : 1 - Math.exp(-dt * 12);
+    for (const key of ORBIT_KEYS) orbit[key] = lerp(orbit[key], orbit.goal[key], ease);
+    if (atDesk) {
+      orbitPose(view, orbitPos, orbitLook);
+      camera.position.copy(orbitPos).add(offset);
+      camera.lookAt(orbitLook);
+    } else {
+      camera.position.copy(view.pos).add(offset);
+      camera.lookAt(view.look);
+    }
 
-    if (pointerMoved && pointerActive && atDesk) {
+    if (pointerMoved && pointerActive && atDesk && !gesture?.moved) {
       pointerMoved = false;
       const hit = pick();
       stage.style.cursor = hit ? "pointer" : "";
@@ -2136,8 +3527,10 @@ export async function mount({
       built.tvState.clock = clockText(true);
       if (built.tvState.mode === "idle") built.redrawTv();
     }
-    /* 正在放带或是雪花时，电视每一帧都要重画。 */
-    if (built.tvState.mode === "media" || built.tvState.mode === "noise") built.redrawTv();
+    /* 正在放带、雪花、开关机或显示面板屏显时，屏幕每一帧都要重画。 */
+    const busy = built.screensBusy();
+    if (busy.tv) built.redrawTv();
+    if (busy.computer) built.redrawComputer();
   }
 
   function frame(now) {
@@ -2200,9 +3593,16 @@ export async function mount({
     window.removeEventListener("resize", relayout);
     document.removeEventListener("visibilitychange", onVisibility);
     canvas.removeEventListener("webglcontextlost", onContextLost);
+    window.clearTimeout(armTimer);
+    stage.removeEventListener("pointerdown", onPointerDown);
     stage.removeEventListener("pointermove", onPointerMove);
+    stage.removeEventListener("pointerup", onPointerUp);
+    stage.removeEventListener("pointercancel", onPointerUp);
     stage.removeEventListener("pointerleave", onPointerLeave);
-    stage.removeEventListener("click", onClick);
+    stage.removeEventListener("wheel", onWheel);
+    stage.removeEventListener("contextmenu", stopDefault);
+    stage.removeEventListener("gesturestart", stopDefault);
+    stage.removeEventListener("gesturechange", stopDefault);
     stage.style.cursor = "";
     scene.traverse((node) => {
       node.geometry?.dispose?.();
@@ -2241,6 +3641,16 @@ export async function mount({
     goTo,
     screenRect,
     toggleLamp: () => built.toggleLamp(),
+    setCalcDisplay: (text) => built.setCalcDisplay(text),
+    /* 键盘：方向键转视角，+ − 缩放，0 复位（只在书桌视角）。 */
+    nudge({ yaw = 0, pitch = 0, zoom = 1 } = {}) {
+      if (!canOrbit()) return;
+      orbit.goal.yaw += yaw;
+      orbit.goal.pitch += pitch;
+      orbit.goal.zoom *= zoom;
+      clampOrbit();
+    },
+    resetOrbit: () => resetOrbit(),
     setTapes: (list) => built.setTapes(list),
     insertTape: (index) => built.moveTape(index, true, reducedMotion),
     ejectTape: () => (built.loadedTape >= 0 ? built.moveTape(built.loadedTape, false, reducedMotion) : Promise.resolve()),
@@ -2249,7 +3659,22 @@ export async function mount({
     },
     tv,
     setVcr,
-    setRecorder: (playing) => built.setRecorder(playing),
+    setCassettes: (list) => built.setCassettes(list),
+    insertCassette: (index) => built.insertCassette(index, reducedMotion),
+    ejectCassette: () => built.ejectCassette(reducedMotion),
+    setDeckPlaying: (playing) => built.setDeckPlaying(playing),
+    get loadedCassette() {
+      return built.loadedCassette;
+    },
+    setBooks: (list) => built.setBooks(list),
+    /* 换到下一个书桌机位；只在书桌视角下有效。返回新的机位序号。 */
+    cycleDeskView(step = 1) {
+      if (current !== "desk") return deskIndex;
+      deskIndex = (deskIndex + step + deskPresets.length) % deskPresets.length;
+      computePoses();
+      goTo("desk");
+      return deskIndex;
+    },
     onLayout(listener) {
       layoutListeners.add(listener);
       return () => layoutListeners.delete(listener);
