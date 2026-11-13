@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-tapclick";
+  const SCENE_URL = "/room/scene.js?v=20261113-card";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -42,7 +42,7 @@
   const STRINGS = {
     zh: {
       menu: { about: "关于", work: "履历", posts: "文章", film: "录像带", music: "音乐", online: "联系", services: "服务" },
-      buttons: { back: "回到桌面", notepad: "放下记事本", eject: "退带", hangup: "挂断", calc: "放下计算器", play: "播放", pause: "暂停", next: "下一段", credits: "致谢", soundOn: "声音：开", soundOff: "声音：关", lofi: "静态版", view: "视角" },
+      buttons: { back: "回到桌面", notepad: "放下记事本", eject: "退带", hangup: "挂断", calc: "放下计算器", cardBack: "放回名片盒", flip: "翻面", play: "播放", pause: "暂停", next: "下一段", credits: "致谢", soundOn: "声音：开", soundOff: "声音：关", lofi: "静态版", view: "视角" },
       noticeIntro: "个人网站是互联网上少数还能好玩的地方，所以这里还有一个可交互的版本。",
       reasons: {
         "no-webgl": "你的浏览器没有提供 WebGL 2，所以看到的是这个静态版本。",
@@ -57,9 +57,10 @@
       },
       nav: { about: "关于我", work: "履历与作品", posts: "文章与档案", film: "录像带", music: "录音机 · 原创音乐", online: "联系方式" },
       hints: {
-        desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · C 计算器 · M 录音机 · L 台灯",
+        desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · C 计算器 · N 名片 · M 录音机 · L 台灯",
         calc: "数字键与 + − × ÷ 计算 · Enter 等于 · Backspace 退格 · Delete 清零 · ESC 放下",
         orbit: "拖动 转视角 · 右键拖动 平移 · 滚轮 缩放 · 双击 复位",
+        card: "点名片或空格 翻面 · 拖动 转着看 · ESC 放回名片盒",
         music: "点磁带放进录音机 · 空格 播放 / 暂停 · ← → 上一首 / 下一首 · S 停止退带 · ESC 回到桌面",
         about: "↑ ↓ 滚动 · 1–5 功能键 · ESC 回到桌面",
         work: "点条目打开 · ESC 放下记事本",
@@ -102,7 +103,7 @@
     },
     en: {
       menu: { about: "ABOUT", work: "WORK", posts: "POSTS", film: "FILM", music: "MUSIC", online: "ONLINE", services: "SERVICES" },
-      buttons: { back: "BACK TO DESK", notepad: "PUT DOWN NOTEPAD", eject: "EJECT", hangup: "HANG UP", calc: "PUT DOWN CALCULATOR", play: "PLAY", pause: "PAUSE", next: "NEXT", credits: "CREDITS", soundOn: "SOUND ON", soundOff: "SOUND OFF", lofi: "LO-FI", view: "VIEW" },
+      buttons: { back: "BACK TO DESK", notepad: "PUT DOWN NOTEPAD", eject: "EJECT", hangup: "HANG UP", calc: "PUT DOWN CALCULATOR", cardBack: "PUT CARD BACK", flip: "FLIP", play: "PLAY", pause: "PAUSE", next: "NEXT", credits: "CREDITS", soundOn: "SOUND ON", soundOff: "SOUND OFF", lofi: "LO-FI", view: "VIEW" },
       noticeIntro: "Personal websites are one of the few places on the internet that can still be fun, so there is also an interactive version here. ",
       reasons: {
         "no-webgl": "Your browser doesn't provide WebGL 2, so you're seeing this static version.",
@@ -117,9 +118,10 @@
       },
       nav: { about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Videotapes", music: "Boombox · original music", online: "Contact" },
       hints: {
-        desk: "A about · W work · P posts · F tapes · O online · C calculator · M recorder · L lamp",
+        desk: "A about · W work · P posts · F tapes · O online · C calculator · N card · M recorder · L lamp",
         calc: "Digits and + − × ÷ to calculate · Enter equals · Backspace delete · Delete clear · ESC put it down",
         orbit: "Drag to look around · right-drag to pan · scroll to zoom · double-click to reset",
+        card: "Click the card or Space to flip · drag to turn it · ESC put it back",
         music: "Pick a cassette · Space play / pause · ← → previous / next · S stop & eject · ESC back to desk",
         about: "↑ ↓ scroll · 1–5 function keys · ESC back to desk",
         work: "Click an entry to open it · ESC put down the notepad",
@@ -156,7 +158,7 @@
       ],
       hotspots: {
         about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Tapes · promo film & media",
-        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", tape: "Boombox · play a cassette", cassette: "Put it in the boombox", book: "Projects",
+        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", tape: "Boombox · play a cassette", card: "Business card · take one out", cassette: "Put it in the boombox", book: "Projects",
         deckPlay: "Play / pause", deckPause: "Pause", deckStop: "Stop · eject", deckNext: "Next track", deckPrev: "Previous track", deckRec: "Record key (just for fun)", calc: "Calculator · pick it up",
         tvPower: "TV on/off", tvPreset: "Channel presets 1–6", tvChannel: "Change channel", tvVolume: "Volume", pcPower: "Computer on/off", pcBright: "Screen brightness",
       },
@@ -167,7 +169,7 @@
     },
     de: {
       menu: { about: "ÜBER MICH", work: "WERDEGANG", posts: "BEITRÄGE", film: "FILM", music: "MUSIK", online: "KONTAKT", services: "LEISTUNGEN" },
-      buttons: { back: "ZUM SCHREIBTISCH", notepad: "NOTIZBLOCK WEGLEGEN", eject: "AUSWERFEN", hangup: "AUFLEGEN", calc: "RECHNER WEGLEGEN", play: "ABSPIELEN", pause: "PAUSE", next: "WEITER", credits: "CREDITS", soundOn: "TON AN", soundOff: "TON AUS", lofi: "LO-FI", view: "ANSICHT" },
+      buttons: { back: "ZUM SCHREIBTISCH", notepad: "NOTIZBLOCK WEGLEGEN", eject: "AUSWERFEN", hangup: "AUFLEGEN", calc: "RECHNER WEGLEGEN", cardBack: "KARTE ZURÜCKLEGEN", flip: "UMDREHEN", play: "ABSPIELEN", pause: "PAUSE", next: "WEITER", credits: "CREDITS", soundOn: "TON AN", soundOff: "TON AUS", lofi: "LO-FI", view: "ANSICHT" },
       noticeIntro: "Persönliche Websites gehören zu den wenigen Orten im Internet, die noch Spaß machen dürfen – deshalb gibt es hier auch eine interaktive Version. ",
       reasons: {
         "no-webgl": "Dein Browser bietet kein WebGL 2, deshalb siehst du diese statische Version.",
@@ -182,9 +184,10 @@
       },
       nav: { about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Videokassetten", music: "Kassettenrekorder · eigene Musik", online: "Kontakt" },
       hints: {
-        desk: "A Über mich · W Werdegang · P Beiträge · F Kassetten · O Kontakt · C Rechner · M Rekorder · L Lampe",
+        desk: "A Über mich · W Werdegang · P Beiträge · F Kassetten · O Kontakt · C Rechner · N Karte · M Rekorder · L Lampe",
         calc: "Ziffern und + − × ÷ zum Rechnen · Enter gleich · Rücktaste löschen · Entf zurücksetzen · ESC weglegen",
         orbit: "Ziehen zum Umsehen · Rechts ziehen zum Verschieben · Scrollen zum Zoomen · Doppelklick zurücksetzen",
+        card: "Karte anklicken oder Leertaste zum Umdrehen · ziehen zum Drehen · ESC zurücklegen",
         music: "Kassette wählen · Leertaste Wiedergabe / Pause · ← → zurück / weiter · S Stopp & Auswurf · ESC zum Schreibtisch",
         about: "↑ ↓ scrollen · 1–5 Funktionstasten · ESC zurück zum Schreibtisch",
         work: "Eintrag anklicken zum Öffnen · ESC Notizblock weglegen",
@@ -221,7 +224,7 @@
       ],
       hotspots: {
         about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Kassetten · Imagefilm & Medien",
-        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", tape: "Kassettenrekorder · Kassette abspielen", cassette: "In den Rekorder legen", book: "Projekte",
+        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", tape: "Kassettenrekorder · Kassette abspielen", card: "Visitenkarte · eine herausnehmen", cassette: "In den Rekorder legen", book: "Projekte",
         deckPlay: "Wiedergabe / Pause", deckPause: "Pause", deckStop: "Stopp · Auswurf", deckNext: "Nächster Titel", deckPrev: "Vorheriger Titel", deckRec: "Aufnahmetaste (nur zum Spaß)", calc: "Taschenrechner · in die Hand nehmen",
         tvPower: "Fernseher ein/aus", tvPreset: "Programmtasten 1–6", tvChannel: "Kanal wechseln", tvVolume: "Lautstärke", pcPower: "Computer ein/aus", pcBright: "Bildschirmhelligkeit",
       },
@@ -232,7 +235,7 @@
     },
     ko: {
       menu: { about: "소개", work: "이력", posts: "글", film: "영상", music: "음악", online: "연락처", services: "서비스" },
-      buttons: { back: "책상으로", notepad: "메모장 내려놓기", eject: "꺼내기", hangup: "끊기", calc: "계산기 내려놓기", play: "재생", pause: "일시정지", next: "다음", credits: "크레딧", soundOn: "소리 켬", soundOff: "소리 끔", lofi: "정적 버전", view: "시점" },
+      buttons: { back: "책상으로", notepad: "메모장 내려놓기", eject: "꺼내기", hangup: "끊기", calc: "계산기 내려놓기", cardBack: "명함 넣기", flip: "뒤집기", play: "재생", pause: "일시정지", next: "다음", credits: "크레딧", soundOn: "소리 켬", soundOff: "소리 끔", lofi: "정적 버전", view: "시점" },
       noticeIntro: "개인 웹사이트는 인터넷에서 아직 재미있을 수 있는 몇 안 되는 곳이라, 여기에는 인터랙티브 버전도 있습니다. ",
       reasons: {
         "no-webgl": "브라우저가 WebGL 2를 지원하지 않아 정적 버전을 보고 계십니다.",
@@ -247,9 +250,10 @@
       },
       nav: { about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "비디오테이프", music: "카세트 · 창작 음악", online: "연락처" },
       hints: {
-        desk: "A 소개 · W 이력 · P 글 · F 테이프 · O 연락처 · C 계산기 · M 카세트 · L 스탠드",
+        desk: "A 소개 · W 이력 · P 글 · F 테이프 · O 연락처 · C 계산기 · N 명함 · M 카세트 · L 스탠드",
         calc: "숫자와 + − × ÷ 로 계산 · Enter 결과 · Backspace 지우기 · Delete 초기화 · ESC 내려놓기",
         orbit: "드래그로 둘러보기 · 오른쪽 드래그로 이동 · 스크롤로 확대 · 더블클릭으로 원위치",
+        card: "명함을 누르거나 Space로 뒤집기 · 드래그로 돌려 보기 · ESC 명함 넣기",
         music: "카세트 고르기 · Space 재생 / 일시정지 · ← → 이전 / 다음 · S 정지·꺼내기 · ESC 책상으로",
         about: "↑ ↓ 스크롤 · 1–5 기능 키 · ESC 책상으로",
         work: "항목을 눌러 열기 · ESC 메모장 내려놓기",
@@ -286,7 +290,7 @@
       ],
       hotspots: {
         about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "테이프 · 홍보 영상과 미디어",
-        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", tape: "카세트 · 음악 듣기", cassette: "카세트에 넣기", book: "작업",
+        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", tape: "카세트 · 음악 듣기", card: "명함 · 한 장 꺼내기", cassette: "카세트에 넣기", book: "작업",
         deckPlay: "재생 / 일시정지", deckPause: "일시정지", deckStop: "정지 · 꺼내기", deckNext: "다음 곡", deckPrev: "이전 곡", deckRec: "녹음 버튼(그냥 눌러 보기)", calc: "계산기 · 들어서 쓰기",
         tvPower: "TV 켜기/끄기", tvPreset: "채널 프리셋 1–6", tvChannel: "채널 바꾸기", tvVolume: "볼륨", pcPower: "컴퓨터 켜기/끄기", pcBright: "화면 밝기",
       },
@@ -314,7 +318,7 @@
   const DESK_HINT = `${HINTS.desk}\n${HINTS.orbit}`;
   /* 有实体键盘时按钮上补“ · ESC”；手机上没有 Esc 键，不显示。 */
   const ESC = matches("(pointer: fine)") ? " · ESC" : "";
-  const BACK_KEYS = { work: "notepad", film: "eject", online: "hangup", calc: "calc" };
+  const BACK_KEYS = { work: "notepad", film: "eject", online: "hangup", calc: "calc", card: "cardBack" };
   const backLabel = (id) => `${T.buttons[BACK_KEYS[id] || "back"]}${ESC}`;
   /* 不贴在 3D 屏幕上、自己从下面升起来的面板。 */
   const FLOATING = new Set(["work", "calc", "music"]);
@@ -845,6 +849,31 @@
         src: sameOrigin(audio?.querySelector("source")?.getAttribute("src") || audio?.getAttribute("src")),
       };
     }).filter((track) => track.src && track.title);
+  }
+
+  /* 名片：首页 #card 的正反两面（文字、联系方式、二维码图片地址），场景按它画贴图。 */
+  function collectCard() {
+    const card = document.querySelector("#card [data-card]");
+    if (!card) return null;
+    const text = (selector) => textOf(card.querySelector(selector));
+    const pairs = (selector) => [...card.querySelectorAll(selector)].map((node) => ({ title: textOf(node.querySelector("dt")), text: textOf(node.querySelector("dd")) }));
+    return {
+      en: text("[data-card-en]"),
+      name: text("[data-card-name]"),
+      tag: text("[data-card-tag]"),
+      sub: text("[data-card-sub]"),
+      focus: pairs("[data-card-focus]"),
+      org: text("[data-card-org]"),
+      role: text("[data-card-role]"),
+      open: text("[data-card-open]"),
+      services: pairs("[data-card-service]"),
+      contacts: [...card.querySelectorAll("[data-card-contact]")].map((node) => ({ label: textOf(node.querySelector("b")), value: textOf(node.querySelector("a, span")) })),
+      notes: [...card.querySelectorAll("[data-card-note]")].map((node) => textOf(node)),
+      qrs: [...card.querySelectorAll("[data-card-qr]")].map((node) => {
+        const label = textOf(node.querySelector("figcaption b"));
+        return { src: sameOrigin(node.querySelector("img")?.getAttribute("src")), label, caption: textOf(node.querySelector("figcaption")).slice(label.length).trim() };
+      }).filter((qr) => qr.src),
+    };
   }
 
   /* 书架上的作品书：首页 Work 区 Projects 分隔线之后的条目。 */
@@ -1467,6 +1496,10 @@
     soundButton.setAttribute("aria-pressed", "false");
     soundButton.setAttribute("aria-label", T.sound);
     soundButton.addEventListener("click", () => toggleSound());
+    const flipButton = element("button", "room-btn room-flip", T.buttons.flip);
+    flipButton.type = "button";
+    flipButton.hidden = true;
+    flipButton.addEventListener("click", () => controller?.flipCard());
     const viewButton = element("button", "room-btn room-view", T.buttons.view);
     viewButton.type = "button";
     viewButton.setAttribute("aria-label", T.music.view);
@@ -1479,7 +1512,7 @@
     lofi.title = T.lofi;
     lofi.setAttribute("aria-label", `${T.buttons.lofi}: ${T.lofi}`);
     lofi.addEventListener("click", () => leave({ target: "#top", persist: true }));
-    buttons.append(back, play, next, credits, viewButton, soundButton, lofi);
+    buttons.append(back, flipButton, play, next, credits, viewButton, soundButton, lofi);
     dock.append(keys, buttons);
     /* 窄屏照 Felix 手机版：声音和静态版挪到顶部右侧；宽屏放回右下角那一排。 */
     const narrow = window.matchMedia ? window.matchMedia("(max-width: 719px)") : null;
@@ -1511,7 +1544,7 @@
     overlay.addEventListener("keydown", onKey);
     document.body.append(overlay);
     ui = {
-      navButtons, panels, tip, keys, back, play, next, sound: soundButton, credits, creditsPanel,
+      navButtons, panels, tip, keys, back, flip: flipButton, play, next, sound: soundButton, credits, creditsPanel,
       unbind: () => narrow?.removeEventListener?.("change", placeTools),
     };
     calcShow();
@@ -1586,6 +1619,7 @@
     ui.back.textContent = backLabel(next);
     ui.play.hidden = next !== "film";
     ui.next.hidden = next !== "film";
+    ui.flip.hidden = next !== "card";
 
     /* 进入某个视图时压一条历史记录，手机上的返回手势就会回到桌面而不是离开网站。 */
     if (!fromHistory) {
@@ -1662,6 +1696,16 @@
     }
     if (view === "desk" && key === "v") {
       controller?.cycleDeskView();
+      event.preventDefault();
+      return;
+    }
+    if (view === "card" && !onButton && (key === " " || key === "enter")) {
+      controller?.flipCard();
+      event.preventDefault();
+      return;
+    }
+    if (view === "desk" && key === "n") {
+      openView("card");
       event.preventDefault();
       return;
     }
@@ -1745,6 +1789,10 @@
     }
     if (id === "calc") {
       openView("calc");
+      return;
+    }
+    if (id === "card") {
+      openView("card");
       return;
     }
     if (NAV.some((item) => item.view === id)) {
@@ -1875,6 +1923,7 @@
       syncTapes();
       controller.setCassettes(music.tracks.map((track, index) => ({ label: T.tapes.music, en: "MUSIC", color: MUSIC_COLORS[index % MUSIC_COLORS.length] })));
       controller.setBooks(collectWorks());
+      controller.setCard(collectCard());
       musicInfo("");
       loadArchiveTapes();
     } catch {
@@ -1931,6 +1980,7 @@
           ui.back.hidden = true;
           ui.play.hidden = true;
           ui.next.hidden = true;
+          ui.flip.hidden = true;
           ui.creditsPanel.hidden = true;
         }
         if (overlay) overlay.hidden = true;

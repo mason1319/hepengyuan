@@ -233,6 +233,37 @@ html[data-theme="dark"] .ph-warn{--warn:#ffb867}
 .mu-item{padding:13px 0;border-bottom:1px solid var(--rule)}
 .mu-item audio{display:block;width:100%;max-width:560px;height:40px;margin-top:10px}
 .mu-note{margin:6px 0 0;font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--muted)}
+/* 名片：正反两面，深紫底、香槟金描边（和 3D 房间名片盒里那张是同一份内容）。不跟随浅色 / 深色主题。 */
+.bc{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;margin:12px 0 0}
+.bc-face{position:relative;margin:0;padding:22px 22px 20px;border-radius:14px;color:#e8e2f4;font-family:var(--body);
+  background:radial-gradient(120% 90% at 18% 8%,#4b3b8a 0%,#2c2156 55%,#1b1436 100%);
+  box-shadow:inset 0 0 0 1.5px #cdb98d,inset 0 0 0 6px rgba(205,185,141,.14),0 14px 30px rgba(20,12,40,.28)}
+.bc-en{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:#d8cfb6}
+.bc-name{margin:6px 0 0;font-family:"Xingkai SC","STXingkai","Kaiti SC","STKaiti","KaiTi",var(--serif);font-size:44px;line-height:1.1;letter-spacing:.12em;color:#efe9da;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.bc-tag{margin:6px 0 0;font-size:16px;font-weight:700;color:#efe9da}
+.bc-sub{margin:4px 0 0;font-size:13px;color:#cfc6e4}
+.bc-focus{display:grid;gap:10px;margin:14px 0 0}
+.bc-focus div{padding-left:10px;border-left:2px solid #cdb98d}
+.bc-focus dt{font-size:14px;font-weight:700;color:#efe9da}
+.bc-focus dd{margin:2px 0 0;font-size:12.5px;color:#cfc6e4}
+.bc-foot{margin-top:16px;padding-top:12px;border-top:1px solid rgba(205,185,141,.5)}
+.bc-org{margin:0;font-size:17px;font-weight:700;color:#efe9da}
+.bc-role{margin:3px 0 0;font-size:13px;color:#d8cfb6}
+.bc-open{margin:8px 0 0;font-size:12px;color:#b9b0d6}
+.bc-back::before{content:"";display:block;height:22px;margin:-4px -22px 14px;background:linear-gradient(#141018,#29242f)}
+.bc-services{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 16px;margin:0}
+.bc-services dt{font-size:14px;font-weight:700;color:#efe9da}
+.bc-services dd{margin:3px 0 0;font-size:12px;line-height:1.5;color:#cfc6e4}
+.bc-contact{display:grid;gap:4px;margin:14px 0 0;padding:12px 0 0;list-style:none;border-top:1px solid rgba(205,185,141,.5);font-size:14px}
+.bc-contact b{margin-right:.5em;font-weight:400;color:#d8cfb6}
+.bc-contact a,.bc-contact span{font-family:var(--mono);color:#efe9da;text-decoration:none}
+.bc-note{margin:8px 0 0;font-size:12px;color:#b9b0d6}
+.bc-note+.bc-note{margin-top:2px}
+.bc-qrs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.bc-qrs figure{margin:0;text-align:center}
+.bc-qrs img{display:block;width:100%;height:auto;aspect-ratio:1;padding:4px;border-radius:6px;background:#fff;box-shadow:0 0 0 2px #cdb98d}
+.bc-qrs figcaption{margin-top:6px;font-size:11px;line-height:1.35;color:#d8cfb6}
+.bc-qrs figcaption b{display:block;font-size:12px;font-weight:700;color:#efe9da}
 
 /* ---------------------------------------------------------------- Online / 联系 */
 .on-hd{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
@@ -558,6 +589,7 @@ a.pad-t:hover,a.pad-t:focus-visible{color:#b23b3b;outline:none;text-decoration-c
 .deck-key:focus-visible{outline:2px solid #3a7bd5;outline-offset:2px}
 .deck-key.is-stop{background:linear-gradient(#e6e0d1,#c9c1ad)}
 .room-view::before{content:"\25CE"}
+.room-flip::before{content:"\21BB"}
 
 /* 窄屏照 Felix 手机版：顶部一行小字导航 + 右侧圆形图标（声音、静态版）和语言；
    底部只留左下角一个很淡的“致谢”，进了某个视图右下角才出现返回按钮。 */
