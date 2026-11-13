@@ -1246,7 +1246,39 @@ function drawBaguaMark(g, cx, cy, r) {
   g.restore();
 }
 
-function drawCardFront(g, W, H, data) {
+/* 名片上的书法名字：首页给的是一张白色字形透明图（assets/card/name.png），
+   这里给它上银色渐变，再在右下叠几层深色做出压铸金属字的厚度和投影。 */
+function drawNameArt(g, image, x, y, w, h) {
+  const off = document.createElement("canvas");
+  off.width = Math.ceil(w);
+  off.height = Math.ceil(h);
+  const o = off.getContext("2d");
+  const tint = (fill) => {
+    o.globalCompositeOperation = "source-over";
+    o.clearRect(0, 0, off.width, off.height);
+    o.drawImage(image, 0, 0, off.width, off.height);
+    o.globalCompositeOperation = "source-in";
+    o.fillStyle = fill;
+    o.fillRect(0, 0, off.width, off.height);
+    return off;
+  };
+  g.save();
+  g.shadowColor = "rgba(0,0,0,0.6)";
+  g.shadowBlur = 16;
+  g.shadowOffsetY = 10;
+  g.drawImage(tint("#1d1922"), x + 6, y + 7);
+  g.restore();
+  const side = tint("#5f5a55");
+  for (let step = 6; step >= 1; step -= 1) g.drawImage(side, x + step * 0.7, y + step);
+  const face = o.createLinearGradient(0, 0, off.width * 0.25, off.height);
+  face.addColorStop(0, "#fffcf4");
+  face.addColorStop(0.45, "#d3ccbd");
+  face.addColorStop(0.62, "#efe9dc");
+  face.addColorStop(1, "#8f887b");
+  g.drawImage(tint(face), x, y);
+}
+
+function drawCardFront(g, W, H, data, nameImage = null) {
   drawCardBase(g, W, H);
   if (!data) return;
   g.textBaseline = "alphabetic";
@@ -1255,15 +1287,20 @@ function drawCardFront(g, W, H, data) {
   if ("letterSpacing" in g) g.letterSpacing = "4px";
   fitText(g, data.en, 110, 175, 720, 40, 600);
   if ("letterSpacing" in g) g.letterSpacing = "0px";
-  embossed(g, () => {
-    const silver = g.createLinearGradient(0, 220, 0, 400);
-    silver.addColorStop(0, "#fbf7ee");
-    silver.addColorStop(1, "#a9a294");
-    g.fillStyle = silver;
-    if ("letterSpacing" in g) g.letterSpacing = "18px";
-    fitText(g, data.name, 100, 370, 720, 172, 400, BRUSH);
-    if ("letterSpacing" in g) g.letterSpacing = "0px";
-  });
+  if (nameImage?.complete && nameImage.naturalWidth) {
+    const w = 660;
+    drawNameArt(g, nameImage, 100, 205, w, (w * nameImage.naturalHeight) / nameImage.naturalWidth);
+  } else {
+    embossed(g, () => {
+      const silver = g.createLinearGradient(0, 220, 0, 400);
+      silver.addColorStop(0, "#fbf7ee");
+      silver.addColorStop(1, "#a9a294");
+      g.fillStyle = silver;
+      if ("letterSpacing" in g) g.letterSpacing = "18px";
+      fitText(g, data.name, 100, 370, 720, 172, 400, BRUSH);
+      if ("letterSpacing" in g) g.letterSpacing = "0px";
+    });
+  }
   embossed(g, () => {
     g.fillStyle = CARD_INK.bright;
     fitText(g, data.tag, 110, 470, 760, 60, 700);
@@ -2472,8 +2509,9 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   scene.attach(heroCard);
   let cardData = null;
   let cardImages = [];
+  let cardNameImage = null;
   const redrawCard = () => {
-    drawCardFront(cardCanvases[0].getContext("2d"), CARD_PX.w, CARD_PX.h, cardData);
+    drawCardFront(cardCanvases[0].getContext("2d"), CARD_PX.w, CARD_PX.h, cardData, cardNameImage);
     drawCardBack(cardCanvases[1].getContext("2d"), CARD_PX.w, CARD_PX.h, cardData, cardImages);
     for (const texture of cardTextures) texture.needsUpdate = true;
   };
@@ -2486,6 +2524,13 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
       image.src = qr.src;
       return image;
     });
+    cardNameImage = null;
+    if (data?.nameImage) {
+      cardNameImage = new Image();
+      cardNameImage.decoding = "async";
+      cardNameImage.addEventListener("load", redrawCard, { once: true });
+      cardNameImage.src = data.nameImage;
+    }
     redrawCard();
   };
   redrawCard();

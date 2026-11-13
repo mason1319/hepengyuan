@@ -239,7 +239,10 @@ html[data-theme="dark"] .ph-warn{--warn:#ffb867}
   background:radial-gradient(120% 90% at 18% 8%,#4b3b8a 0%,#2c2156 55%,#1b1436 100%);
   box-shadow:inset 0 0 0 1.5px #cdb98d,inset 0 0 0 6px rgba(205,185,141,.14),0 14px 30px rgba(20,12,40,.28)}
 .bc-en{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:#d8cfb6}
-.bc-name{margin:6px 0 0;font-family:"Xingkai SC","STXingkai","Kaiti SC","STKaiti","KaiTi",var(--serif);font-size:44px;line-height:1.1;letter-spacing:.12em;color:#efe9da;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+/* 名字用名片上的书法字形（白色透明图当遮罩，银色渐变上色）；文字本身还在，只是透明，读屏和搜索照样能读到。 */
+.bc-name{width:min(100%,230px);aspect-ratio:1400/424;margin:10px 0 0;overflow:hidden;font-size:20px;line-height:1;color:transparent;
+  background:linear-gradient(160deg,#fffcf4 0%,#d3ccbd 45%,#efe9dc 62%,#8f887b 100%);
+  -webkit-mask:url("/assets/card/name.png") left center/contain no-repeat;mask:url("/assets/card/name.png") left center/contain no-repeat}
 .bc-tag{margin:6px 0 0;font-size:16px;font-weight:700;color:#efe9da}
 .bc-sub{margin:4px 0 0;font-size:13px;color:#cfc6e4}
 .bc-focus{display:grid;gap:10px;margin:14px 0 0}

@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-card";
+  const SCENE_URL = "/room/scene.js?v=20261113-cardname";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -860,6 +860,7 @@
     return {
       en: text("[data-card-en]"),
       name: text("[data-card-name]"),
+      nameImage: sameOrigin(card.querySelector("[data-card-name]")?.getAttribute("data-card-name-img")),
       tag: text("[data-card-tag]"),
       sub: text("[data-card-sub]"),
       focus: pairs("[data-card-focus]"),
