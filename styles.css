@@ -286,6 +286,44 @@ main>#personal-film{margin-top:0}
 .pfoot nav a:hover{color:var(--ink)}
 .pfoot .rights{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
 
+/* ---------------------------------------------------------------- 多语言
+   页眉右侧的语言菜单（<details>，不依赖脚本）。/en/、/de/、/ko/ 由 scripts/i18n.mjs 生成。 */
+.lang{position:relative;font-family:var(--osd)}
+.lang>summary{list-style:none;cursor:pointer;font-size:17px;letter-spacing:.07em;line-height:inherit;color:var(--muted);
+  padding:1px 8px 0;border:1px solid var(--rule);border-radius:3px;white-space:nowrap}
+.lang>summary::-webkit-details-marker{display:none}
+.lang>summary::after{content:" \25BE";font-size:.75em}
+.lang>summary:hover,.lang[open]>summary{color:var(--ink)}
+.lang>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lang ul{position:absolute;right:0;top:calc(100% + 6px);z-index:30;list-style:none;margin:0;padding:6px;min-width:9.5em;
+  background:var(--sheet);border:1px solid var(--rule);border-radius:6px;box-shadow:0 12px 32px rgba(0,0,0,.14)}
+.lang a{display:block;padding:6px 10px;border-radius:4px;font-family:var(--body);font-size:14px;color:var(--soft);text-decoration:none;white-space:nowrap}
+.lang a:hover,.lang a:focus-visible{background:var(--hover);color:var(--ink);outline:none}
+.lang a[aria-current="page"]{color:var(--ink);font-weight:700}
+.lang a[aria-current="page"]::after{content:" \2713";color:var(--accent)}
+.pfoot .i18n-note{flex-basis:100%;order:3;margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.6;color:var(--muted)}
+
+/* 韩文：拉丁字体之后接系统韩文字体；德文长复合词允许断字 */
+:root:lang(ko){
+  --body:"Fira Sans","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","PingFang SC","Helvetica Neue",Arial,sans-serif;
+  --serif:"Literata","AppleMyungjo","Nanum Myeongjo","Noto Serif KR","Songti SC",Georgia,serif;
+  --display:"Archivo","Arial Narrow","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+}
+:root:lang(ko) main{word-break:keep-all;overflow-wrap:anywhere}
+:root:lang(de) main p{-webkit-hyphens:auto;hyphens:auto}
+
+/* 房间顶部导航里的语言菜单 */
+.room-lang{position:relative}
+.room-lang>summary{list-style:none;cursor:pointer}
+.room-lang>summary::-webkit-details-marker{display:none}
+.room-lang>summary::after{content:" \25BE";font-size:.6em}
+.room-lang-list{position:absolute;right:0;top:calc(100% + 8px);z-index:7;list-style:none;margin:0;padding:6px;min-width:10em;
+  background:rgba(14,11,8,.94);border:1px solid rgba(244,239,228,.25);border-radius:8px}
+.room-lang-a{display:block;padding:7px 10px;border-radius:4px;font-family:var(--body);font-size:15px;color:#ece8dd;text-decoration:none;white-space:nowrap;text-shadow:none}
+.room-lang-a:hover,.room-lang-a:focus-visible{background:#f4efe4;color:#14110d;outline:none}
+.room-lang-a[aria-current="page"]::after{content:" \2713";color:#ffb45e}
+@media (max-width:719px){.room-lang-list{right:auto;left:0}}
+
 /* ---------------------------------------------------------------- hi-fi 房间
    可交互的 3D 版本盖在静态首页之上。<html data-room> 由 <head> 里的内联脚本
    和 /room/boot.js 写入：boot → loading → on → leaving →（移除）。

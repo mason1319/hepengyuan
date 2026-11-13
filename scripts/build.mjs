@@ -31,7 +31,7 @@ for (const file of publicFiles) {
 await cp(resolve(projectRoot, "assets"), resolve(outputDirectory, "assets"), { recursive: true });
 await cp(resolve(projectRoot, "samples"), resolve(outputDirectory, "samples"), { recursive: true });
 await cp(resolve(projectRoot, "admin"), resolve(outputDirectory, "admin"), { recursive: true });
-for (const page of ["terms", "policy", "faqs", "services", "room"]) {
+for (const page of ["terms", "policy", "faqs", "services", "room", "en", "de", "ko"]) {
   await cp(resolve(projectRoot, page), resolve(outputDirectory, page), { recursive: true });
 }
 

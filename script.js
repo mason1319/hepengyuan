@@ -28,13 +28,16 @@ function writeStoredTheme(theme) {
   }
 }
 
+/* 译文首页在按钮上用 data-theme-* 提供本语言的文字；没有时用中文。 */
 function applyTheme(theme, button) {
   if (theme === "auto") root?.removeAttribute?.("data-theme");
   else root?.setAttribute?.("data-theme", theme);
 
   if (!button) return;
   button.textContent = theme.toUpperCase();
-  button.setAttribute("aria-label", `配色：${THEME_LABELS[theme]}（点击切换）`);
+  const name = button.dataset?.[`theme${theme[0].toUpperCase()}${theme.slice(1)}`] || THEME_LABELS[theme];
+  const template = button.dataset?.themeTemplate || "配色：{mode}（点击切换）";
+  button.setAttribute("aria-label", template.replace("{mode}", name));
 }
 
 try {
@@ -97,9 +100,11 @@ async function copyContactName(trigger) {
   const value = trigger?.dataset.copyValue?.trim() || contactName?.textContent.trim();
   if (!value) return;
 
-  const label = trigger?.dataset.copyLabel?.trim();
-  const statusPrefix = label ? `已复制${label}` : "已复制";
-  const fallbackPrefix = label ? `请手动复制${label}` : "请手动复制";
+  const label = trigger?.dataset.copyLabel?.trim() || "";
+  /* 译文首页在提示元素上用 data-copied / data-manual 提供本语言的句式；没有时用中文。 */
+  const copiedTemplate = copyStatus.dataset?.copied || "已复制{label}：{value}";
+  const manualTemplate = copyStatus.dataset?.manual || "请手动复制{label}：{value}";
+  const format = (template) => template.replace("{label}", label).replace("{value}", value);
 
   const requestId = copyRequestId += 1;
   let copied = false;
@@ -117,7 +122,7 @@ async function copyContactName(trigger) {
   }
 
   if (requestId !== copyRequestId) return;
-  copyStatus.textContent = copied ? `${statusPrefix}：${value}` : `${fallbackPrefix}：${value}`;
+  copyStatus.textContent = copied ? format(copiedTemplate) : format(manualTemplate);
 }
 
 if (copyStatus && copyButtons.length > 0) {

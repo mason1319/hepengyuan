@@ -394,7 +394,7 @@ function drawComputer(g, W, H, s) {
       g.fillText(`${active ? ">" : " "} ${hotspot.label}`, 56, y);
       g.fillStyle = active ? "#03110a" : GREEN_DIM;
       g.font = `30px ${SANS}`;
-      g.fillText(hotspot.sub.split(" · ")[0], 330, y + 8);
+      g.fillText((s.subs?.[hotspot.id] || hotspot.sub).split(" · ")[0], 330, y + 8);
     });
     g.font = `44px ${OSD}`;
     g.fillStyle = GREEN;
@@ -486,7 +486,7 @@ function drawTv(g, W, H, s, noise) {
     g.font = `40px ${OSD}`;
     g.fillText(s.clock, W / 2, H * 0.31 + 62);
     g.font = `28px ${SANS}`;
-    g.fillText("放入录像带 · FILM", W / 2, barH + H * 0.15);
+    g.fillText(s.insertText || "放入录像带 · FILM", W / 2, barH + H * 0.15);
   }
   g.restore();
   scanlines(g, W, H, 0.22);
@@ -1686,6 +1686,7 @@ export async function mount({
   forced = false,
   reducedMotion = false,
   posterUrl = "/assets/hpy-promo-poster.jpg",
+  labels = {},
   onHover = () => {},
   onPick = () => {},
   onFail = () => {},
@@ -1735,6 +1736,10 @@ export async function mount({
   const probe = camera.clone();
 
   const built = buildScene({ scene, renderer, posterUrl, quality });
+  /* 译文页传进来的物件说明与电视测试卡文字；没有时用中文默认值。 */
+  const subs = labels.hotspots || {};
+  built.computerState.subs = subs;
+  built.tvState.insertText = labels.tvInsert || "";
   const byId = Object.fromEntries(HOTSPOTS.map((hotspot) => [hotspot.id, hotspot]));
   const pickRoots = [...Object.values(built.hotspots).flatMap((entry) => entry.groups), built.lamp, built.recorder];
 
@@ -1905,7 +1910,7 @@ export async function mount({
     onHover({
       id,
       label: hotspot.label,
-      sub: hotspot.sub,
+      sub: subs[id] || hotspot.sub,
       external: Boolean(hotspot?.href && !hotspot.href.startsWith("#")),
       x: pointerPx.x,
       y: pointerPx.y,

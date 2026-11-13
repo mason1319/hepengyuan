@@ -129,7 +129,7 @@ if (failures.length === 0) {
     [/class="on-hd"/, ".on-hd contact rows"],
     [/data-contact-note/, "[data-contact-note] copy status"],
     [/<section id="personal-film"[\s\S]*?<source src="\/media\/promo\/[^"]+"/, "the #personal-film video source (FILM promo tape)"],
-    [/<span><b>片名<\/b>/, "the 片名 caption in #personal-film (FILM tape title)"],
+    [/<span data-film-title><b>片名<\/b>/, "the data-film-title caption in #personal-film (FILM tape title)"],
   ]) {
     if (!pattern.test(html)) fail(`index.html: room panels read ${message}, which is missing`);
   }
