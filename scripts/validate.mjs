@@ -3,6 +3,7 @@ import "./validate-root-interactions.mjs";
 import "./validate-aggie-ip.mjs";
 import "./validate-s1.mjs";
 import "./validate-room.mjs";
+import "./validate-i18n.mjs";
 
 import { readFile, stat } from "node:fs/promises";
 

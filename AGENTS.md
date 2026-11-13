@@ -18,6 +18,7 @@
 - `styles.css`：设计 token、自托管字体与全站版式（首页、`services/`、`policy.css` 都依赖它）。
 - `script.js`：三态配色切换、公开联系方式复制与滚动渐显。
 - `room/`：首页的 hi-fi 版——可交互的 3D 80 年代夜间书桌，盖在静态首页之上，布局参照 felixrieseberg.com 的房间版（只借鉴布局与交互方式，模型、文字、代码都是自己的）。桌上是老电脑（ABOUT、ONLINE 拨号 BBS）、放在录像机上的老电视（POSTS 图文电视、FILM 录像带）、录像带、遥控器、按键电话与调制解调器（ONLINE / SERVICES）、黄色记事本与墙上年份卡片（WORK）、掌机（GAME），窗台上的手提录音机开关雨声。`boot.js` 判断设备能力、负责降级提示与进出切换，并搭建房间里的全部 HTML（导航、右下按钮、光标提示、盖在屏幕上的面板、录像带播放控制）；`scene.js` 是按需加载的 three.js 场景（纯程序化建模，无外部模型），只负责画面、镜头、放带退带和屏幕投影位置。样式在 `styles.css` 的「hi-fi 房间」一节。
+- `en/`、`de/`、`ko/`：英文、德文、韩文首页，由 `scripts/i18n.mjs` 根据 `index.html` 与 `i18n/<lang>.json` 的逐句译文生成，不要手改。页眉和 3D 房间顶部都有语言菜单（简体中文 / English / Deutsch / 한국어）；服务页与条款页目前只有中文。
 - `profile.json`：机器可读权威个人资料。
 - `policy.css`：`policy/`、`terms/`、`faqs/` 三页的版式，依赖 `styles.css` 的 token。
 - `robots.txt` / `sitemap.xml` / `llms.txt`：抓取、发现与 GEO 补充入口。
@@ -34,6 +35,7 @@
 
 - 不得虚构履历、职位、客户、奖项、学历、项目数据或联系方式。
 - 更新公开身份信息时，同步检查 `index.html`、`profile.json`、`llms.txt` 和 JSON-LD。
+- 中文首页是唯一的事实来源。改了 `index.html` 的可见文字后，在 `i18n/en.json`、`de.json`、`ko.json` 里补上或改掉对应句子，再运行 `npm run i18n`；生成器会拒绝残留中文和失效译文，`scripts/validate-i18n.mjs` 会核对译文页的链接、联系方式和年份与中文首页一致。译文只能翻译，不能增删事实；人物 JSON-LD 只放在中文首页，译文页用 WebPage 指回 `https://hepengyuan.com/#person`。
 - 更新网址或日期时，同步检查 `robots.txt` 和 `sitemap.xml`。
 - 保持核心内容为服务器直出 HTML，不要把身份与事实仅放入 JavaScript 渲染。
 - 保留键盘焦点、语义标签、手机端布局和 `prefers-reduced-motion` 支持。
@@ -54,7 +56,7 @@
 3. 确认 `wrangler.jsonc` 已替换真实 D1 ID，R2 bucket 已创建，Access issuer / AUD / 管理员邮箱已在生产环境配置。
 4. 确认当前 HEAD 包含最新 `origin/main` 和线上生产提交。
 5. 只运行 `npm run release`；不得直接绕过门禁调用 `wrangler deploy`。
-6. 发布后实际请求 `/`、`/robots.txt`、`/sitemap.xml`、`/profile.json`、`/llms.txt`、`/api/media.json`、`/travel/`、`/learning/`、`/sitemap-media.xml`，以及 `/room/boot.js`、`/room/scene.js` 和 `/assets/vendor/` 下的 three.js。
+6. 发布后实际请求 `/`、`/robots.txt`、`/sitemap.xml`、`/profile.json`、`/llms.txt`、`/api/media.json`、`/travel/`、`/learning/`、`/sitemap-media.xml`，`/en/`、`/de/`、`/ko/`，以及 `/room/boot.js`、`/room/scene.js` 和 `/assets/vendor/` 下的 three.js。
 7. 在真实浏览器里打开 `/` 确认 3D 房间能进入、能点物件跳到对应栏目；再打开 `/?room=0` 确认静态版，`/?room=1` 确认可以强制回到房间。
 
 ## Known gotchas

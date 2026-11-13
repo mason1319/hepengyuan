@@ -11,6 +11,11 @@
     <meta name="author" content="何鹏远, He Pengyuan">
     <meta name="keywords" content="何鹏远,He Pengyuan,HPY,TerraSol 明远,Aggie 速记英语,AI工作流,AI Agent,全栈开发,GEO,量化交易">
     <link rel="canonical" href="https://hepengyuan.com/">
+    <link rel="alternate" hreflang="zh-CN" href="https://hepengyuan.com/">
+    <link rel="alternate" hreflang="en" href="https://hepengyuan.com/en/">
+    <link rel="alternate" hreflang="de" href="https://hepengyuan.com/de/">
+    <link rel="alternate" hreflang="ko" href="https://hepengyuan.com/ko/">
+    <link rel="alternate" hreflang="x-default" href="https://hepengyuan.com/">
     <link rel="alternate" type="application/json" href="/profile.json" title="何鹏远公开资料">
     <link rel="alternate" type="application/rss+xml" href="/sitemap-blog.xml" title="何鹏远的文章">
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
@@ -78,7 +83,7 @@
     <link rel="preload" href="/assets/fonts/fira-sans-400-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles.css?v=20261112-room">
     <script src="/script.js?v=20261112-room" defer></script>
-    <script src="/room/boot.js?v=20261113-tv" defer></script>
+    <script src="/room/boot.js?v=20261113-i18n" defer></script>
 
     <script type="application/ld+json">
       {
@@ -174,6 +179,15 @@
         <a class="nav-game-entry" href="/aggie-3a/">GAME</a>
       </nav>
       <span class="ctl">
+        <details class="lang">
+          <summary aria-label="语言 / Language">简体</summary>
+          <ul>
+            <li><a href="/" hreflang="zh-CN" lang="zh-CN" aria-current="page">简体中文</a></li>
+            <li><a href="/en/" hreflang="en" lang="en">English</a></li>
+            <li><a href="/de/" hreflang="de" lang="de">Deutsch</a></li>
+            <li><a href="/ko/" hreflang="ko" lang="ko">한국어</a></li>
+          </ul>
+        </details>
         <a class="ph-room" href="/?room=1" data-room title="回到 hi-fi 版：可交互的 3D 房间" hidden>HI-FI</a>
         <button type="button" class="themeb" id="theme" title="浅色、深色，或跟随系统" aria-label="配色：跟随系统" hidden>AUTO</button>
       </span>
@@ -209,7 +223,7 @@
               当前浏览器不支持直接播放视频，可以稍后访问公开媒体链接。
             </video>
             <figcaption>
-              <span><b>片名</b> 何鹏远个人宣传片</span>
+              <span data-film-title><b>片名</b> 何鹏远个人宣传片</span>
               <span><b>时长</b> 1 分 48 秒</span>
               <span><b>主题</b> AI 工具咨询 · 工作流 · 全栈产品 · 独立部署</span>
             </figcaption>

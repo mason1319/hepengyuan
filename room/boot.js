@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-tv";
+  const SCENE_URL = "/room/scene.js?v=20261113-i18n";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -24,41 +24,259 @@
 
   const root = document.documentElement;
 
-  const NOTICE_INTRO = "个人网站是互联网上少数还能好玩的地方，所以这里还有一个可交互的版本。";
-  const NOTICE_REASONS = {
-    "no-webgl": "你的浏览器没有提供 WebGL 2，所以看到的是这个静态版本。",
-    software: "你的浏览器现在没有硬件加速，3D 只能用软件渲染，所以被送到了这个静态版本。",
-    "low-end": "你的设备被识别为可能跑不动它，所以被送到了这个静态版本。",
-    "save-data": "你开启了省流量模式，所以默认给你这个静态版本。",
-    "slow-network": "你当前的网络比较慢，所以默认给你这个静态版本。",
-    "reduced-motion": "你的系统开启了「减少动态效果」，所以默认给你这个静态版本。",
-    slow: "刚才在你的设备上试着运行过，帧率太低，所以换回了这个静态版本。",
-    "load-failed": "可交互的版本这次没能加载成功，所以先给你这个静态版本。",
-    "context-lost": "浏览器中断了 3D 渲染，所以换回了这个静态版本。",
+  /* ---------------------------------------------------------------- 语言
+     页面的 <html lang> 决定房间用哪种语言；正文内容仍然全部从当前页面读取。 */
+  const LANG = (() => {
+    const value = (root.getAttribute("lang") || "zh").toLowerCase();
+    if (value.startsWith("en")) return "en";
+    if (value.startsWith("de")) return "de";
+    if (value.startsWith("ko")) return "ko";
+    return "zh";
+  })();
+  const LANG_PAGES = [
+    { lang: "zh", path: "/", label: "简体中文", short: "简体" },
+    { lang: "en", path: "/en/", label: "English", short: "EN" },
+    { lang: "de", path: "/de/", label: "Deutsch", short: "DE" },
+    { lang: "ko", path: "/ko/", label: "한국어", short: "한국어" },
+  ];
+  const STRINGS = {
+    zh: {
+      noticeIntro: "个人网站是互联网上少数还能好玩的地方，所以这里还有一个可交互的版本。",
+      reasons: {
+        "no-webgl": "你的浏览器没有提供 WebGL 2，所以看到的是这个静态版本。",
+        software: "你的浏览器现在没有硬件加速，3D 只能用软件渲染，所以被送到了这个静态版本。",
+        "low-end": "你的设备被识别为可能跑不动它，所以被送到了这个静态版本。",
+        "save-data": "你开启了省流量模式，所以默认给你这个静态版本。",
+        "slow-network": "你当前的网络比较慢，所以默认给你这个静态版本。",
+        "reduced-motion": "你的系统开启了「减少动态效果」，所以默认给你这个静态版本。",
+        slow: "刚才在你的设备上试着运行过，帧率太低，所以换回了这个静态版本。",
+        "load-failed": "可交互的版本这次没能加载成功，所以先给你这个静态版本。",
+        "context-lost": "浏览器中断了 3D 渲染，所以换回了这个静态版本。",
+      },
+      nav: { about: "关于我", work: "履历与作品", posts: "文章与档案", film: "录像带", online: "联系方式" },
+      hints: {
+        desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · M 录音机 · L 台灯",
+        about: "↑ ↓ 滚动 · 1–5 功能键 · ESC 回到桌面",
+        work: "点条目打开 · ESC 放下记事本",
+        posts: "1–9 打开 · ESC 回到桌面",
+        film: "空格 暂停 · ← → 上一段 / 下一段 · 1–4 换带 · ESC 退带",
+        online: "1–8 打开或复制 · ESC 挂断",
+      },
+      tapes: { promo: "宣传片", travel: "旅行", learning: "学习" },
+      postsHeading: "文章 POSTS",
+      postsFoot: "按数字键打开 · ESC 回到桌面",
+      onlineFind: "在这些地方找到我：",
+      onlineCopy: "复制",
+      onlineFoot: "按 1–8 打开或复制 · ESC 挂断",
+      workCareer: "履历",
+      workProjects: "作品",
+      filmTapPlay: "点画面播放",
+      play: "继续播放（空格）",
+      pause: "暂停（空格）",
+      overlay: "可交互的 3D 房间。顶部导航可以打开各个栏目，LO-FI 切到静态版。",
+      roomNav: "房间导航",
+      back: "回到桌面（Esc）",
+      next: "下一段（→）",
+      sound: "雨声",
+      lofi: "切到静态版，并记住这个选择",
+      loading: "正在布置房间…",
+      language: "语言 / Language",
+      credits: [
+        ["场景", "程序化建模，没有使用外部模型"],
+        ["渲染", "three.js r170 · MIT"],
+        ["字体", "Literata · Fira Sans · Fira Code · VT323 · OFL"],
+        ["雨声", "浏览器现场合成"],
+        ["录像带", "宣传片取自首页；旅行与学习影像只来自已公开的影像档案"],
+        ["布局灵感", "Felix Rieseberg 的个人网站 felixrieseberg.com"],
+      ],
+      hotspots: {},
+      tvInsert: "",
+    },
+    en: {
+      noticeIntro: "Personal websites are one of the few places on the internet that can still be fun, so there is also an interactive version here. ",
+      reasons: {
+        "no-webgl": "Your browser doesn't provide WebGL 2, so you're seeing this static version.",
+        software: "Your browser has no hardware acceleration right now and could only render 3D in software, so you were sent to this static version.",
+        "low-end": "Your device looks like it might not be able to run it, so you were sent to this static version.",
+        "save-data": "You have data saver turned on, so you get this static version by default.",
+        "slow-network": "Your connection is slow right now, so you get this static version by default.",
+        "reduced-motion": "Your system has “reduce motion” turned on, so you get this static version by default.",
+        slow: "We just tried it on your device and the frame rate was too low, so we switched back to this static version.",
+        "load-failed": "The interactive version didn't load this time, so here is the static version for now.",
+        "context-lost": "Your browser stopped the 3D rendering, so we switched back to this static version.",
+      },
+      nav: { about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Videotapes", online: "Contact" },
+      hints: {
+        desk: "A about · W work · P posts · F tapes · O online · M recorder · L lamp",
+        about: "↑ ↓ scroll · 1–5 function keys · ESC back to desk",
+        work: "Click an entry to open it · ESC put down the notepad",
+        posts: "1–9 open · ESC back to desk",
+        film: "Space pause · ← → previous / next · 1–4 switch tape · ESC eject",
+        online: "1–8 open or copy · ESC hang up",
+      },
+      tapes: { promo: "Promo film", travel: "Travel", learning: "Learning" },
+      postsHeading: "POSTS",
+      postsFoot: "Press a number to open · ESC back to desk",
+      onlineFind: "Find me here:",
+      onlineCopy: "copy",
+      onlineFoot: "Press 1–8 to open or copy · ESC hang up",
+      workCareer: "Career",
+      workProjects: "Projects",
+      filmTapPlay: "Tap the screen to play",
+      play: "Play (Space)",
+      pause: "Pause (Space)",
+      overlay: "Interactive 3D room. Use the top menu to open each section; LO-FI switches to the static version.",
+      roomNav: "Room navigation",
+      back: "Back to the desk (Esc)",
+      next: "Next (→)",
+      sound: "Rain sound",
+      lofi: "Switch to the static version and remember this choice",
+      loading: "Setting up the room…",
+      language: "Language",
+      credits: [
+        ["Scene", "Procedurally modelled, no external models"],
+        ["Rendering", "three.js r170 · MIT"],
+        ["Fonts", "Literata · Fira Sans · Fira Code · VT323 · OFL"],
+        ["Rain", "Synthesized live in the browser"],
+        ["Tapes", "The promo film comes from the homepage; travel and learning media come only from the published media archive"],
+        ["Layout inspiration", "Felix Rieseberg's personal website felixrieseberg.com"],
+      ],
+      hotspots: {
+        about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Tapes · promo film & media",
+        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", tape: "Recorder · rain sound",
+      },
+      tvInsert: "Insert a tape · FILM",
+    },
+    de: {
+      noticeIntro: "Persönliche Websites gehören zu den wenigen Orten im Internet, die noch Spaß machen dürfen – deshalb gibt es hier auch eine interaktive Version. ",
+      reasons: {
+        "no-webgl": "Dein Browser bietet kein WebGL 2, deshalb siehst du diese statische Version.",
+        software: "Dein Browser hat gerade keine Hardwarebeschleunigung und könnte 3D nur per Software darstellen, deshalb siehst du diese statische Version.",
+        "low-end": "Dein Gerät schafft die interaktive Version vermutlich nicht, deshalb siehst du diese statische Version.",
+        "save-data": "Du hast den Datensparmodus aktiviert, deshalb zeigen wir standardmäßig diese statische Version.",
+        "slow-network": "Deine Verbindung ist gerade langsam, deshalb zeigen wir standardmäßig diese statische Version.",
+        "reduced-motion": "Dein System hat „Bewegung reduzieren“ aktiviert, deshalb zeigen wir standardmäßig diese statische Version.",
+        slow: "Wir haben es eben auf deinem Gerät versucht, aber die Bildrate war zu niedrig – deshalb wieder die statische Version.",
+        "load-failed": "Die interaktive Version konnte diesmal nicht geladen werden, deshalb vorerst die statische Version.",
+        "context-lost": "Dein Browser hat das 3D-Rendering unterbrochen, deshalb wieder die statische Version.",
+      },
+      nav: { about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Videokassetten", online: "Kontakt" },
+      hints: {
+        desk: "A Über mich · W Werdegang · P Beiträge · F Kassetten · O Kontakt · M Rekorder · L Lampe",
+        about: "↑ ↓ scrollen · 1–5 Funktionstasten · ESC zurück zum Schreibtisch",
+        work: "Eintrag anklicken zum Öffnen · ESC Notizblock weglegen",
+        posts: "1–9 öffnen · ESC zurück zum Schreibtisch",
+        film: "Leertaste Pause · ← → zurück / weiter · 1–4 Kassette wechseln · ESC auswerfen",
+        online: "1–8 öffnen oder kopieren · ESC auflegen",
+      },
+      tapes: { promo: "Imagefilm", travel: "Reisen", learning: "Lernen" },
+      postsHeading: "BEITRÄGE",
+      postsFoot: "Zahl drücken zum Öffnen · ESC zurück zum Schreibtisch",
+      onlineFind: "Hier findest du mich:",
+      onlineCopy: "kopieren",
+      onlineFoot: "1–8 öffnen oder kopieren · ESC auflegen",
+      workCareer: "Werdegang",
+      workProjects: "Projekte",
+      filmTapPlay: "Zum Abspielen auf den Bildschirm tippen",
+      play: "Abspielen (Leertaste)",
+      pause: "Pause (Leertaste)",
+      overlay: "Interaktiver 3D-Raum. Über das Menü oben öffnest du die einzelnen Bereiche; LO-FI wechselt zur statischen Version.",
+      roomNav: "Raumnavigation",
+      back: "Zurück zum Schreibtisch (Esc)",
+      next: "Weiter (→)",
+      sound: "Regengeräusch",
+      lofi: "Zur statischen Version wechseln und diese Wahl merken",
+      loading: "Der Raum wird eingerichtet …",
+      language: "Sprache / Language",
+      credits: [
+        ["Szene", "Prozedural modelliert, keine externen Modelle"],
+        ["Rendering", "three.js r170 · MIT"],
+        ["Schriften", "Literata · Fira Sans · Fira Code · VT323 · OFL"],
+        ["Regen", "Live im Browser erzeugt"],
+        ["Kassetten", "Der Imagefilm stammt von der Startseite; Reise- und Lernmedien nur aus dem veröffentlichten Medienarchiv"],
+        ["Layout-Idee", "Die persönliche Website von Felix Rieseberg, felixrieseberg.com"],
+      ],
+      hotspots: {
+        about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Kassetten · Imagefilm & Medien",
+        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", tape: "Rekorder · Regen",
+      },
+      tvInsert: "Kassette einlegen · FILM",
+    },
+    ko: {
+      noticeIntro: "개인 웹사이트는 인터넷에서 아직 재미있을 수 있는 몇 안 되는 곳이라, 여기에는 인터랙티브 버전도 있습니다. ",
+      reasons: {
+        "no-webgl": "브라우저가 WebGL 2를 지원하지 않아 정적 버전을 보고 계십니다.",
+        software: "지금 브라우저에 하드웨어 가속이 없어 3D를 소프트웨어로만 그릴 수 있기 때문에 정적 버전으로 안내했습니다.",
+        "low-end": "사용 중인 기기에서 원활하게 실행되지 않을 것 같아 정적 버전으로 안내했습니다.",
+        "save-data": "데이터 절약 모드가 켜져 있어 기본으로 정적 버전을 보여 드립니다.",
+        "slow-network": "지금 네트워크가 느려 기본으로 정적 버전을 보여 드립니다.",
+        "reduced-motion": "시스템에서 ‘동작 줄이기’가 켜져 있어 기본으로 정적 버전을 보여 드립니다.",
+        slow: "방금 기기에서 실행해 보았지만 프레임 속도가 너무 낮아 정적 버전으로 돌아왔습니다.",
+        "load-failed": "이번에는 인터랙티브 버전을 불러오지 못해 우선 정적 버전을 보여 드립니다.",
+        "context-lost": "브라우저가 3D 렌더링을 중단해 정적 버전으로 돌아왔습니다.",
+      },
+      nav: { about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "비디오테이프", online: "연락처" },
+      hints: {
+        desk: "A 소개 · W 이력 · P 글 · F 테이프 · O 연락처 · M 카세트 · L 스탠드",
+        about: "↑ ↓ 스크롤 · 1–5 기능 키 · ESC 책상으로",
+        work: "항목을 눌러 열기 · ESC 메모장 내려놓기",
+        posts: "1–9 열기 · ESC 책상으로",
+        film: "스페이스 일시정지 · ← → 이전 / 다음 · 1–4 테이프 바꾸기 · ESC 꺼내기",
+        online: "1–8 열기 또는 복사 · ESC 끊기",
+      },
+      tapes: { promo: "홍보 영상", travel: "여행", learning: "학습" },
+      postsHeading: "글 POSTS",
+      postsFoot: "숫자 키로 열기 · ESC 책상으로",
+      onlineFind: "여기에서 만나요:",
+      onlineCopy: "복사",
+      onlineFoot: "1–8 열기 또는 복사 · ESC 끊기",
+      workCareer: "이력",
+      workProjects: "작업",
+      filmTapPlay: "화면을 눌러 재생",
+      play: "재생(스페이스)",
+      pause: "일시정지(스페이스)",
+      overlay: "인터랙티브 3D 방. 위쪽 메뉴로 각 섹션을 열 수 있고, LO-FI를 누르면 정적 버전으로 바뀝니다.",
+      roomNav: "방 내비게이션",
+      back: "책상으로 돌아가기(Esc)",
+      next: "다음(→)",
+      sound: "빗소리",
+      lofi: "정적 버전으로 바꾸고 이 선택 기억하기",
+      loading: "방을 꾸미는 중…",
+      language: "언어 / Language",
+      credits: [
+        ["장면", "절차적 모델링, 외부 모델 없음"],
+        ["렌더링", "three.js r170 · MIT"],
+        ["글꼴", "Literata · Fira Sans · Fira Code · VT323 · OFL"],
+        ["빗소리", "브라우저에서 실시간 합성"],
+        ["비디오테이프", "홍보 영상은 홈페이지에서, 여행·학습 미디어는 공개된 미디어 아카이브에서만 가져옵니다"],
+        ["레이아웃 영감", "Felix Rieseberg의 개인 웹사이트 felixrieseberg.com"],
+      ],
+      hotspots: {
+        about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "테이프 · 홍보 영상과 미디어",
+        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", tape: "카세트 · 빗소리",
+      },
+      tvInsert: "테이프를 넣어 주세요 · FILM",
+    },
   };
+  const T = STRINGS[LANG];
+  const HOME = LANG_PAGES.find((page) => page.lang === LANG).path;
+
 
   /* 顶部导航与快捷键。SERVICES 是离开房间的普通链接。 */
   const NAV = [
-    { view: "about", label: "ABOUT", sub: "关于我", key: "a" },
-    { view: "work", label: "WORK", sub: "履历与作品", key: "w" },
-    { view: "posts", label: "POSTS", sub: "文章与档案", key: "p" },
-    { view: "film", label: "FILM", sub: "录像带", key: "f" },
-    { view: "online", label: "ONLINE", sub: "联系方式", key: "o" },
+    { view: "about", label: "ABOUT", sub: T.nav.about, key: "a" },
+    { view: "work", label: "WORK", sub: T.nav.work, key: "w" },
+    { view: "posts", label: "POSTS", sub: T.nav.posts, key: "p" },
+    { view: "film", label: "FILM", sub: T.nav.film, key: "f" },
+    { view: "online", label: "ONLINE", sub: T.nav.online, key: "o" },
   ];
   const LEAVE_LINKS = { services: "/services/", game: "/aggie-3a/" };
-  const HINTS = {
-    desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · M 录音机 · L 台灯",
-    about: "↑ ↓ 滚动 · 1–5 功能键 · ESC 回到桌面",
-    work: "点条目打开 · ESC 放下记事本",
-    posts: "1–9 打开 · ESC 回到桌面",
-    film: "空格 暂停 · ← → 上一段 / 下一段 · 1–4 换带 · ESC 退带",
-    online: "1–8 打开或复制 · ESC 挂断",
-  };
+  const HINTS = T.hints;
   /* 老电脑底部的功能键，和首页导航同一套视图。 */
   const FKEYS = ["about", "online", "posts", "film", "work"];
   const ARCHIVES = [
-    { category: "travel", label: "旅行", en: "TRAVEL", color: "#3a7bd5" },
-    { category: "learning", label: "学习", en: "LEARNING", color: "#3aa86b" },
+    { category: "travel", label: T.tapes.travel, en: "TRAVEL", color: "#3a7bd5" },
+    { category: "learning", label: T.tapes.learning, en: "LEARNING", color: "#3aa86b" },
   ];
   const IMAGE_SECONDS = 6;
 
@@ -164,7 +382,7 @@
     if (!box) return;
 
     const text = box.querySelector(".ph-warn-t");
-    if (text && NOTICE_REASONS[reason]) text.textContent = NOTICE_INTRO + NOTICE_REASONS[reason];
+    if (text && T.reasons[reason]) text.textContent = T.noticeIntro + T.reasons[reason];
 
     const retry = document.querySelector("#bm-try");
     if (retry) retry.hidden = !canRetry;
@@ -213,10 +431,10 @@
   function buildAbout() {
     const panel = element("section", "room-screen room-crt");
     panel.dataset.view = "about";
-    panel.setAttribute("aria-label", "关于我");
+    panel.setAttribute("aria-label", T.nav.about);
     const body = element("div", "room-screen-body");
     body.append(element("p", "crt-bar", "HPY-DOS 1.0  ·  ABOUT.TXT"));
-    const heading = element("h2", "crt-h", textOf(document.querySelector("main h1")) || "你好，我是何鹏远。");
+    const heading = element("h2", "crt-h", textOf(document.querySelector("main h1")));
     heading.tabIndex = -1;
     body.append(heading);
     const dek = textOf(document.querySelector(".pb-dek"));
@@ -262,12 +480,12 @@
   function buildPosts() {
     const panel = element("section", "room-screen room-ttx");
     panel.dataset.view = "posts";
-    panel.setAttribute("aria-label", "文章与档案");
+    panel.setAttribute("aria-label", T.nav.posts);
     const body = element("div", "room-screen-body");
     const bar = element("p", "ttx-bar");
     bar.append(element("span", "", "HPY TELETEXT"), element("span", "", "P100"));
     body.append(bar);
-    const heading = element("h2", "ttx-h", "文章 POSTS");
+    const heading = element("h2", "ttx-h", T.postsHeading);
     heading.tabIndex = -1;
     body.append(heading);
 
@@ -292,7 +510,7 @@
       if (anchor) add(anchor, textOf(anchor), textOf(head.querySelector(".y")));
     });
     body.append(list);
-    body.append(element("p", "ttx-foot", "按数字键打开 · ESC 回到桌面"));
+    body.append(element("p", "ttx-foot", T.postsFoot));
     panel.append(body);
     return panel;
   }
@@ -300,14 +518,14 @@
   function buildOnline() {
     const panel = element("section", "room-screen room-crt room-bbs");
     panel.dataset.view = "online";
-    panel.setAttribute("aria-label", "联系方式");
+    panel.setAttribute("aria-label", T.nav.online);
     const body = element("div", "room-screen-body");
     body.append(element("p", "crt-bar", "HPY BBS  ·  ONLINE"));
     body.append(element("p", "bbs-dial", "ATDT HEPENGYUAN.COM"), element("p", "bbs-dial", "CONNECT 2400"));
     const heading = element("h2", "bbs-h", "HPY BBS");
     heading.tabIndex = -1;
     body.append(heading);
-    body.append(element("p", "crt-k", "在这些地方找到我："));
+    body.append(element("p", "crt-k", T.onlineFind));
 
     const list = element("ol", "bbs-list");
     let n = 0;
@@ -338,12 +556,12 @@
       control.append(
         element("span", "bbs-n", `[${n}]`),
         element("span", "bbs-name", name),
-        element("span", "bbs-val", anchor ? textOf(anchor) : `${textOf(copy)} · 复制`),
+        element("span", "bbs-val", anchor ? textOf(anchor) : `${textOf(copy)} · ${T.onlineCopy}`),
       );
       item.append(control);
       list.append(item);
     });
-    body.append(list, note, element("p", "crt-p", "按 1–8 打开或复制 · ESC 挂断"));
+    body.append(list, note, element("p", "crt-p", T.onlineFoot));
     panel.append(body);
     return panel;
   }
@@ -352,8 +570,8 @@
   function buildFilm() {
     const panel = element("section", "room-screen room-tvfx");
     panel.dataset.view = "film";
-    panel.setAttribute("aria-label", "录像带");
-    const heading = element("h2", "sr-only", "录像带");
+    panel.setAttribute("aria-label", T.nav.film);
+    const heading = element("h2", "sr-only", T.nav.film);
     heading.tabIndex = -1;
     const title = element("p", "tvfx-title");
     title.setAttribute("aria-live", "polite");
@@ -370,7 +588,7 @@
   function buildWork() {
     const pad = element("aside", "room-pad");
     pad.dataset.view = "work";
-    pad.setAttribute("aria-label", "履历与作品");
+    pad.setAttribute("aria-label", T.nav.work);
     const body = element("div", "pad-body");
     const heading = element("h2", "pad-h", "Work");
     heading.tabIndex = -1;
@@ -397,8 +615,8 @@
       });
       body.append(list);
     };
-    section("履历", items.filter(before));
-    section("作品", items.filter((node) => !before(node)));
+    section(T.workCareer, items.filter(before));
+    section(T.workProjects, items.filter((node) => !before(node)));
     pad.append(body);
     return pad;
   }
@@ -424,9 +642,10 @@
     const video = film?.querySelector("video");
     const src = sameOrigin(video?.querySelector("source")?.getAttribute("src") || video?.getAttribute("src"));
     if (src) {
-      const named = [...film.querySelectorAll("figcaption span")].find((span) => textOf(span.querySelector("b")) === "片名");
-      const title = named ? textOf(named).replace(/^片名\s*/, "") : textOf(film.querySelector("h2"));
-      tapes.push({ id: "promo", label: "宣传片", en: "PROMO", color: "#d9583a", items: [{ kind: "video", src, poster: sameOrigin(video.getAttribute("poster")), title }] });
+      /* 片名所在的那一格用 data-film-title 标出，译文页也一样；去掉粗体的「片名 / Title」前缀。 */
+      const named = film.querySelector("figcaption [data-film-title]");
+      const title = named ? textOf(named).slice(textOf(named.querySelector("b")).length).trim() : textOf(film.querySelector("h2"));
+      tapes.push({ id: "promo", label: T.tapes.promo, en: "PROMO", color: "#d9583a", items: [{ kind: "video", src, poster: sameOrigin(video.getAttribute("poster")), title }] });
     }
     return tapes;
   }
@@ -473,7 +692,7 @@
     panel.setInfo(`${tape.label} ${tape.en} · ${counter}${status ? ` · ${status}` : ""}`, item?.title || "");
     if (ui.play) {
       ui.play.textContent = media.paused ? "PLAY" : "PAUSE";
-      ui.play.setAttribute("aria-label", media.paused ? "继续播放（空格）" : "暂停（空格）");
+      ui.play.setAttribute("aria-label", media.paused ? T.play : T.pause);
     }
     return counter;
   }
@@ -540,7 +759,7 @@
         video.addEventListener("loadeddata", () => {
           if (token !== media.token) return;
           controller?.tv({ mode: "media", element: video, osd: `\u2016 PAUSE ${counter}`, osdHold: true });
-          filmInfo("点画面播放");
+          filmInfo(T.filmTapPlay);
         }, { once: true });
       });
       return;
@@ -688,7 +907,7 @@
     overlay.id = "room";
     overlay.tabIndex = -1;
     overlay.setAttribute("role", "region");
-    overlay.setAttribute("aria-label", "可交互的 3D 房间。顶部导航可以打开各个栏目，LO-FI 切到静态版。");
+    overlay.setAttribute("aria-label", T.overlay);
 
     stage = element("div", "room-stage");
 
@@ -696,7 +915,7 @@
     const name = element("p", "room-name");
     name.append(element("span", "cn", "何鹏远"), element("span", "en", "HE PENGYUAN"));
     const nav = element("nav", "room-nav");
-    nav.setAttribute("aria-label", "房间导航");
+    nav.setAttribute("aria-label", T.roomNav);
     const navButtons = {};
     for (const item of NAV) {
       const button = element("button", "room-nav-b", item.label);
@@ -713,6 +932,24 @@
       session.set(SEEN_KEY, "1");
     });
     nav.append(services);
+
+    /* 语言菜单：换到对应语言的首页，并直接进房间。 */
+    const langMenu = element("details", "room-lang");
+    const langSummary = element("summary", "room-nav-b", LANG_PAGES.find((page) => page.lang === LANG).short);
+    langSummary.setAttribute("aria-label", T.language);
+    const langList = element("ul", "room-lang-list");
+    for (const page of LANG_PAGES) {
+      const item = element("li");
+      const link = element("a", "room-lang-a", page.label);
+      link.href = `${page.path}?room=1`;
+      link.lang = page.lang === "zh" ? "zh-CN" : page.lang;
+      link.hreflang = link.lang;
+      if (page.lang === LANG) link.setAttribute("aria-current", "page");
+      item.append(link);
+      langList.append(item);
+    }
+    langMenu.append(langSummary, langList);
+    nav.append(langMenu);
     hud.append(name, nav);
 
     const panels = {
@@ -736,7 +973,7 @@
     const back = element("button", "room-btn room-back", "BACK TO DESK · ESC");
     back.type = "button";
     back.hidden = true;
-    back.setAttribute("aria-label", "回到桌面（Esc）");
+    back.setAttribute("aria-label", T.back);
     back.addEventListener("click", () => openView("desk"));
     const play = element("button", "room-btn room-play", "PAUSE");
     play.type = "button";
@@ -745,7 +982,7 @@
     const next = element("button", "room-btn room-next", "NEXT");
     next.type = "button";
     next.hidden = true;
-    next.setAttribute("aria-label", "下一段（→）");
+    next.setAttribute("aria-label", T.next);
     next.addEventListener("click", () => step(1));
     const credits = element("button", "room-btn room-credits-b", "CREDITS");
     credits.type = "button";
@@ -753,12 +990,12 @@
     const soundButton = element("button", "room-btn room-sound", "SOUND OFF");
     soundButton.type = "button";
     soundButton.setAttribute("aria-pressed", "false");
-    soundButton.setAttribute("aria-label", "雨声");
+    soundButton.setAttribute("aria-label", T.sound);
     soundButton.addEventListener("click", () => toggleSound());
     const lofi = element("button", "room-btn room-lofi", "LO-FI");
     lofi.type = "button";
-    lofi.title = "切到静态版，并记住这个选择";
-    lofi.setAttribute("aria-label", "LO-FI：切到静态版，并记住这个选择");
+    lofi.title = T.lofi;
+    lofi.setAttribute("aria-label", `LO-FI: ${T.lofi}`);
     lofi.addEventListener("click", () => leave({ target: "#top", persist: true }));
     buttons.append(back, play, next, credits, soundButton, lofi);
     dock.append(keys, buttons);
@@ -767,14 +1004,7 @@
     creditsPanel.hidden = true;
     creditsPanel.setAttribute("role", "dialog");
     creditsPanel.setAttribute("aria-label", "Credits");
-    [
-      ["场景", "程序化建模，没有使用外部模型"],
-      ["渲染", "three.js r170 · MIT"],
-      ["字体", "Literata · Fira Sans · Fira Code · VT323 · OFL"],
-      ["雨声", "浏览器现场合成"],
-      ["录像带", "宣传片取自首页；旅行与学习影像只来自已公开的影像档案"],
-      ["布局灵感", "Felix Rieseberg 的个人网站 felixrieseberg.com"],
-    ].forEach(([key, value]) => {
+    T.credits.forEach(([key, value]) => {
       const row = element("p", "rc-row");
       row.append(element("b", "", key), element("span", "", value));
       creditsPanel.append(row);
@@ -784,7 +1014,7 @@
       credits.setAttribute("aria-expanded", String(!creditsPanel.hidden));
     });
 
-    const status = element("p", "room-status", "正在布置房间…");
+    const status = element("p", "room-status", T.loading);
     status.setAttribute("role", "status");
 
     overlay.append(stage, ...Object.values(panels), hud, tip, creditsPanel, dock, status);
@@ -1045,6 +1275,7 @@
           forced,
           reducedMotion: matches("(prefers-reduced-motion: reduce)"),
           posterUrl: POSTER_URL,
+          labels: { hotspots: T.hotspots, tvInsert: T.tvInsert },
           onHover,
           onPick,
           onFail: fail,
@@ -1141,7 +1372,7 @@
     capability = probe();
 
     document.addEventListener("click", (event) => {
-      const link = event.target instanceof Element ? event.target.closest('a[href="/?room=1"]') : null;
+      const link = event.target instanceof Element ? event.target.closest(`a[href="${HOME}?room=1"]`) : null;
       if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       if (!capability.webgl) return;
       event.preventDefault();
