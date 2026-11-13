@@ -70,3 +70,4 @@
 - 没有域名和站长账号时，不能完成 Search Console、Bing Webmaster Tools 或 IndexNow 提交。
 - 房间的降级判断不要用 `navigator.connection.effectiveType === "3g"`：它按往返延迟估算，跨境访问时很多带宽正常的访客都会被报成 3g。
 - 房间的帧率看门狗阈值必须低于 30fps：省电模式和部分移动浏览器会把刷新率锁在 30。
+- 宣传片有两个版本：1080p（R2 `public/promo/pengyuan-personal-promo-1080p.mp4`，电脑用）和 720p（`public/promo/pengyuan-personal-promo-720p.mp4`，约 1.3 Mbps，手机用）。国内手机不开 VPN 直连 Cloudflare 时，1080p 的码率常常加载不动。首页用 `<source media>` 让手机选 720p，3D 房间按同样规则挑选；换宣传片时两个文件都要重新编码上传（H.264、`-movflags +faststart`）。

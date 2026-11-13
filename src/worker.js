@@ -31,6 +31,10 @@ const CANONICAL_SITE = "https://hepengyuan.com";
 const REVOCABLE_PUBLIC_CACHE = "public, no-cache, max-age=0, must-revalidate";
 const PROMO_VIDEO_ROUTE = "/media/promo/pengyuan-personal-promo.mp4";
 const PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4";
+/* 手机版宣传片：720p、约 1.3 Mbps（17 MB）。国内手机不开 VPN 直连时，1080p（约 7 Mbps）常常加载不动。
+   首页 <source media> 与 3D 房间在手机上选它，电脑仍用 1080p。 */
+const PROMO_VIDEO_MOBILE_ROUTE = "/media/promo/pengyuan-personal-promo-720p.mp4";
+const PROMO_VIDEO_MOBILE_KEY = "public/promo/pengyuan-personal-promo-720p.mp4";
 /* 首页 #music 的原创音乐：固定路由 → R2 固定键。新增一首时在这里加一行，并把文件传到对应的键。 */
 const MUSIC_ROUTES = new Map([
   ["/media/music/lai-zi-gao-wei-de-ni.mp3", "public/music/lai-zi-gao-wei-de-ni.mp3"],
@@ -474,6 +478,14 @@ async function handlePublicDynamic(request, env, baseUrl) {
       slug: "pengyuan-personal-promo",
       mime_type: "video/mp4",
       object_key: PROMO_VIDEO_KEY,
+    });
+  }
+
+  if (path === PROMO_VIDEO_MOBILE_ROUTE) {
+    return handleMediaFile(request, env, {
+      slug: "pengyuan-personal-promo-720p",
+      mime_type: "video/mp4",
+      object_key: PROMO_VIDEO_MOBILE_KEY,
     });
   }
 
