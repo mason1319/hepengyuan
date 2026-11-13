@@ -13,6 +13,7 @@ const checks = [
   { path: "/sitemap-media.xml", type: "application/xml", includes: "urlset" },
   { path: "/aggie-3a/", type: "text/html", includes: "Aggie速记英语3A大作 · V6" },
   { path: "/media/promo/pengyuan-personal-promo.mp4", type: "video/mp4", method: "HEAD" },
+  { path: "/media/promo/pengyuan-personal-promo-720p.mp4", type: "video/mp4", method: "HEAD" },
   { path: "/media/music/lai-zi-gao-wei-de-ni.mp3", type: "audio/mpeg", method: "HEAD" },
   { path: "/en/", type: "text/html", includes: "Hi, I'm He Pengyuan." },
   { path: "/de/", type: "text/html", includes: "Hallo, ich bin He Pengyuan." },

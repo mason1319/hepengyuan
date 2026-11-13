@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-phonefit";
+  const SCENE_URL = "/room/scene.js?v=20261113-promo720";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -1091,7 +1091,11 @@
     const tapes = [];
     const film = document.querySelector("#personal-film");
     const video = film?.querySelector("video");
-    const src = sameOrigin(video?.querySelector("source")?.getAttribute("src") || video?.getAttribute("src"));
+    /* 和浏览器一样挑 <source>：第一个没有 media、或 media 条件成立的那个。
+       手机因此拿到 720p 版宣传片（国内直连时 1080p 常常加载不动），电脑仍是 1080p。 */
+    const source = [...(video?.querySelectorAll("source") || [])]
+      .find((candidate) => !candidate.getAttribute("media") || matches(candidate.getAttribute("media")));
+    const src = sameOrigin(source?.getAttribute("src") || video?.getAttribute("src"));
     if (src) {
       /* 片名所在的那一格用 data-film-title 标出，译文页也一样；去掉粗体的「片名 / Title」前缀。 */
       const named = film.querySelector("figcaption [data-film-title]");
