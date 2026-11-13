@@ -2199,6 +2199,71 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     };
   };
 
+  /* ---- 照片：墙上一幅全家福、主书桌上立着一张小时候的照片、显示器右上角贴着一张本人的拍立得。
+     纯装饰，图片在 assets/room/，上传前已去掉 EXIF / GPS。 */
+  const photoLoader = new THREE.TextureLoader();
+  const photoMaterial = (src, glow = 0.18) => {
+    const texture = photoLoader.load(src);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = anisotropy;
+    return new THREE.MeshStandardMaterial({ map: texture, emissiveMap: texture, emissive: 0xffffff, emissiveIntensity: glow, roughness: 0.55 });
+  };
+  const makeFrame = ({ src, pw, ph, matte, rim, depth = 0.016, frameMat, lipMat = null }) => {
+    const group = new THREE.Group();
+    const ow = pw + 2 * (matte + rim);
+    const oh = ph + 2 * (matte + rim);
+    group.add(box(ow, oh, 0.004, std(0x2a1d14, 0.8), 0, 0, -0.002));
+    for (const [w, h, x, y] of [[ow, rim, 0, oh / 2 - rim / 2], [ow, rim, 0, -oh / 2 + rim / 2], [rim, oh - 2 * rim, -ow / 2 + rim / 2, 0], [rim, oh - 2 * rim, ow / 2 - rim / 2, 0]]) {
+      group.add(box(w, h, depth, frameMat, x, y, depth / 2 - 0.004));
+    }
+    const mw = pw + 2 * matte;
+    const mh = ph + 2 * matte;
+    group.add(box(mw, mh, 0.002, std(0xf3eee2, 0.9), 0, 0, 0.001));
+    if (lipMat) {
+      for (const [w, h, x, y] of [[mw, 0.002, 0, mh / 2], [mw, 0.002, 0, -mh / 2], [0.002, mh, -mw / 2, 0], [0.002, mh, mw / 2, 0]]) group.add(box(w, h, 0.004, lipMat, x, y, 0.002));
+    }
+    const photo = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), photoMaterial(src));
+    photo.position.z = 0.0024;
+    group.add(photo);
+    const glass = noPick(new THREE.Mesh(new THREE.PlaneGeometry(mw, mh), sheenMaterial));
+    glass.position.z = 0.0045;
+    group.add(glass);
+    group.traverse((node) => {
+      if (node.isMesh) node.castShadow = true;
+    });
+    return group;
+  };
+  /* 全家福：深色木框，挂在挂钟和窗帘之间。 */
+  const familyFrame = makeFrame({ src: "/assets/room/photo-family.webp", pw: 0.11, ph: 0.139, matte: 0.014, rim: 0.014, frameMat: std(0x3b2414, 0.45, 0.1), lipMat: std(0xc8ab6e, 0.3, 0.85) });
+  familyFrame.position.set(-0.8, 1.9, BACK + 0.008);
+  familyFrame.rotation.z = 0.012;
+  scene.add(familyFrame);
+  /* 两个孩子和黄花：香槟金细框的小立框，摆在主书桌左后方（台灯和电视之间），背后有支脚。 */
+  const kidsFrame = makeFrame({ src: "/assets/room/photo-kids.webp", pw: 0.13, ph: 0.0975, matte: 0.012, rim: 0.01, depth: 0.012, frameMat: std(0xc8ab6e, 0.3, 0.85) });
+  const kidsStand = new THREE.Group();
+  kidsStand.position.set(-0.31, DESK_TOP, -1.27);
+  kidsStand.rotation.y = 0.12;
+  kidsFrame.position.set(0, 0.0708 * Math.cos(0.16), 0);
+  kidsFrame.rotation.x = -0.16;
+  kidsStand.add(kidsFrame);
+  const leg = box(0.012, 0.11, 0.004, std(0x2a1d14, 0.8), 0, 0.05, -0.03);
+  leg.rotation.x = 0.42;
+  kidsStand.add(leg);
+  scene.add(kidsStand);
+  /* 拍立得：用一条胶带斜贴在显示器右上角（和 Felix 显示器上那张一样的位置）。 */
+  const polaroid = new THREE.Group();
+  polaroid.position.set(0.184, 0.322, 0.2138);
+  polaroid.rotation.z = -0.13;
+  polaroid.add(box(0.072, 0.096, 0.0008, std(0xf7f4ec, 0.85)));
+  const selfie = new THREE.Mesh(new THREE.PlaneGeometry(0.062, 0.0775), photoMaterial("/assets/room/me.webp", 0.22));
+  selfie.position.set(0, 0.0065, 0.0005);
+  polaroid.add(selfie);
+  const tape = new THREE.Mesh(new THREE.PlaneGeometry(0.036, 0.012), new THREE.MeshStandardMaterial({ color: 0xf0e4c0, roughness: 0.7, transparent: true, opacity: 0.72 }));
+  tape.position.set(0.004, 0.047, 0.0008);
+  tape.rotation.z = 0.26;
+  polaroid.add(tape);
+  monitorBody.add(polaroid);
+
   /* ---- 录像带（FILM）：由启动器根据首页与公开影像动态生成 */
   const tapeStack = new THREE.Group();
   tapeStack.position.set(0.5, DESK_TOP, -1.36);
@@ -3320,7 +3385,7 @@ export async function mount({
   function computePoses() {
     const v = (x, y, z) => new THREE.Vector3(x, y, z);
     deskPresets = [
-      { pos: v(lerp(-0.33, -0.3, narrow), lerp(1.36, 1.4, narrow), lerp(1.3, 1.2, narrow)), look: v(lerp(-0.36, -0.32, narrow), lerp(1.15, 1.02, narrow), -1.5) },
+      { pos: v(lerp(-0.33, -0.5, narrow), lerp(1.36, 1.42, narrow), lerp(1.3, 2.3, narrow)), look: v(lerp(-0.36, -0.5, narrow), lerp(1.15, 1.12, narrow), -1.5) },
       { pos: v(-0.6, 1.3, lerp(0.3, 0.95, narrow)), look: v(-0.96, 1.02, -1.3) },
       { pos: v(lerp(-1.42, -1.5, narrow), 1.24, lerp(0.35, 0.95, narrow)), look: v(-1.64, 1.0, -1.45) },
       { pos: v(0.66, 1.34, lerp(-0.3, 0.25, narrow)), look: v(0.68, 1.1, -1.62) },
@@ -3393,9 +3458,11 @@ export async function mount({
     const baseVertical = 40;
     const minHorizontal = 60;
     const horizontal = deg(2 * Math.atan(Math.tan(rad(baseVertical) / 2) * aspect));
+    /* 竖屏手机放宽到 84°，全景才能从书架一直看到窗台上的录音机和右边的电话。 */
+    const maxVertical = aspect < 0.75 ? 84 : 70;
     camera.fov = horizontal >= minHorizontal
       ? baseVertical
-      : Math.min(70, deg(2 * Math.atan(Math.tan(rad(minHorizontal) / 2) / aspect)));
+      : Math.min(maxVertical, deg(2 * Math.atan(Math.tan(rad(minHorizontal) / 2) / aspect)));
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
     probe.fov = camera.fov;
