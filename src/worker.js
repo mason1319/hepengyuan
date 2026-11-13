@@ -1,3 +1,4 @@
+import { AGGIE_GUARD_TAG, AGGIE_GUARD_VERSION } from "./aggie-guard.js";
 import { AuthError, isLocalDevelopmentRequest, isLocalHostname, verifyAccessIdentity } from "./auth.js";
 import {
   MediaError,
@@ -389,10 +390,11 @@ async function handleAggie3AExperience(request, env) {
     : await env.MEDIA_BUCKET.get(AGGIE_3A_OBJECT_KEY);
   if (!object) return textResponse("Aggie 3A experience not found", 404);
 
-  const etag = object.httpEtag || object.etag;
+  /* 游戏文件原样来自 R2，返回时在 <head> 末尾插入手机保护脚本（src/aggie-guard.js），
+     所以长度未知、ETag 带上保护脚本的版本号，免得浏览器拿旧缓存（没有保护脚本）来对 304。 */
+  const etag = object.etag ? `W/"${object.etag}-guard${AGGIE_GUARD_VERSION}"` : null;
   const headers = new Headers({
     "Content-Type": "text/html; charset=utf-8",
-    "Content-Length": String(object.size),
     "Cache-Control": REVOCABLE_PUBLIC_CACHE,
     "Content-Disposition": 'inline; filename="aggie-3a-v6.html"',
     "X-Aggie-Version": "V6",
@@ -403,9 +405,17 @@ async function handleAggie3AExperience(request, env) {
     ...securityHeaders,
   });
   if (etag) headers.set("ETag", etag);
-  if (etag && request.headers.get("If-None-Match") === etag) return new Response(null, { status: 304, headers });
+  const ifNoneMatch = (request.headers.get("If-None-Match") || "").split(",").map((value) => value.trim());
+  if (etag && ifNoneMatch.includes(etag)) return new Response(null, { status: 304, headers });
+  if (request.method === "HEAD") return new Response(null, { headers });
 
-  return new Response(request.method === "HEAD" ? null : object.body, { headers });
+  return new HTMLRewriter()
+    .on("head", {
+      element(head) {
+        head.append(AGGIE_GUARD_TAG, { html: true });
+      },
+    })
+    .transform(new Response(object.body, { headers }));
 }
 
 async function handlePublicDynamic(request, env, baseUrl) {
