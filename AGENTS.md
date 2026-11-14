@@ -71,4 +71,5 @@
 - 没有域名和站长账号时，不能完成 Search Console、Bing Webmaster Tools 或 IndexNow 提交。
 - 房间的降级判断不要用 `navigator.connection.effectiveType === "3g"`：它按往返延迟估算，跨境访问时很多带宽正常的访客都会被报成 3g。
 - 房间的帧率看门狗阈值必须低于 30fps：省电模式和部分移动浏览器会把刷新率锁在 30。
+- 国内手机（尤其微信里）不开 VPN 直连 Cloudflare 时，房间约 230KB 的场景常要下十几秒。所以 `boot.js` 打开房间时用 modulepreload 把 three.js（`THREE_URL`，必须与 `scene.js` 的 import 一致）和 `scene.js` 并行预取；下载限时 30 秒、搭建限时 15 秒，超过 6 秒就显示“网络有点慢”和秒数，并给出「先看静态版」（只离开这一次，不记偏好）。失败时静态页提示会写明是下载超时、搭建超时还是哪条报错，让访客截图就能定位。不要再改回一个总的短限时。
 - 宣传片有两个版本：1080p（R2 `public/promo/pengyuan-personal-promo-1080p.mp4`，电脑用）和 720p（`public/promo/pengyuan-personal-promo-720p.mp4`，约 1.3 Mbps，手机用）。国内手机不开 VPN 直连 Cloudflare 时，1080p 的码率常常加载不动。首页用 `<source media>` 让手机选 720p，3D 房间按同样规则挑选；换宣传片时两个文件都要重新编码上传（H.264、`-movflags +faststart`）。

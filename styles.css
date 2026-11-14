@@ -434,14 +434,16 @@ html[data-room="on"] .room-dock{opacity:1}
 .room-tip.is-confirm{padding:7px 11px 6px;text-align:center;color:#14110d;background:#f4efe4;border-color:rgba(20,17,13,.25);box-shadow:0 8px 22px rgba(0,0,0,.5)}
 .room-tip-again{margin-top:3px;font-size:9px;letter-spacing:.16em;opacity:.62}
 
-.room-status{position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0;font-family:var(--osd);font-size:22px;letter-spacing:.14em;color:#949085}
+.room-status{position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0;width:max-content;max-width:calc(100% - 40px);text-align:center;font-family:var(--osd);font-size:22px;letter-spacing:.14em;color:#949085}
+/* 载入超过 6 秒才出现的「先看静态版」：压在状态文字下面，房间进来后就不显示。 */
+.room-skip{position:absolute;left:50%;top:calc(50% + 48px);translate:-50% 0;z-index:5}
 /* 手机第一次进房间时底部那句“左右拖动”的提示 */
 .room-hint{position:absolute;left:50%;bottom:calc(64px + env(safe-area-inset-bottom));z-index:5;translate:-50% 0;margin:0;padding:8px 14px 7px;max-width:calc(100% - 32px);
   border-radius:999px;background:rgba(14,11,8,.78);border:1px solid rgba(244,239,228,.3);font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:#f4efe4;
   text-align:center;pointer-events:none;opacity:0;transition:opacity .5s ease}
 .room-hint.is-on{opacity:1}
 .room-hint[hidden]{display:none}
-html[data-room="on"] .room-status,html[data-room="leaving"] .room-status{display:none}
+html[data-room="on"] .room-status,html[data-room="leaving"] .room-status,html[data-room="on"] .room-skip,html[data-room="leaving"] .room-skip{display:none}
 
 /* ---- 屏幕面板：位置贴在 3D 屏幕上；字号跟着屏幕大小走 */
 .room-screen{position:absolute;z-index:2;overflow:hidden;container-type:size;opacity:0;transition:opacity .35s ease;-webkit-user-select:text;user-select:text}

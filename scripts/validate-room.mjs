@@ -56,6 +56,10 @@ if (failures.length === 0) {
     }
   }
 
+  /* ---- 预取的 three.js 必须就是 scene.js import 的那个文件，否则预取白下、下载也不会并行 */
+  const preloadThree = boot.match(/const THREE_URL = "([^"]+)";/)?.[1];
+  if (preloadThree !== `/${THREE_PATH}`) fail(`room/boot.js: THREE_URL must be /${THREE_PATH} so it preloads the file scene.js imports (found ${preloadThree})`);
+
   /* ---- 首页接线与版本号 */
   const bootTag = html.match(/<script src="\/room\/boot\.js\?v=([\w-]+)" defer><\/script>/);
   if (!bootTag) fail("index.html: deferred /room/boot.js script tag is missing");
