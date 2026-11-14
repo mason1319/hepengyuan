@@ -13,7 +13,7 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261113-promo720";
+  const SCENE_URL = "/room/scene.js?v=20261114-preload";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -21,7 +21,15 @@
   const INTRO_KEY = "hpy-room-intro"; /* 本次会话已经在手机上演示过左右拖动 */
   const NOTICE_KEY = "hpy-static-notice"; /* "off" 静态版提示已被关掉 */
   const FADE_MS = 460;
-  const LOAD_TIMEOUT_MS = 12000; /* 超过这个时间还没布置好，就不让访客继续对着黑屏等 */
+  /* scene.js 依赖的 three.js；打开房间时和 scene.js 一起预取，两个文件并行下载，而不是等 scene.js 到了才开始拉 three.js。
+     必须和 scene.js 里的 import 一致（校验脚本会对）。 */
+  const THREE_URL = "/assets/vendor/three-0.170.0.module.min.js";
+  /* 国内手机（尤其微信里）不开 VPN 直连 Cloudflare 时，约 230KB 的场景常常要下十几秒。
+     下载和搭建分开计时：下载最多等 30 秒，搭建（建模、编译着色器）再给 15 秒；
+     超过 6 秒就提示网络慢、显示秒数，并给出「先看静态版」按钮，不让访客对着黑屏干等。 */
+  const DOWNLOAD_TIMEOUT_MS = 30000;
+  const BUILD_TIMEOUT_MS = 15000;
+  const SLOW_HINT_MS = 6000;
 
   const root = document.documentElement;
 
@@ -88,6 +96,9 @@
       sound: "雨声",
       lofi: "切到静态版，并记住这个选择",
       loading: "正在布置房间…",
+      loadingSlow: "网络有点慢，还在下载 3D 房间…",
+      skip: "先看静态版",
+      failDetail: { download: "下载 3D 场景超过 {s} 秒", build: "搭建 3D 场景超过 {s} 秒", error: "出错：{e}", wrap: "（{d}）" },
       dragHint: "← 左右拖动看整个房间 · 双指缩放 →",
       language: "语言 / Language",
       credits: [
@@ -150,6 +161,9 @@
       sound: "Rain sound",
       lofi: "Switch to the static version and remember this choice",
       loading: "Setting up the room…",
+      loadingSlow: "Slow connection — still downloading the 3D room…",
+      skip: "SKIP TO STATIC VERSION",
+      failDetail: { download: "downloading the 3D scene took over {s} s", build: "building the 3D scene took over {s} s", error: "error: {e}", wrap: " ({d})" },
       dragHint: "← Drag to see the whole room · pinch to zoom →",
       language: "Language",
       credits: [
@@ -217,6 +231,9 @@
       sound: "Regengeräusch",
       lofi: "Zur statischen Version wechseln und diese Wahl merken",
       loading: "Der Raum wird eingerichtet …",
+      loadingSlow: "Langsame Verbindung – der 3D-Raum lädt noch …",
+      skip: "ZUR STATISCHEN VERSION",
+      failDetail: { download: "Laden der 3D-Szene dauerte über {s} s", build: "Aufbau der 3D-Szene dauerte über {s} s", error: "Fehler: {e}", wrap: " ({d})" },
       dragHint: "← Ziehen, um den ganzen Raum zu sehen · mit zwei Fingern zoomen →",
       language: "Sprache / Language",
       credits: [
@@ -284,6 +301,9 @@
       sound: "빗소리",
       lofi: "정적 버전으로 바꾸고 이 선택 기억하기",
       loading: "방을 꾸미는 중…",
+      loadingSlow: "연결이 느려 3D 방을 아직 내려받는 중…",
+      skip: "정적 버전 먼저 보기",
+      failDetail: { download: "3D 장면 다운로드가 {s}초를 넘음", build: "3D 장면 구성이 {s}초를 넘음", error: "오류: {e}", wrap: " ({d})" },
       dragHint: "← 드래그해서 방 전체 보기 · 두 손가락으로 확대 →",
       language: "언어 / Language",
       credits: [
@@ -431,13 +451,15 @@
     if (box) box.hidden = true;
   }
 
-  function showNotice(reason, canRetry) {
+  function showNotice(reason, canRetry, detail = "") {
     if (local.get(NOTICE_KEY) === "off") return;
     const box = document.querySelector("#bm-warn");
     if (!box) return;
 
     const text = box.querySelector(".ph-warn-t");
-    if (text && T.reasons[reason]) text.textContent = T.noticeIntro + T.reasons[reason];
+    if (text && T.reasons[reason]) {
+      text.textContent = T.noticeIntro + T.reasons[reason] + (detail ? T.failDetail.wrap.replace("{d}", detail) : "");
+    }
 
     const retry = document.querySelector("#bm-try");
     if (retry) retry.hidden = !canRetry;
@@ -1567,15 +1589,20 @@
 
     const status = element("p", "room-status", T.loading);
     status.setAttribute("role", "status");
+    /* 载入慢时才出现：只离开这一次，不记成“以后都要静态版”。 */
+    const skip = element("button", "room-btn room-skip", T.skip);
+    skip.type = "button";
+    skip.hidden = true;
+    skip.addEventListener("click", () => leave({ target: "#top", persist: false }));
     const hint = element("p", "room-hint", T.dragHint);
     hint.hidden = true;
     hint.setAttribute("aria-hidden", "true");
 
-    overlay.append(stage, ...Object.values(panels), hud, tip, creditsPanel, dock, status, hint);
+    overlay.append(stage, ...Object.values(panels), hud, tip, creditsPanel, dock, status, skip, hint);
     overlay.addEventListener("keydown", onKey);
     document.body.append(overlay);
     ui = {
-      navButtons, panels, tip, keys, back, flip: flipButton, play, next, sound: soundButton, credits, creditsPanel, hint,
+      navButtons, panels, tip, keys, back, flip: flipButton, play, next, sound: soundButton, credits, creditsPanel, hint, status, skip,
       unbind: () => narrow?.removeEventListener?.("change", placeTools),
     };
     calcShow();
@@ -1911,14 +1938,51 @@
     state = "idle";
   }
 
-  /* 加载失败、运行太慢、上下文丢失：统一退回静态版并说明原因。 */
-  function fail(reason) {
+  /* 加载失败、运行太慢、上下文丢失：统一退回静态版并说明原因。
+     detail 写明这次具体卡在哪（下载超时 / 搭建超时 / 报错），方便访客截图告诉我们。 */
+  function fail(reason, detail = "") {
     teardown();
     session.set(SEEN_KEY, "1");
     if (reason === "slow") local.set(PREF_KEY, "auto-off");
     const canRetry = reason !== "no-webgl" && Boolean(capability?.webgl);
     showPills(canRetry);
-    showNotice(reason, canRetry);
+    showNotice(reason, canRetry, detail);
+  }
+
+  function describeFailure(error) {
+    if (error?.phase === "download") return T.failDetail.download.replace("{s}", String(DOWNLOAD_TIMEOUT_MS / 1000));
+    if (error?.phase === "build") return T.failDetail.build.replace("{s}", String(BUILD_TIMEOUT_MS / 1000));
+    const message = `${error?.name || "Error"}${error?.message ? `: ${error.message}` : ""}`.replace(/\s+/g, " ").slice(0, 120);
+    return T.failDetail.error.replace("{e}", message);
+  }
+
+  /* 和 scene.js 一起预取 three.js，让两个文件并行下载。支持 modulepreload 的用它；
+     老的 iOS Safari 不支持，就退回 preload as=script（crossorigin 与模块请求一致，才能复用）。 */
+  let preloaded = false;
+  function preloadScene() {
+    if (preloaded) return;
+    preloaded = true;
+    for (const href of [THREE_URL, SCENE_URL]) {
+      const link = document.createElement("link");
+      if (link.relList?.supports?.("modulepreload")) {
+        link.rel = "modulepreload";
+      } else {
+        link.rel = "preload";
+        link.as = "script";
+        link.crossOrigin = "anonymous";
+      }
+      link.href = href;
+      document.head.append(link);
+    }
+  }
+
+  /* 给一个阶段计时；超时的错误带上 phase，失败说明里写清是下载还是搭建。 */
+  function within(promise, ms, phase) {
+    let timer = 0;
+    const timeout = new Promise((_, reject) => {
+      timer = window.setTimeout(() => reject(Object.assign(new Error(`room: ${phase} timeout`), { phase })), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
   }
 
   async function open({ forced }) {
@@ -1939,27 +2003,33 @@
       return;
     }
 
-    let timer = 0;
+    preloadScene();
+    const startedAt = Date.now();
+    let downloading = true;
+    let mounting = null;
+    /* 超过 6 秒：说明是网络慢、显示等了几秒，并亮出「先看静态版」。 */
+    const slowTicker = window.setInterval(() => {
+      const waited = Date.now() - startedAt;
+      if (waited < SLOW_HINT_MS || !ui) return;
+      ui.status.textContent = `${downloading ? T.loadingSlow : T.loading} ${Math.round(waited / 1000)}s`;
+      ui.skip.hidden = false;
+    }, 1000);
     try {
-      const timeout = new Promise((_, reject) => {
-        timer = window.setTimeout(() => reject(new Error("room: load timeout")), LOAD_TIMEOUT_MS);
-      });
-      const module = await Promise.race([import(SCENE_URL), timeout]);
+      const module = await within(import(SCENE_URL), DOWNLOAD_TIMEOUT_MS, "download");
+      downloading = false;
       if (state !== "opening") return;
-      const mounted = await Promise.race([
-        module.mount({
-          stage,
-          quality: capability?.quality || "high",
-          forced,
-          reducedMotion: matches("(prefers-reduced-motion: reduce)"),
-          posterUrl: POSTER_URL,
-          labels: { hotspots: T.hotspots, tvInsert: T.tvInsert },
-          onHover,
-          onPick,
-          onFail: fail,
-        }),
-        timeout,
-      ]);
+      mounting = module.mount({
+        stage,
+        quality: capability?.quality || "high",
+        forced,
+        reducedMotion: matches("(prefers-reduced-motion: reduce)"),
+        posterUrl: POSTER_URL,
+        labels: { hotspots: T.hotspots, tvInsert: T.tvInsert },
+        onHover,
+        onPick,
+        onFail: fail,
+      });
+      const mounted = await within(mounting, BUILD_TIMEOUT_MS, "build");
       if (state !== "opening") {
         mounted.dispose();
         return;
@@ -1976,11 +2046,17 @@
       controller.setCard(collectCard());
       musicInfo("");
       loadArchiveTapes();
-    } catch {
-      if (state === "opening") fail("load-failed");
+    } catch (error) {
+      /* 搭建超时后场景可能稍后才建好：那时已经退回静态版，把它拆掉，免得在后台空转。 */
+      mounting?.then((late) => late?.dispose?.(), () => {});
+      if (state === "opening") fail("load-failed", describeFailure(error));
       return;
     } finally {
-      window.clearTimeout(timer);
+      window.clearInterval(slowTicker);
+      if (ui) {
+        ui.skip.hidden = true;
+        ui.status.textContent = T.loading;
+      }
     }
 
     controller.start();
