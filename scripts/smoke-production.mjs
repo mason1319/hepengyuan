@@ -21,6 +21,9 @@ const checks = [
   { path: "/ko/", type: "text/html", includes: "안녕하세요, 허펑위안입니다." },
   { path: "/room/boot.js", type: "javascript", includes: "hpy-room" },
   { path: "/room/scene.js", type: "javascript", includes: "export async function mount" },
+  { path: "/room/avatar.js", type: "javascript", includes: "export function start" },
+  { path: "/assets/room/voice/hello.mp3", type: "audio/mpeg", method: "HEAD" },
+  { path: "/assets/room/voice/stop-tv.mp3", type: "audio/mpeg", method: "HEAD" },
   { path: "/assets/vendor/three-0.170.0.module.min.js", type: "javascript", includes: "SPDX-License-Identifier: MIT" },
 ];
 

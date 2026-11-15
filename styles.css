@@ -437,6 +437,28 @@ html[data-room="on"] .room-dock{opacity:1}
 .room-status{position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0;width:max-content;max-width:calc(100% - 40px);text-align:center;font-family:var(--osd);font-size:22px;letter-spacing:.14em;color:#949085}
 /* 载入超过 6 秒才出现的「先看静态版」：压在状态文字下面，房间进来后就不显示。 */
 .room-skip{position:absolute;left:50%;top:calc(50% + 48px);translate:-50% 0;z-index:5}
+/* 小人的气泡：跟在它头顶（位置由 /room/avatar.js 用 CSSOM 写入），带逛时里面有按钮。 */
+.room-say{position:absolute;left:0;top:0;z-index:2;max-width:min(270px,calc(100% - 16px));margin:0;padding:10px 13px 10px;border-radius:14px;
+  background:#f4efe4;color:#14110d;font-family:var(--body);font-size:14px;line-height:1.5;box-shadow:0 10px 26px rgba(0,0,0,.5);
+  opacity:0;transition:opacity .16s ease;-webkit-user-select:none;user-select:none}
+.room-say.is-on{opacity:1}
+.room-say.is-off{opacity:0;pointer-events:none}
+.room-say[hidden]{display:none}
+.room-say::after{content:"";position:absolute;left:var(--tail,50%);bottom:-6px;width:13px;height:13px;margin-left:-6.5px;background:inherit;transform:rotate(45deg);border-radius:2px}
+.room-say.is-right::after{left:-6px;bottom:auto;top:50%;margin:-6.5px 0 0}
+.room-say.is-left::after{left:auto;right:-6px;bottom:auto;top:50%;margin:-6.5px 0 0}
+.room-say.is-below::after{bottom:auto;top:-6px}
+.say-t{margin:0}
+.say-n{margin-right:.6em;font-family:var(--mono);font-size:11px;letter-spacing:.06em;opacity:.6}
+.say-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.say-acts[hidden]{display:none}
+.say-b{appearance:none;cursor:pointer;padding:5px 11px 4px;border:1px solid rgba(20,17,13,.35);border-radius:999px;background:none;
+  font:inherit;font-size:12.5px;line-height:1.3;color:inherit;touch-action:manipulation}
+.say-b.is-main{background:#14110d;border-color:#14110d;color:#f4efe4}
+.say-b.say-mute{margin-left:auto;padding-inline:6px;border-color:transparent;font-size:11.5px;opacity:.62}
+.say-b.say-mute:hover,.say-b.say-mute:focus-visible{opacity:1}
+.say-b:focus-visible{outline:2px solid #ff7a5c;outline-offset:2px}
+
 /* 手机第一次进房间时底部那句“左右拖动”的提示 */
 .room-hint{position:absolute;left:50%;bottom:calc(64px + env(safe-area-inset-bottom));z-index:5;translate:-50% 0;margin:0;padding:8px 14px 7px;max-width:calc(100% - 32px);
   border-radius:999px;background:rgba(14,11,8,.78);border:1px solid rgba(244,239,228,.3);font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:#f4efe4;
