@@ -88,7 +88,7 @@
     <link rel="preload" href="/assets/fonts/fira-sans-400-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles.css?v=20261112-room">
     <script src="/script.js?v=20261112-room" defer></script>
-    <script src="/room/boot.js?v=20261116-guard" defer></script>
+    <script src="/room/boot.js?v=20261116-cinema2" defer></script>
 
     <script type="application/ld+json">
       {
@@ -211,10 +211,18 @@
               Co-founder · operations officer. Responsible for designing and building Aggie's website and online English-learning platform, building its systems and AI agents, and coordinating student recruitment, advertising, brand operations and GEO (generative AI search optimization). The platform serves the school's own teaching and operations; AI first-pass grading of homework is only a draft that teachers review before students get feedback.
             </p>
             <p class="pb-tags">
-              <a href="https://aggieai.me/people/he-pengyuan/">Profile</a>
-              <a href="https://aggieai.me/stories/platform/">Platform case study</a>
-              <a href="https://aggieai.me/people/hu/">Teaching partner: Teacher Hu</a>
-              <a href="https://aggieai.me/">aggieai.me</a>
+              <a href="https://aggieai.me/people/he-pengyuan/" data-go="aggie-profile">Profile</a>
+              <a href="https://aggieai.me/stories/platform/" data-go="aggie-platform">Platform case study</a>
+              <a href="https://aggieai.me/people/hu/" data-go="aggie-hu">Teaching partner: Teacher Hu</a>
+              <a href="https://aggieai.me/games/word-bridge/" data-go="aggie-word-bridge">Word Bridge game</a>
+              <a href="https://aggieai.me/join.html" data-go="aggie-join">Book a trial lesson</a>
+              <a href="https://aggieai.me/" data-go="aggie">aggieai.me</a>
+            </p>
+            <!-- Projector reels: the 3D room reads its films from these links (data-film) and, when one ends, offers
+                 data-film-next and data-film-exits. The files are relayed from aggieai.me by src/worker.js (AGGIE_FILMS). -->
+            <p class="pb-tags" id="aggie-films">
+              <a href="/media/aggie/learning-15s.mp4" data-film="aggie-15s" data-film-length="0:15" data-film-next="aggie-brand" data-film-exits="aggie-word-bridge aggie-join">Aggie in 15 seconds (video)</a>
+              <a href="/media/aggie/brand-film.mp4" data-film="aggie-brand" data-film-length="5:48" data-film-exits="aggie-word-bridge aggie-join">Aggie brand film (video)</a>
             </p>
           </section>
 
@@ -242,16 +250,16 @@
           <p class="pb-lbl pb-grp">Projects</p>
 
           <div class="pb-item">
-            <div class="pb-hd"><a class="t" href="https://aggieai.me/">Aggie 速记英语 management system</a><span class="y">React · Cloudflare</span></div>
-            <p>A Web / H5 / PWA management system for English-training schools, covering students, courses, fees, leads and operations. <a href="https://aggieai.me/">aggieai.me</a></p>
+            <div class="pb-hd"><a class="t" href="https://aggieai.me/" data-go="aggie">Aggie 速记英语 management system</a><span class="y">React · Cloudflare</span></div>
+            <p>A Web / H5 / PWA management system for English-training schools, covering students, courses, fees, leads and operations. <a href="https://aggieai.me/" data-go="aggie">aggieai.me</a></p>
           </div>
           <div class="pb-item">
-            <div class="pb-hd"><a class="t" href="/aggie-3a/">Aggie 3A interactive demo V6</a><span class="y">Web Browser</span></div>
-            <p>A 3A-style interactive demo that runs right in the browser and uses a game to explain how 速记英语 works. <a href="/aggie-3a/">hepengyuan.com/aggie-3a</a></p>
+            <div class="pb-hd"><a class="t" href="/aggie-3a/" data-go="aggie-3a">Aggie 3A interactive demo V6</a><span class="y">Web Browser</span></div>
+            <p>A 3A-style interactive demo that runs right in the browser and uses a game to explain how 速记英语 works. <a href="/aggie-3a/" data-go="aggie-3a">hepengyuan.com/aggie-3a</a></p>
           </div>
           <div class="pb-item">
-            <div class="pb-hd"><a class="t" href="https://beimingquant.xyz/">Beiming Quantum Nexus</a><span class="y">Vue · Python · Docker</span></div>
-            <p>A quantitative trading engine and strategy management platform covering backtesting, performance curves, trading operations and AI Agent / MCP integration. <a href="https://beimingquant.xyz/">beimingquant.xyz</a></p>
+            <div class="pb-hd"><a class="t" href="https://beimingquant.xyz/" data-go="beiming">Beiming Quantum Nexus</a><span class="y">Vue · Python · Docker</span></div>
+            <p>A quantitative trading engine and strategy management platform covering backtesting, performance curves, trading operations and AI Agent / MCP integration. <a href="https://beimingquant.xyz/" data-go="beiming">beimingquant.xyz</a></p>
           </div>
           <div class="pb-item">
             <div class="pb-hd"><span class="t">Agent Ops R&D and operations hub</span><span class="y">Agent orchestration</span></div>
@@ -262,8 +270,8 @@
             <p>A complete subscription product for ChatGPT, Claude, Gemini and X accounts, including front end, back end, admin console, orders, fulfillment and subscription status. <a href="/services/#works">Details (in Chinese)</a></p>
           </div>
           <div class="pb-item">
-            <div class="pb-hd"><a class="t" href="https://listingforge.shop/">Global Growth Engine</a><span class="y">GEO · content growth</span></div>
-            <p>A GEO visibility and content-growth product for overseas sellers, offering English-language standalone sites, content marketing and inquiry operations. <a href="https://listingforge.shop/">listingforge.shop</a></p>
+            <div class="pb-hd"><a class="t" href="https://listingforge.shop/" data-go="gge">Global Growth Engine</a><span class="y">GEO · content growth</span></div>
+            <p>A GEO visibility and content-growth product for overseas sellers, offering English-language standalone sites, content marketing and inquiry operations. <a href="https://listingforge.shop/" data-go="gge">listingforge.shop</a></p>
           </div>
 
           <p class="pb-note">

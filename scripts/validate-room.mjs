@@ -132,6 +132,37 @@ if (failures.length === 0) {
   /* 从别的页面返回、整页重载、失败退出之后，历史记录里不能留着会自己弹出来的视图标记。 */
   if ((boot.match(/dropRoomHistory\(\)/g) || []).length < 3) fail("room/boot.js: the room's history marker must be cleared on load and on teardown");
   if (!/pageshow[\s\S]{0,600}openView\("desk"\)/.test(boot)) fail("room/boot.js: a bfcache restore must return to the desk through openView");
+  /* 灯绳（雨夜 / 晴天午后）：窗外全用着色器画，不加载图片；绳子、按键、按钮是同一个开关，四种语言都有说明。 */
+  const sceneSource = scene;
+  for (const token of ["uniform float uDay;", "uniform float uWet;", 'cord: { label: "LIGHT"', "sun.map = canvasTexture(", "toggleLight,"]) {
+    if (!sceneSource.includes(token)) fail(`room/scene.js: the day / night switch is missing ${token}`);
+  }
+  if (!boot.includes('"hpy-room-light"') || !boot.includes('key === "t" && view === "desk"') || !boot.includes("room-light")) {
+    fail("room/boot.js: the light switch needs its session key, the T shortcut and the on-screen button");
+  }
+  if ((boot.match(/light: \{ day: "/g) || []).length !== 4 || (boot.match(/, light: "/g) || []).length !== 4) {
+    fail("room/boot.js: every language needs the light button's label and its day / night description");
+  }
+  if (!css.includes('.room[data-light="day"] .room-hud')) fail("styles.css: the daytime room needs a darker scrim behind the top navigation");
+  /* 放映机：片子只来自首页登记（data-film，本站地址），出口只来自 data-go；room/ 里不写任何片子或项目的地址。 */
+  for (const [name, source] of [["room/boot.js", boot], ["room/scene.js", scene]]) {
+    if (/aggieai\.me|\/media\/aggie\/|beimingquant|listingforge/.test(source)) fail(`${name}: project and film addresses must come from the homepage registry, not from room code`);
+  }
+  const filmTags = [...html.matchAll(/<a\b[^>]*\bdata-film="([a-z0-9-]+)"[^>]*>/g)];
+  const filmIds = new Set(filmTags.map((match) => match[1]));
+  if (!filmTags.length) fail("index.html: the projector needs at least one data-film link");
+  for (const [tag, id] of filmTags) {
+    if (!/\bhref="\/media\/[^"]+"/.test(tag)) fail(`index.html: film "${id}" must be served from this site under /media/`);
+    const next = /\bdata-film-next="([^"]*)"/.exec(tag)?.[1];
+    if (next && !filmIds.has(next)) fail(`index.html: film "${id}" names a next film that is not registered: ${next}`);
+    for (const exit of (/\bdata-film-exits="([^"]*)"/.exec(tag)?.[1] || "").split(/\s+/).filter(Boolean)) {
+      if (!html.includes(`data-go="${exit}"`)) fail(`index.html: film "${id}" names an exit that is not registered: ${exit}`);
+    }
+  }
+  if (!boot.includes('document.querySelectorAll("main a[data-film]")') || !scene.includes('cinema: "wall"') || !scene.includes("setProjector")) {
+    fail("the projector view must read its films from the homepage and be backed by the wall screen in the scene");
+  }
+  if ((boot.match(/      cinema: \{ name: "/g) || []).length !== 4) fail("room/boot.js: every language needs the projector strings");
   if (!boot.includes("room-skiplink") || !css.includes(".room-skiplink:focus{")) fail("the room needs a keyboard skip link to the static version as its first Tab stop");
   if (!/@media print\{[^}]*\.room\{display:none !important\}/.test(css.replace(/\n\s*/g, ""))
     && !/\.room\{display:none !important\}/.test(css)) {

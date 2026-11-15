@@ -36,6 +36,31 @@ for (const page of ["terms", "policy", "faqs", "services", "room", "en", "de", "
   await cp(resolve(projectRoot, page), resolve(outputDirectory, page), { recursive: true });
 }
 
+/* 出口登记表：首页上每个带 data-go 的链接是通往某个项目的出口；带 data-film 的是放映机能放的片子。
+   同一个 id 可以出现多次，但地址必须一致。汇成 /projects.json：Worker 的 /go/<id> 按它跳转和计数，
+   别的项目（和 AI）也可以读它。 */
+const indexSource = await readFile(resolve(outputDirectory, "index.html"), "utf8");
+const plainText = (markup) => markup.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+const registry = { version: 1, site: "https://hepengyuan.com", exits: {}, films: {} };
+for (const [, attributes, inner] of indexSource.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)) {
+  const href = /\bhref="([^"]+)"/.exec(attributes)?.[1];
+  const goId = /\bdata-go="([^"]+)"/.exec(attributes)?.[1];
+  const filmId = /\bdata-film="([^"]+)"/.exec(attributes)?.[1];
+  if (goId) {
+    if (!/^[a-z0-9-]{1,64}$/.test(goId) || !href) throw new Error(`Exit "${goId}" needs a lowercase id and an href.`);
+    if (!/^(https:\/\/|\/)/.test(href)) throw new Error(`Exit "${goId}" must point to an https or same-site address.`);
+    const known = registry.exits[goId];
+    if (known && known.url !== href) throw new Error(`Exit "${goId}" points to two different addresses.`);
+    registry.exits[goId] ||= { url: href, label: plainText(inner) };
+  }
+  if (filmId) {
+    if (!/^[a-z0-9-]{1,64}$/.test(filmId) || !href?.startsWith("/media/")) throw new Error(`Film "${filmId}" must be served from this site under /media/.`);
+    registry.films[filmId] = { url: href, title: plainText(inner), length: /\bdata-film-length="([^"]+)"/.exec(attributes)?.[1] || null };
+  }
+}
+if (!Object.keys(registry.exits).length) throw new Error("No exits (data-go links) were found on the homepage.");
+await writeFile(resolve(outputDirectory, "projects.json"), `${JSON.stringify(registry, null, 2)}\n`);
+
 /* 样式表和脚本的网址带内容指纹：内容不变网址不变，内容一变网址就变。
    所以 _headers 才敢让浏览器把它们缓存一周——回访时不用再为这两个文件各等一个来回（样式表还会挡住首屏）。
    源文件里的 ?v=… 只是给人看的；发布出去的页面一律换成指纹，忘了改版本号也不会让访客拿到旧样式。 */

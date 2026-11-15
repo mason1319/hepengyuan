@@ -322,6 +322,56 @@ await expectMediaError(() => parseByteRange("bytes=1000-1001", 1000), 416, "out-
   assert((await promo({ headers: { Range: "bytes=0-1" } })).status === 206, "promo video: a plain range request must still be 206");
 }
 
+/* 统一出口 /go/<id>：只认登记表里的出口，外站带来源标记并记数；Aggie 的片子由本站代取，Range 原样转给上游。 */
+{
+  const writes = [];
+  const goEnv = {
+    ASSETS: {
+      async fetch(request) {
+        if (new URL(request.url).pathname !== "/projects.json") return new Response("missing", { status: 404 });
+        return Response.json({ version: 1, exits: { aggie: { url: "https://aggieai.me/" }, "aggie-3a": { url: "/aggie-3a/" } } });
+      },
+    },
+    MEDIA_DB: {
+      prepare(sql) {
+        const statement = { bind: (...values) => { statement.values = values; return statement; }, run: async () => { writes.push({ sql, values: statement.values }); return {}; }, all: async () => ({ results: [] }) };
+        return statement;
+      },
+    },
+  };
+  const go = (path, init) => worker.fetch(new Request(`https://hepengyuan.com${path}`, init), goEnv);
+  const out = await go("/go/aggie?from=room");
+  const target = new URL(out.headers.get("Location"));
+  assert(out.status === 302 && target.origin === "https://aggieai.me", "go: a registered exit must redirect to its registered address");
+  assert(target.searchParams.get("utm_source") === "hepengyuan.com" && target.searchParams.get("utm_medium") === "room" && target.searchParams.get("utm_campaign") === "aggie", "go: outbound links must carry the source tags");
+  assert(writes.length === 1 && writes[0].values[0] === "aggie" && writes[0].values[2] === "room", "go: the click must be counted once with its source");
+  const inner = await go("/go/aggie-3a?from=evil");
+  assert(inner.status === 302 && inner.headers.get("Location") === "https://hepengyuan.com/aggie-3a/" && writes[1].values[2] === "link", "go: same-site exits get no tags and unknown sources fall back to link");
+  const beacon = await go("/go/aggie?from=page", { method: "POST" });
+  assert(beacon.status === 204 && !beacon.headers.has("Location") && writes.length === 3, "go: POST only counts");
+  assert((await go("/go/not-registered")).status === 404 && (await go("/go/https:%2F%2Fevil.example")).status === 404, "go: unknown ids must not redirect anywhere");
+  assert(writes.length === 3, "go: unknown ids must not be counted");
+  assert(wrangler.includes('"/go/*"') && wrangler.includes('"/media/aggie/*"'), "wrangler: /go/* and /media/aggie/* must run the Worker first");
+
+  const upstreamCalls = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init = {}) => {
+    upstreamCalls.push({ url: String(input), range: new Headers(init.headers).get("Range") });
+    return new Response(new Uint8Array(2), { status: 206, headers: { "Content-Range": "bytes 0-1/2572854", "Content-Length": "2", ETag: '"up-v1"', "Set-Cookie": "x=1" } });
+  };
+  try {
+    const film = await worker.fetch(new Request("https://hepengyuan.com/media/aggie/learning-15s.mp4", { headers: { Range: "bytes=0-1" } }), {});
+    assert(film.status === 206 && film.headers.get("Content-Range") === "bytes 0-1/2572854" && film.headers.get("Content-Type") === "video/mp4", "relay: range answers must pass through");
+    assert(upstreamCalls[0].url === "https://aggieai.me/media/aggie-learning-15s.mp4" && upstreamCalls[0].range === "bytes=0-1", "relay: the fixed upstream must be asked for the same range");
+    assert(!film.headers.has("Set-Cookie") && film.headers.get("X-Content-Type-Options") === "nosniff", "relay: only safe headers may come back");
+    assert((await worker.fetch(new Request("https://hepengyuan.com/media/aggie/other.mp4"), {})).status === 404 && upstreamCalls.length === 1, "relay: only the two registered films are relayed");
+    globalThis.fetch = async () => new Response("nope", { status: 500 });
+    assert((await worker.fetch(new Request("https://hepengyuan.com/media/aggie/brand-film.mp4"), {})).status === 502, "relay: an upstream failure must be a clean 502");
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
 /* 公开的文章接口不能带后台登录邮箱和内部 id；后台保存时旧版本不能盖掉新版本；长文章要存得下。 */
 {
   const articleRow = {

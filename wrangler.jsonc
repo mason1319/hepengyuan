@@ -31,6 +31,8 @@
       "/media/poster/*",
       "/media/promo/*",
       "/media/music/*",
+      "/media/aggie/*",
+      "/go/*",
       "/assets/room/voice/*",
       "/travel",
       "/travel/*",

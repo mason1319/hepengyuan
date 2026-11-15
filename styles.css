@@ -427,6 +427,12 @@ html[data-room="on"] .room-dock{opacity:1}
 .room-back::before{content:"\2190"}
 .room-credits-b::before{content:"\24D8"}
 .room-sound::before{content:"\266A"}
+/* 天色按钮：夜里是月亮，白天是太阳（\FE0E 让手机别把它换成彩色表情）。 */
+.room-light::before{content:"\263E\FE0E"}
+.room[data-light="day"] .room-light::before{content:"\2600\FE0E"}
+/* 白天画面亮：顶部衬底压深、底部提示的描边加重，浅色的字才读得清。 */
+.room[data-light="day"] .room-hud{background:linear-gradient(to bottom,rgba(8,6,4,.74),rgba(8,6,4,0))}
+.room[data-light="day"] .room-keys{text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 12px rgba(0,0,0,.85)}
 .room-sound[aria-pressed="true"]{color:#ffb45e;border-color:#ffb45e}
 .room-lofi::before{content:"\25A4"}
 
@@ -552,6 +558,32 @@ html[data-room="on"] .room-status,html[data-room="leaving"] .room-status,html[da
 .tvfx-title{position:absolute;left:5%;right:5%;bottom:6%;margin:0;font-family:"PingFang SC","Microsoft YaHei",var(--body);font-size:clamp(13px,6.5cqh,24px);line-height:1.3;
   color:#fff;text-shadow:0 0 8px rgba(0,0,0,.95),0 1px 2px #000}
 /* 录像带视频元素：挂在页面里供电视取画面，自身不可见、不可点（不能用 display:none，iPhone 会不解码）。 */
+/* 放映机的幕布：一块盖在墙上那幅幕布上的面板，片盘菜单、视频和片尾卡片都在里面。尺寸跟着幕布走（cq 单位）。 */
+.room-cinema{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4cqh;padding:5cqh 5cqw;
+  background:#0d0c0a;color:#f4efe4;font-family:var(--mono);text-align:center}
+.room-cinema::after{content:none}
+.room-cinema .cin-h{margin:0;font-family:var(--osd);font-size:clamp(15px,8cqh,36px);font-weight:400;letter-spacing:.12em;color:#f4efe4}
+.cin-menu,.cin-card{display:flex;flex-direction:column;align-items:center;gap:2cqh;max-width:100%}
+.cin-row{display:flex;flex-wrap:wrap;justify-content:center;gap:1.6cqh 1.4cqw}
+.cin-h[hidden],.cin-menu[hidden],.cin-card[hidden],.cin-video[hidden]{display:none}
+.cin-b{appearance:none;cursor:pointer;display:inline-flex;align-items:baseline;gap:.6em;font:inherit;font-size:clamp(11px,4.6cqh,19px);letter-spacing:.05em;
+  text-decoration:none;color:#14110d;background:#f4efe4;border:0;border-radius:999px;padding:.5em 1.1em}
+.cin-b small{font-size:.78em;opacity:.6}
+.cin-b:hover{background:#fff}
+.cin-b:focus-visible{outline:2px solid #ff7a5c;outline-offset:2px}
+.cin-b.cin-ghost{background:transparent;color:#f4efe4;box-shadow:inset 0 0 0 1px rgba(244,239,228,.45)}
+.cin-b.cin-ghost:hover{background:rgba(244,239,228,.12)}
+.cin-t{margin:0;font-size:clamp(12px,5.4cqh,24px)}
+.cin-k{margin:0;font-size:clamp(10px,3.4cqh,13px);letter-spacing:.16em;opacity:.6}
+.cin-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;cursor:pointer}
+.cin-status{position:absolute;left:0;right:0;bottom:6cqh;margin:0;font-size:clamp(10px,3.6cqh,14px);letter-spacing:.1em;color:#cfc8b8;pointer-events:none}
+/* 竖着拿手机时幕布只有一百多像素高：标题和小字只留给读屏，按钮保证手指点得中。 */
+@media (max-width:719px){
+  .room-cinema{gap:6px;padding:4px 6px}
+  .room-cinema .cin-h,.cin-t,.cin-k{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .cin-menu,.cin-card,.cin-row{gap:6px}
+  .cin-b{min-height:36px;align-items:center;font-size:13px;padding:0 14px}
+}
 .room-tape-video{position:absolute;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1}
 /* 手机上视频直接摆在电视屏幕的位置（位置由脚本按屏幕投影写入），上面再盖一层扫描线和字幕。 */
 .room-tape-video.is-onscreen{z-index:1;opacity:1;object-fit:cover;border-radius:6% / 8%;background:#000}

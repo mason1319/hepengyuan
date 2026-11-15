@@ -37,6 +37,8 @@ export const HOTSPOTS = [
 /* 不是导航、只在房间里起作用的物件。 */
 const ACTIONS = {
   lamp: { label: "LAMP", sub: "开关台灯" },
+  cord: { label: "LIGHT", sub: "灯绳 · 拉一下换个天色" },
+  projector: { label: "CINEMA", sub: "放映机 · 在墙上放电影" },
   tape: { label: "MUSIC", sub: "录音机 · 放磁带听音乐" },
   cassette: { label: "CASSETTE", sub: "放进录音机" },
   book: { label: "WORK", sub: "作品" },
@@ -215,7 +217,9 @@ function noPick(object) {
 
 /* ------------------------------------------------------------------ 雨窗
    窗外是程序化的夜景光斑（不指向任何具体城市），玻璃上有静止水珠和
-   走走停停往下流的水滴。水滴被当成小透镜：在水滴里采样偏移后的窗外。 */
+   走走停停往下流的水滴。水滴被当成小透镜：在水滴里采样偏移后的窗外。
+   拉一下灯绳换成白天：uDay 从 0 到 1，窗外变成午后的晴天（天空、慢慢飘的云、远处一线屋顶和树影，
+   同样全是程序画的，不放照片、不指向任何地方）；uWet 是玻璃上还剩多少水，雨停后慢慢干。 */
 
 const RAIN_VERTEX = /* glsl */ `
 varying vec2 vUv;
@@ -228,6 +232,8 @@ const RAIN_FRAGMENT = /* glsl */ `
 precision highp float;
 uniform float uTime;
 uniform vec2 uSize;
+uniform float uDay;
+uniform float uWet;
 varying vec2 vUv;
 
 float h11(float p) { return fract(sin(p * 127.1) * 43758.5453); }
@@ -266,13 +272,57 @@ vec3 bokeh(vec2 p, float scale, float seed, float soft) {
   return col;
 }
 
-vec3 outside(vec2 uv, float soft) {
+vec3 nightOutside(vec2 uv, float soft) {
   vec2 p = vec2(uv.x * uSize.x / uSize.y, uv.y);
   vec3 col = mix(vec3(0.012, 0.02, 0.045), vec3(0.05, 0.075, 0.14), smoothstep(-0.1, 1.1, uv.y));
   float band = smoothstep(1.02, 0.3, uv.y);
   col += bokeh(p, 5.5, 1.0, soft) * 0.42 * band;
   col += bokeh(p + 7.3, 10.0, 9.0, soft * 1.6) * 0.22 * band;
   return col;
+}
+
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), f.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+float fbm(vec2 p) {
+  float sum = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 4; i++) {
+    sum += amp * vnoise(p);
+    p = p * 2.03 + 7.1;
+    amp *= 0.5;
+  }
+  return sum;
+}
+
+/* 午后的晴天：高处是深一点的蓝，靠近地平线发白；太阳在画面外的右上方，只留一片光晕。 */
+vec3 dayOutside(vec2 uv, float soft) {
+  vec2 p = vec2(uv.x * uSize.x / uSize.y, uv.y);
+  vec3 col = mix(vec3(0.72, 0.79, 0.86), vec3(0.09, 0.27, 0.66), smoothstep(0.0, 0.8, uv.y));
+  float glow = exp(-2.4 * length(p - vec2(uSize.x / uSize.y + 0.2, 1.2)));
+  col += vec3(1.0, 0.85, 0.6) * glow * 0.5;
+  float cloud = smoothstep(0.5, 0.74, fbm(p * vec2(1.5, 3.4) + vec2(uTime * 0.011, 0.0)));
+  cloud *= smoothstep(0.22, 0.55, uv.y);
+  col = mix(col, vec3(1.0, 0.98, 0.95), cloud * 0.9);
+  /* 远处一线屋顶和树影：只有起伏和几个方块，认不出是哪里。 */
+  float blocks = 0.035 * step(0.55, h11(floor(p.x * 8.0) + 3.0)) * h11(floor(p.x * 8.0) + 9.0);
+  float ridge = 0.15 + 0.045 * vnoise(vec2(p.x * 4.0, 2.0)) + blocks;
+  float far = smoothstep(ridge + 0.006 + soft * 0.08, ridge - 0.006, uv.y);
+  col = mix(col, vec3(0.4, 0.5, 0.55), far * 0.92);
+  float crown = 0.07 + 0.05 * vnoise(vec2(p.x * 9.0, 5.0)) + 0.015 * vnoise(vec2(p.x * 31.0, 1.0));
+  float near = smoothstep(crown + 0.008 + soft * 0.08, crown - 0.008, uv.y);
+  col = mix(col, vec3(0.13, 0.25, 0.14), near);
+  return col;
+}
+
+vec3 outside(vec2 uv, float soft) {
+  if (uDay < 0.001) return nightOutside(uv, soft);
+  if (uDay > 0.999) return dayOutside(uv, soft);
+  return mix(nightOutside(uv, soft), dayOutside(uv, soft), uDay);
 }
 
 /* xy = 折射偏移，z = 水量 */
@@ -321,13 +371,19 @@ void main() {
   vec3 b = slide(vUv + vec2(0.37, 0.0), t * 1.15, 13.0, 3.2, 3.0);
   vec3 s1 = stills(vUv, t, 30.0, 1.0);
   vec3 s2 = stills(vUv, t, 55.0, 5.0);
+  /* 雨停以后：往下流的水滴先没（uWet 降到一半之前就停了），静止的水珠跟着 uWet 慢慢干。 */
+  float flow = smoothstep(0.5, 1.0, uWet);
+  a *= flow;
+  b *= flow;
+  s1 *= uWet;
+  s2 *= uWet;
 
   vec2 off = a.xy * 0.09 + b.xy * 0.06 + s1.xy * 0.035 + s2.xy * 0.02;
   float water = clamp(a.z + b.z + s1.z * 0.8 + s2.z * 0.6, 0.0, 1.0);
   float soft = mix(0.2, 0.05, water);
 
   vec3 col = outside(vUv - off, soft);
-  col = mix(col + vec3(0.012, 0.016, 0.026), col * 1.3, water);
+  col = mix(col + vec3(0.012, 0.016, 0.026) * (1.0 - uDay), col * 1.3, water);
 
   /* 空中的雨丝 */
   vec2 rp = vec2(vUv.x * uSize.x / uSize.y * 40.0 + vUv.y * 5.0, vUv.y * 1.6 + t * 2.4);
@@ -335,7 +391,7 @@ void main() {
   float seg = fract(rp.y * (0.6 + h11(rid)) + h11(rid * 3.1) * 10.0);
   float streak = smoothstep(0.09, 0.0, abs(fract(rp.x) - 0.5))
     * smoothstep(0.0, 0.1, seg) * smoothstep(0.5, 0.1, seg) * step(0.55, h11(rid + 2.0));
-  col += vec3(0.45, 0.55, 0.75) * streak * 0.06 * (1.0 - water);
+  col += vec3(0.45, 0.55, 0.75) * streak * 0.06 * (1.0 - water) * flow * (1.0 - uDay);
 
   float edge = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
   col *= 0.72 + 0.28 * smoothstep(0.0, 0.1, edge);
@@ -1398,7 +1454,7 @@ function drawCardBack(g, W, H, data, images = []) {
 
 const BACK = -1.6;
 const LEFT = -1.95;
-const RIGHT = 1.25;
+const RIGHT = 3.0; /* 原来是 1.25：向右加宽出一个放映角（后墙右段挂幕布，对面是放映机） */
 const CEIL = 2.75;
 const FRONT = 2.4;
 const DESK_TOP = 0.75;
@@ -1442,7 +1498,12 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
 
   /* ---- 窗：雨夜 */
   const rain = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uSize: { value: new THREE.Vector2(WIN.x1 - WIN.x0, WIN.y1 - WIN.y0) } },
+    uniforms: {
+      uTime: { value: 0 },
+      uSize: { value: new THREE.Vector2(WIN.x1 - WIN.x0, WIN.y1 - WIN.y0) },
+      uDay: { value: 0 },
+      uWet: { value: 1 },
+    },
     vertexShader: RAIN_VERTEX,
     fragmentShader: RAIN_FRAGMENT,
   });
@@ -3035,12 +3096,14 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     lampOn = !lampOn;
   };
   tickers.push((time, dt) => {
-    lampLevel = lerp(lampLevel, lampOn ? 1 : 0, 1 - Math.exp(-dt * 9));
+    lampLevel = lerp(lampLevel, lampOn && !projector.on ? 1 : 0, 1 - Math.exp(-dt * 9));
     spot.intensity = 3.4 * lampLevel;
     bulbLight.intensity = 0.35 * lampLevel;
     lampGlow.material.opacity = 0.55 * lampLevel;
     bulbMaterial.color.setRGB(0.16 + 0.84 * lampLevel, 0.14 + 0.75 * lampLevel, 0.12 + 0.6 * lampLevel);
     shadeMaterial.emissiveIntensity = lampLevel;
+    /* 灯灭着的时候不必每帧重画它的阴影贴图（白天由太阳那盏灯投影）。 */
+    spot.shadow.autoUpdate = lampLevel > 0.01;
   });
 
   /* ---- 挂钟：显示访客本地的真实时间 */
@@ -3166,9 +3229,10 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   scene.add(bulbs);
   const haloGeometry = new THREE.BufferGeometry();
   haloGeometry.setAttribute("position", new THREE.BufferAttribute(haloPositions, 3));
-  scene.add(noPick(new THREE.Points(haloGeometry, new THREE.PointsMaterial({
+  const fairyHalo = noPick(new THREE.Points(haloGeometry, new THREE.PointsMaterial({
     color: 0xffb060, size: 0.1, sizeAttenuation: true, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending, map: glow,
-  }))));
+  })));
+  scene.add(fairyHalo);
   for (const x of [-0.4, 0.55]) {
     const warm = new THREE.PointLight(0xffb060, 0.25, 2.2, 2);
     warm.position.set(x, 2.2, BACK + 0.3);
@@ -3177,7 +3241,8 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   }
 
   /* ---- 光：暖色室内 + 窗外冷光 */
-  scene.add(new THREE.HemisphereLight(0xc2a586, 0x2a1c14, 1.05));
+  const hemi = new THREE.HemisphereLight(0xc2a586, 0x2a1c14, 1.05);
+  scene.add(hemi);
   const windowLight = new THREE.PointLight(0x7f9df0, 2.6, 7, 2);
   windowLight.position.set(0.3, 1.6, BACK + 0.4);
   scene.add(windowLight);
@@ -3188,6 +3253,265 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     for (const light of moodLights) light.visible = enabled;
   };
   setMood(quality === "high");
+
+  /* ---- 午后的太阳：窗外左上方的一盏聚光灯，带一张“窗格”贴图——只有四块玻璃的位置是亮的。
+     光斑的形状来自这张贴图而不是阴影贴图，所以没有阴影的低画质（手机）也照样有窗格光斑；
+     高画质再打开它的阴影，桌上的东西会在光斑里投下影子。夜里强度是 0。
+     窗外天空里那片光晕（着色器 dayOutside 里的 glow）画在右上方，和这盏灯同一侧。
+     这盏灯从一开始就在场景里：灯的数量不变，拉灯绳时不用重新编译着色器。 */
+  /* 仰角约 45°，从右上方略斜着照进来：电视的影子落向左前方，右半张桌子（记事本、计算器、电话）和桌前的地板留给光斑。 */
+  const sunAim = new THREE.Vector3(-0.22, -1.0, 0.95).normalize();
+  const windowCenter = new THREE.Vector3((WIN.x0 + WIN.x1) / 2, (WIN.y0 + WIN.y1) / 2, BACK - 0.08);
+  const sun = new THREE.SpotLight(0xffd8a0, 0, 0, rad(15), 0.15, 0);
+  sun.position.copy(windowCenter).addScaledVector(sunAim, -4);
+  sun.target.position.copy(windowCenter).addScaledVector(sunAim, 1.2);
+  sun.castShadow = quality === "high";
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.near = 1.5;
+  sun.shadow.camera.far = 9;
+  sun.shadow.bias = -0.0008;
+  sun.shadow.radius = 3;
+  scene.add(sun);
+  scene.add(sun.target);
+  sun.updateMatrixWorld(true);
+  sun.target.updateMatrixWorld(true);
+  sun.shadow.updateMatrices(sun);
+  sun.map = canvasTexture(512, 512, (g, w, h) => {
+    g.fillStyle = "#000";
+    g.fillRect(0, 0, w, h);
+    /* 把窗上的一个点投到这盏灯的贴图坐标里（和着色器里用的是同一个矩阵）。 */
+    const corner = new THREE.Vector4();
+    const project = (x, y) => {
+      corner.set(x, y, windowCenter.z, 1).applyMatrix4(sun.shadow.matrix);
+      return [(corner.x / corner.w) * w, (1 - corner.y / corner.w) * h];
+    };
+    const bar = 0.04;
+    const mullion = (WIN.x0 + WIN.x1) / 2;
+    const transomY = 1.74;
+    g.fillStyle = "#fff";
+    g.shadowColor = "#fff";
+    g.shadowBlur = 5; /* 光斑边缘留一点虚边 */
+    for (const [x0, x1] of [[WIN.x0 + bar, mullion - 0.018], [mullion + 0.018, WIN.x1 - bar]]) {
+      for (const [y0, y1] of [[WIN.y0 + bar, transomY - 0.016], [transomY + 0.016, WIN.y1 - bar]]) {
+        g.beginPath();
+        [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].forEach(([x, y], index) => {
+          const [px, py] = project(x, y);
+          if (index) g.lineTo(px, py);
+          else g.moveTo(px, py);
+        });
+        g.closePath();
+        g.fill();
+      }
+    }
+  });
+
+  /* ---- 灯绳：90 年代的拉线开关，盒子在天花板上，绳子垂到窗前，底下一颗夜光拉珠。
+     拉一下，房间在雨夜和晴天午后之间切换（台灯和串灯跟着灭 / 亮）。 */
+  const lightCord = new THREE.Group();
+  lightCord.userData.action = "cord";
+  const cordAnchor = new THREE.Vector3(0.64, CEIL, BACK + 0.36);
+  const cordLength = CEIL - 1.63;
+  const switchBox = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.038, 0.028, 24), std(0xe7dccb, 0.55));
+  switchBox.position.set(cordAnchor.x, CEIL - 0.014, cordAnchor.z);
+  lightCord.add(shadowed(switchBox));
+  const cordPivot = new THREE.Group();
+  cordPivot.position.copy(cordAnchor);
+  /* 绳子往天花板里多留一截：被往下拉的时候上端不会露出空隙。 */
+  const cordString = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, cordLength + 0.12, 6), std(0xe9e1cf, 0.85));
+  cordString.position.y = (0.12 - cordLength) / 2;
+  cordPivot.add(shadowed(cordString));
+  const cordFerrule = new THREE.Mesh(new THREE.CylinderGeometry(0.0055, 0.0055, 0.014, 10), std(0xb89a55, 0.4, 0.7));
+  cordFerrule.position.y = -cordLength + 0.007;
+  cordPivot.add(cordFerrule);
+  /* 深色木珠：白天衬着天空是个清楚的剪影，夜里靠夜光（自发光）找得到。 */
+  const beadMaterial = std(0x9b6a45, 0.45, 0, { emissive: 0x7dffa8, emissiveIntensity: 0.6 });
+  const cordBead = new THREE.Mesh(new THREE.SphereGeometry(0.017, 18, 14), beadMaterial);
+  cordBead.scale.y = 1.35;
+  cordBead.position.y = -cordLength - 0.02;
+  cordPivot.add(shadowed(cordBead));
+  cordPivot.add(hitBox(0.14, 0.44, 0.14, 0, -cordLength + 0.14, 0));
+  lightCord.add(cordPivot);
+  scene.add(lightCord);
+
+  /* ---- 放映角：后墙右段挂一幅幕布，对面矮柜上是一台双片盘的老式放映机。
+     墙上放什么由启动器决定（片子来自首页的登记表）：进入放映视图时，一块 HTML 面板盖在幕布上，视频就在那块面板里放。
+     这里只负责物件、片盘转动、光柱，以及放映时把房间的灯压暗。 */
+  const SCREEN = { x: 2.14, y: 1.5, w: 1.44, h: 0.81 };
+  const cinema = new THREE.Group();
+  cinema.userData.action = "projector";
+  const screenTrim = std(0x2a2420, 0.5, 0.4);
+  cinema.add(box(SCREEN.w + 0.08, SCREEN.h + 0.08, 0.012, std(0x141414, 0.8), SCREEN.x, SCREEN.y, BACK + 0.012));
+  const wallScreen = new THREE.Mesh(new THREE.PlaneGeometry(SCREEN.w, SCREEN.h), std(0xf1ede2, 0.96));
+  wallScreen.position.set(SCREEN.x, SCREEN.y, BACK + 0.02);
+  wallScreen.userData.size = [SCREEN.w, SCREEN.h];
+  cinema.add(wallScreen);
+  cinema.add(box(SCREEN.w + 0.16, 0.06, 0.06, screenTrim, SCREEN.x, SCREEN.y + SCREEN.h / 2 + 0.07, BACK + 0.04));
+  cinema.add(box(SCREEN.w + 0.1, 0.022, 0.022, screenTrim, SCREEN.x, SCREEN.y - SCREEN.h / 2 - 0.05, BACK + 0.022));
+
+  const PROJ = { x: 2.14, z: 0.78 };
+  const projectorMetal = std(0x3d4a44, 0.5, 0.5);
+  const projectorDark = std(0x1b1d1f, 0.45, 0.7);
+  cinema.add(box(0.56, 0.7, 0.44, std(0x5a4030, 0.75), PROJ.x, 0.35, PROJ.z));
+  cinema.add(box(0.6, 0.02, 0.48, std(0x3b2a20, 0.6), PROJ.x, 0.71, PROJ.z));
+  cinema.add(box(0.2, 0.2, 0.34, projectorMetal, PROJ.x, 0.82, PROJ.z));
+  cinema.add(box(0.15, 0.1, 0.13, projectorDark, PROJ.x, 0.97, PROJ.z + 0.08));
+  const lensBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.04, 0.1, 20), projectorDark);
+  lensBarrel.rotation.x = Math.PI / 2;
+  lensBarrel.position.set(PROJ.x, 0.84, PROJ.z - 0.22);
+  cinema.add(shadowed(lensBarrel));
+  const lensGlass = std(0x20242a, 0.15, 0.2, { emissive: 0xfff0c4, emissiveIntensity: 0 });
+  const lens = new THREE.Mesh(new THREE.CircleGeometry(0.03, 20), lensGlass);
+  lens.rotation.y = Math.PI;
+  lens.position.set(PROJ.x, 0.84, PROJ.z - 0.271);
+  cinema.add(lens);
+  /* 两只片盘：轴朝左右，装在机身一侧的两根支臂上。三根辐条让转动看得出来。 */
+  const reelMetal = std(0x8d9296, 0.35, 0.8);
+  const makeReel = (y, z, radius) => {
+    const reel = new THREE.Group();
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.008, 8, 32), reelMetal);
+    rim.rotation.y = Math.PI / 2;
+    reel.add(shadowed(rim));
+    const film = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.62, radius * 0.62, 0.016, 24), std(0x1a1512, 0.6));
+    film.rotation.z = Math.PI / 2;
+    reel.add(film);
+    for (let k = 0; k < 3; k += 1) {
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.006, radius * 2 - 0.01, 0.014), reelMetal);
+      spoke.rotation.x = (k * Math.PI) / 3;
+      reel.add(spoke);
+    }
+    reel.position.set(PROJ.x + 0.118, y, z);
+    cinema.add(reel);
+    return reel;
+  };
+  const reels = [makeReel(1.09, PROJ.z - 0.08, 0.105), makeReel(1.03, PROJ.z + 0.17, 0.09)];
+  cinema.add(rod(new THREE.Vector3(PROJ.x + 0.105, 0.9, PROJ.z - 0.04), new THREE.Vector3(PROJ.x + 0.105, 1.09, PROJ.z - 0.08), 0.008, projectorDark));
+  cinema.add(rod(new THREE.Vector3(PROJ.x + 0.105, 0.9, PROJ.z + 0.1), new THREE.Vector3(PROJ.x + 0.105, 1.03, PROJ.z + 0.17), 0.008, projectorDark));
+  cinema.add(hitBox(0.5, 0.62, 0.5, PROJ.x, 0.98, PROJ.z));
+  /* 光柱：从镜头到幕布四角的一个薄薄的发光棱锥，只在放映时看得见。 */
+  const beamGeometry = new THREE.BufferGeometry();
+  const bz = BACK + 0.03;
+  beamGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array([
+    PROJ.x, 0.84, PROJ.z - 0.275,
+    SCREEN.x - SCREEN.w / 2, SCREEN.y - SCREEN.h / 2, bz,
+    SCREEN.x + SCREEN.w / 2, SCREEN.y - SCREEN.h / 2, bz,
+    SCREEN.x + SCREEN.w / 2, SCREEN.y + SCREEN.h / 2, bz,
+    SCREEN.x - SCREEN.w / 2, SCREEN.y + SCREEN.h / 2, bz,
+  ]), 3));
+  beamGeometry.setIndex([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1]);
+  const beam = noPick(new THREE.Mesh(beamGeometry, new THREE.MeshBasicMaterial({
+    color: 0xfff0c4, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+  })));
+  scene.add(cinema);
+  scene.add(beam);
+  const projector = { on: false };
+  /* 开始放映：台灯灭，房间的光压暗（白天的阳光也先退场）；停了再恢复。不改访客选的天色。 */
+  const setProjector = (on) => {
+    projector.on = Boolean(on);
+  };
+
+  const LIGHT_SECONDS = 2;
+  const NIGHT = { sky: new THREE.Color(0xc2a586), ground: new THREE.Color(0x2a1c14), window: new THREE.Color(0x7f9df0), fairy: new THREE.Color(0xffd08a) };
+  const DAY = { sky: new THREE.Color(0xfff0dc), ground: new THREE.Color(0x7a644f), window: new THREE.Color(0xffe7c4), fairy: new THREE.Color(0x6b5a45) };
+  const dayLight = { mode: "night", level: 0, shown: 0, wet: 1, applied: -1, cinema: 0, appliedCinema: -1 };
+  const cordState = { pull: 0, velocity: 0, swing: 0, swingVelocity: 0 };
+
+  /* day：天色（0 雨夜 … 1 晴天）。dim：放映机在放（0 … 1），放映时白天的光先退场，其余的灯压暗。 */
+  const applyLight = (day, dim = 0) => {
+    dayLight.applied = day;
+    dayLight.appliedCinema = dim;
+    const d = day * (1 - dim);
+    dayLight.shown = d;
+    rain.uniforms.uDay.value = d;
+    hemi.color.copy(NIGHT.sky).lerp(DAY.sky, d);
+    hemi.groundColor.copy(NIGHT.ground).lerp(DAY.ground, d);
+    hemi.intensity = lerp(1.05, 1.6, d) * (1 - 0.55 * dim);
+    windowLight.color.copy(NIGHT.window).lerp(DAY.window, d);
+    windowLight.intensity = lerp(2.6, 3.0, d) * (1 - 0.5 * dim);
+    fill.intensity = lerp(1.6, 1.0, d) * (1 - 0.7 * dim);
+    sun.intensity = 19 * d;
+    sun.shadow.autoUpdate = d > 0.01;
+    renderer.toneMappingExposure = lerp(1.15, 1.08, d);
+    /* 串灯白天不亮：灯泡变回没通电的颜色，光晕和两盏氛围灯收掉。 */
+    const fairyOff = Math.max(d, dim);
+    bulbs.material.color.copy(NIGHT.fairy).lerp(DAY.fairy, fairyOff);
+    fairyHalo.material.opacity = 0.5 * (1 - fairyOff);
+    for (const light of moodLights) light.intensity = 0.25 * (1 - fairyOff);
+    lensGlass.emissiveIntensity = 2.2 * dim;
+    /* 夜光拉珠：天黑才看得出它在发光，方便在暗处找到这根绳子。 */
+    beadMaterial.emissiveIntensity = 0.6 * (1 - d);
+  };
+
+  /* mode："day" 或 "night"。instant：不放过渡（进房间时恢复上次的选择、或访客要求减少动态效果）。 */
+  const setLight = (mode, instant = false) => {
+    const next = mode === "day" ? "day" : "night";
+    /* 天亮灯灭、天黑灯亮；之后访客仍然可以自己点台灯。 */
+    if (next !== dayLight.mode) lampOn = next === "night";
+    dayLight.mode = next;
+    if (instant) {
+      dayLight.level = next === "day" ? 1 : 0;
+      dayLight.wet = next === "day" ? 0 : 1;
+      lampLevel = lampOn ? 1 : 0;
+      rain.uniforms.uWet.value = dayLight.wet;
+      applyLight(dayLight.level, dayLight.cinema);
+    }
+    return next;
+  };
+
+  /* 拉一下绳子：绳子往下一沉再弹回去、轻轻晃几下，天色换到另一边。返回新的天色。 */
+  const pullCord = (animate = true) => {
+    if (animate) {
+      cordState.velocity += 1.15;
+      cordState.swingVelocity += (cordState.swing >= 0 ? 1 : -1) * 0.55;
+    }
+    return setLight(dayLight.mode === "day" ? "night" : "day", !animate);
+  };
+
+  tickers.push((time, dt) => {
+    const goal = dayLight.mode === "day" ? 1 : 0;
+    if (dayLight.level !== goal) {
+      dayLight.level = clamp(dayLight.level + Math.sign(goal - dayLight.level) * (dt / LIGHT_SECONDS), 0, 1);
+    }
+    /* 雨：天晴后约 20 秒，玻璃上的水珠才干透；天黑后两三秒就重新下起来。 */
+    const wetGoal = 1 - goal;
+    if (dayLight.wet !== wetGoal) {
+      dayLight.wet = clamp(dayLight.wet + (wetGoal > dayLight.wet ? dt / 2.5 : -dt / 20), 0, 1);
+      rain.uniforms.uWet.value = dayLight.wet;
+    }
+    const cinemaGoal = projector.on ? 1 : 0;
+    if (dayLight.cinema !== cinemaGoal) {
+      dayLight.cinema = clamp(dayLight.cinema + Math.sign(cinemaGoal - dayLight.cinema) * (dt / 1.2), 0, 1);
+    }
+    const d = dayLight.level * dayLight.level * (3 - 2 * dayLight.level);
+    const dim = dayLight.cinema * dayLight.cinema * (3 - 2 * dayLight.cinema);
+    if (d !== dayLight.applied || dim !== dayLight.appliedCinema) applyLight(d, dim);
+    /* 放映机：片盘转，光柱带一点老胶片的闪烁。 */
+    if (dim > 0) {
+      beam.material.opacity = 0.075 * dim * (0.9 + 0.1 * Math.sin(time * 31) * Math.sin(time * 7.3));
+      reels[0].rotation.x -= dt * 4.2 * dim;
+      reels[1].rotation.x -= dt * 5.1 * dim;
+    } else if (beam.material.opacity !== 0) {
+      beam.material.opacity = 0;
+    }
+
+    /* 绳子：一根带阻尼的弹簧（被拉下去再弹回）加一个小摆。分几小步算，帧率低时也不会发散。 */
+    const moving = Math.abs(cordState.pull) + Math.abs(cordState.velocity) + Math.abs(cordState.swing) + Math.abs(cordState.swingVelocity) > 0.0004;
+    if (moving) {
+      const steps = 4;
+      const h = Math.min(dt, 0.1) / steps;
+      for (let i = 0; i < steps; i += 1) {
+        cordState.velocity += (-190 * cordState.pull - 15 * cordState.velocity) * h;
+        cordState.pull += cordState.velocity * h;
+        cordState.swingVelocity += (-28 * cordState.swing - 1.7 * cordState.swingVelocity) * h;
+        cordState.swing += cordState.swingVelocity * h;
+      }
+      if (!moving || Math.abs(cordState.pull) + Math.abs(cordState.velocity) + Math.abs(cordState.swing) + Math.abs(cordState.swingVelocity) < 0.0004) {
+        cordState.pull = cordState.velocity = cordState.swing = cordState.swingVelocity = 0;
+      }
+      cordPivot.position.y = cordAnchor.y - Math.max(cordState.pull, -0.01);
+      cordPivot.rotation.z = cordState.swing * 0.06;
+      cordPivot.rotation.x = cordState.swing * 0.025;
+    }
+  });
 
   /* ---- 灯下的浮尘 */
   const dustCount = quality === "high" ? 70 : 28;
@@ -3211,7 +3535,7 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
       dustPositions[i * 3 + 2] = z + Math.cos(time * 0.09 * speed + phase) * 0.05;
     }
     dustGeometry.attributes.position.needsUpdate = true;
-    dust.material.opacity = 0.5 * lampLevel;
+    dust.material.opacity = 0.5 * Math.max(lampLevel, dayLight.shown);
   });
 
   tickers.push((time) => {
@@ -3259,8 +3583,16 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     screensBusy,
     toggleLamp,
     spot,
+    sun,
+    lightCord,
+    cinema,
+    setProjector,
+    pullCord,
+    setLight,
+    lightMode: () => dayLight.mode,
+    dayLevel: () => dayLight.shown,
     setMood,
-    screens: { computer: computerScreen, tv: tvScreen },
+    screens: { computer: computerScreen, tv: tvScreen, wall: wallScreen },
     cardsCenter,
     computerState,
     redrawComputer,
@@ -3292,7 +3624,7 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
 /* ------------------------------------------------------------------ 挂载 */
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-const VIEW_SCREENS = { about: "computer", online: "computer", posts: "tv", film: "tv" };
+const VIEW_SCREENS = { about: "computer", online: "computer", posts: "tv", film: "tv", cinema: "wall" };
 
 export async function mount({
   stage,
@@ -3301,9 +3633,11 @@ export async function mount({
   reducedMotion = false,
   posterUrl = "/assets/hpy-promo-poster.jpg",
   labels = {},
+  light: wantedLight = "night",
   onHover = () => {},
   onPick = () => {},
   onFail = () => {},
+  onLight = () => {},
 } = {}) {
   if (!stage) throw new Error("room: stage is required");
 
@@ -3357,7 +3691,9 @@ export async function mount({
   built.computerState.subs = subs;
   built.tvState.insertText = labels.tvInsert || "";
   const byId = Object.fromEntries(HOTSPOTS.map((hotspot) => [hotspot.id, hotspot]));
-  const pickRoots = [...Object.values(built.hotspots).flatMap((entry) => entry.groups), built.lamp, built.recorder, built.calculator, built.cassetteStack, built.workBooks, built.cardHolder, built.heroCard];
+  /* 这次访问里上次停在白天还是夜里，进来就是什么样，不放过渡。 */
+  built.setLight(wantedLight === "day" ? "day" : "night", true);
+  const pickRoots = [...Object.values(built.hotspots).flatMap((entry) => entry.groups), built.lamp, built.lightCord, built.cinema, built.recorder, built.calculator, built.cassetteStack, built.workBooks, built.cardHolder, built.heroCard];
 
   /* 悬停时给受光材质一点暖色自发光。 */
   const highlight = new THREE.Color(CORAL);
@@ -3399,7 +3735,7 @@ export async function mount({
     return { pos: center.clone().addScaledVector(normal, distance), look: center };
   }
 
-  /* 书桌视角的五个机位（“视角”按钮 / V 键轮流切换）：全景、电脑桌、书架、窗台录音机、电视。 */
+  /* 书桌视角的六个机位（“视角”按钮 / V 键轮流切换）：全景、电脑桌、书架、窗台录音机、电视、放映角。 */
   let deskIndex = 0;
   let deskPresets = [];
   function computePoses() {
@@ -3410,12 +3746,15 @@ export async function mount({
       { pos: v(lerp(-1.42, -1.5, narrow), 1.24, lerp(0.35, 0.95, narrow)), look: v(-1.64, 1.0, -1.45) },
       { pos: v(0.66, 1.34, lerp(-0.3, 0.25, narrow)), look: v(0.68, 1.1, -1.62) },
       { pos: v(0.14, 1.3, lerp(0.35, 1.05, narrow)), look: v(0.16, 1.06, -1.35) },
+      /* 放映角：从放映机后面看过去，幕布在正前方。 */
+      { pos: v(2.14, 1.5, lerp(2.75, 3.4, narrow)), look: v(2.14, 1.12, -1.5) },
     ];
     poses.desk = deskPresets[deskIndex];
     poses.about = fitScreen(built.screens.computer, 0.8);
     poses.online = poses.about;
     poses.posts = fitScreen(built.screens.tv, 0.8);
     poses.film = poses.posts;
+    poses.cinema = fitScreen(built.screens.wall, 0.82);
 
     /* 书桌视角绕着画面中心那件东西转：全景是电视屏幕，其它机位是它对准的那一点。 */
     if (deskIndex === 0) {
@@ -3835,8 +4174,16 @@ export async function mount({
     tap(event, info.type, info.actor);
   }
 
+  /* 拉灯绳（点绳子、按键或右下角按钮都走这里）：换天色，并告诉启动器现在是白天还是夜里。 */
+  function toggleLight() {
+    const mode = built.pullCord(!reducedMotion);
+    onLight(mode);
+    return mode;
+  }
+
   function activate(hit) {
     if (hit.id === "lamp") built.toggleLamp();
+    else if (hit.id === "cord") toggleLight();
     else if (CONTROL_ACTIONS.has(hit.id)) built.operate(hit.id, hit.value);
     else {
       /* 录音机的琴键先在场景里按下去，播放逻辑交给启动器。 */
@@ -4068,6 +4415,7 @@ export async function mount({
     setHover(null);
     tourHot = null;
     clearPointers();
+    built.setProjector(false);
     actor?.reset();
   }
 
@@ -4133,6 +4481,7 @@ export async function mount({
     applyPixelRatio();
     renderer.shadowMap.enabled = level === "high";
     built.spot.castShadow = level === "high";
+    built.sun.castShadow = level === "high";
     built.setMood(level === "high");
     scene.traverse((node) => {
       if (node.material) node.material.needsUpdate = true;
@@ -4187,7 +4536,8 @@ export async function mount({
       heat[id] = lerp(heat[id], goal, 1 - Math.exp(-dt * 10));
       for (const item of entry.materials) {
         item.material.emissive.copy(item.base).lerp(highlight, heat[id] * 0.5);
-        item.material.emissiveIntensity = lerp(item.baseIntensity, 0.32, heat[id]);
+        /* 白天房间亮，同样的自发光看不出来：悬停高亮跟着加强。 */
+        item.material.emissiveIntensity = lerp(item.baseIntensity, 0.32 + 0.4 * built.dayLevel(), heat[id]);
       }
     }
 
@@ -4332,6 +4682,11 @@ export async function mount({
     goTo,
     screenRect,
     toggleLamp: () => built.toggleLamp(),
+    /* 天色："day" 午后晴天 / "night" 雨夜。toggleLight 等于拉一下灯绳。 */
+    toggleLight,
+    light: () => built.lightMode(),
+    /* 放映机开 / 关：片盘转、出光柱、房间压暗。 */
+    setProjector: (on) => built.setProjector(on),
     setCalcDisplay: (text) => built.setCalcDisplay(text),
     /* 键盘：方向键转视角，+ − 缩放，0 复位（只在书桌视角）。 */
     nudge({ yaw = 0, pitch = 0, zoom = 1 } = {}) {
