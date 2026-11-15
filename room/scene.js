@@ -48,6 +48,7 @@ const ACTIONS = {
   deckRec: { label: "REC", sub: "录音键（按着玩）" },
   calc: { label: "CALC", sub: "计算器 · 拿起来用" },
   card: { label: "CARD", sub: "名片 · 拿一张出来" },
+  avatar: { label: "HPY", sub: "点我说话 · 拖我试试" },
   tvPower: { label: "POWER", sub: "电视开关" },
   tvPreset: { label: "CH", sub: "预选台 1–6" },
   tvChannel: { label: "TUNE", sub: "换台" },
@@ -3220,9 +3221,28 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     tvGlow.intensity = tvState.power ? 0.18 * (0.95 + 0.05 * Math.sin(time * 9.0 + 1.3)) : 0;
   });
 
+  /* ---- 小人（/room/avatar.js，房间亮起来之后才加载）能去的位置。
+     stand：落地站着（剑背在背上）；没有 stand 的是踩着剑悬停。desk：在主书桌桌面上，这些点之间用跑和跳。 */
+  scene.updateMatrixWorld(true);
+  const perchOn = (object, x, y, z) => object.localToWorld(new THREE.Vector3(x, y, z));
+  const perches = {
+    tv: { pos: perchOn(tv, 0, 0.421, 0.02), stand: true },
+    about: { pos: perchOn(monitorBody, 0, 0.362, 0.03), stand: true },
+    music: { pos: perchOn(recorder, 0, 0.257, -0.02), stand: true },
+    game: { pos: new THREE.Vector3(-0.17, DESK_TOP, -0.85), stand: true, desk: true },
+    work: { pos: new THREE.Vector3(0.125, DESK_TOP, -0.84), stand: true, desk: true },
+    calc: { pos: new THREE.Vector3(0.5, DESK_TOP, -1.09), stand: true, desk: true },
+    card: { pos: new THREE.Vector3(0.66, DESK_TOP, -1.05), stand: true, desk: true },
+    online: { pos: new THREE.Vector3(0.95, DESK_TOP, -0.98), stand: true, desk: true },
+    shelf: { pos: new THREE.Vector3(-1.5, 1.02, -1.1) },
+    photos: { pos: new THREE.Vector3(-0.8, 1.62, -1.4) },
+    window: { pos: new THREE.Vector3(0.3, 1.58, -1.4) },
+  };
+
   return {
     hotspots,
     tickers,
+    perches,
     lamp,
     recorder,
     calculator,
@@ -3505,6 +3525,35 @@ export async function mount({
     return { left, top, width: right - left, height: bottom - top };
   }
 
+  /* ---- 小人：/room/avatar.js 在房间亮起来之后才加载，通过 addActor 挂进来。
+     这里只做三件事：把点和拖交给它、每帧让它动一下、离开书桌视角时把它收起来。没加载到就没有小人，别的不受影响。 */
+  let actor = null;
+  let tourHot = null;
+  const actorHost = {
+    THREE,
+    scene,
+    camera,
+    perches: built.perches,
+    reducedMotion,
+    bounds: new THREE.Box3(new THREE.Vector3(LEFT + 0.1, 0.12, BACK + 0.14), new THREE.Vector3(RIGHT - 0.1, CEIL - 0.3, 1)),
+    get narrow() {
+      return narrow;
+    },
+    get width() {
+      return width;
+    },
+    get height() {
+      return height;
+    },
+  };
+  function addActor(create, onEvent) {
+    if (actor || disposed) return actor;
+    actor = create(actorHost, onEvent);
+    pickRoots.push(actor.pickRoot);
+    actor.setVisible(current === "desk");
+    return actor;
+  }
+
   /* ---- 指针
      电脑：悬停出提示，点一下打开。手机：第一下只出提示（“再点一次”），第二下才打开。
      书桌视角下：拖动转视角，右键 / Shift 拖动或双指拖动平移，滚轮或双指捏合缩放，双击空白处复位。 */
@@ -3673,7 +3722,13 @@ export async function mount({
         startTime: performance.now(),
         pinch: 0,
         pinchZoom: orbit.goal.zoom,
+        actor: false,
+        dragging: false,
       };
+      if (actor?.visible && canOrbit() && event.button !== 2) {
+        toNdc(event);
+        gesture.actor = pick()?.id === "avatar";
+      }
     } else if (gesture) {
       gesture.multi = true;
       gesture.moved = true;
@@ -3714,6 +3769,16 @@ export async function mount({
       return;
     }
     if (!canOrbit()) return;
+    if (gesture.actor && actor && pointers.size === 1) {
+      /* 拖的是小人：让它跟着手指走。 */
+      raycaster.setFromCamera(pointer, camera);
+      if (!gesture.dragging) {
+        gesture.dragging = true;
+        actor.grab(raycaster.ray);
+      }
+      actor.dragTo(raycaster.ray);
+      return;
+    }
     if (pointers.size >= 2) {
       const [a, b] = [...pointers.values()];
       const distance = Math.hypot(a.x - b.x, a.y - b.y);
@@ -3739,16 +3804,17 @@ export async function mount({
     const finished = gesture;
     gesture = null;
     if (finished?.type === "mouse") stage.style.cursor = "";
+    if (finished?.dragging) actor?.drop();
     if (pendingTap) window.clearTimeout(pendingTap.timer);
     pendingTap = null;
     if (!finished || finished.moved || finished.multi || event.type === "pointercancel") return;
     if (performance.now() - finished.startTime > 650) return;
     if (finished.type === "mouse" && (finished.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
-    const info = { type: finished.type, clientX: event.clientX, clientY: event.clientY, timer: 0 };
+    const info = { type: finished.type, clientX: event.clientX, clientY: event.clientY, timer: 0, actor: finished.actor };
     info.timer = window.setTimeout(() => {
       if (pendingTap !== info) return;
       pendingTap = null;
-      tap(info, info.type);
+      tap(info, info.type, info.actor);
     }, 400);
     pendingTap = info;
   }
@@ -3758,7 +3824,7 @@ export async function mount({
     if (!info) return;
     pendingTap = null;
     window.clearTimeout(info.timer);
-    tap(event, info.type);
+    tap(event, info.type, info.actor);
   }
 
   function activate(hit) {
@@ -3771,12 +3837,18 @@ export async function mount({
     }
   }
 
-  function tap(event, type) {
+  function tap(event, type, onActor = false) {
     if (current === "card") {
       if (!flight) flipCard();
       return;
     }
     if (!canOrbit()) return;
+    if (onActor && actor?.visible) {
+      /* 按下时点中的是小人（它会动，抬手时未必还在原地）：直接算点它，手机上也不用点两下。 */
+      disarm();
+      actor.tap();
+      return;
+    }
     toNdc(event);
     const hit = pick();
     const touch = type !== "mouse";
@@ -3939,6 +4011,7 @@ export async function mount({
     built.liftCalculator(target === "calc", reducedMotion);
     built.setDeckOpen(target === "music");
     cardAnim.goal = target === "card" ? 1 : 0;
+    actor?.setVisible(target === "desk");
     built.computerState.mode = target === "about" || target === "online" ? target : "desk";
     built.redrawComputer();
     if (target === "posts") tv({ mode: "teletext" });
@@ -3985,6 +4058,8 @@ export async function mount({
     built.liftCalculator(false, true);
     stage.style.cursor = "";
     setHover(null);
+    tourHot = null;
+    actor?.reset();
   }
 
   /* ---- 电视、录像机与录音机：由启动器驱动 */
@@ -4093,12 +4168,12 @@ export async function mount({
     if (pointerMoved && pointerActive && atDesk && !gesture?.moved) {
       pointerMoved = false;
       const hit = pick();
-      stage.style.cursor = hit ? "pointer" : "";
+      stage.style.cursor = hit ? (hit.id === "avatar" ? "grab" : "pointer") : "";
       setHover(hit?.id ?? null);
     }
 
     for (const [id, entry] of Object.entries(built.hotspots)) {
-      const goal = id === hoverId ? 1 : 0;
+      const goal = id === hoverId || id === tourHot ? 1 : 0;
       if (Math.abs(heat[id] - goal) < 0.002) continue;
       heat[id] = lerp(heat[id], goal, 1 - Math.exp(-dt * 10));
       for (const item of entry.materials) {
@@ -4108,6 +4183,7 @@ export async function mount({
     }
 
     for (const tick of built.tickers) tick(time, dt, realDt);
+    actor?.update(dt, realDt, time);
 
     blinkAt += dt;
     if (blinkAt > 0.5) {
@@ -4193,6 +4269,8 @@ export async function mount({
     canvas.removeEventListener("webglcontextlost", onContextLost);
     window.clearTimeout(armTimer);
     stopIntro();
+    actor?.dispose();
+    actor = null;
     stage.removeEventListener("pointerdown", onPointerDown);
     stage.removeEventListener("pointermove", onPointerMove);
     stage.removeEventListener("pointerup", onPointerUp);
@@ -4279,6 +4357,18 @@ export async function mount({
       goTo("desk");
       return deskIndex;
     },
+    /* 直接换到某个书桌机位（小人带逛时用）。 */
+    setDeskView(index) {
+      if (current !== "desk" || index === deskIndex || !deskPresets[index]) return;
+      deskIndex = index;
+      computePoses();
+      goTo("desk");
+    },
+    /* 让某件能点的物件亮起来（和鼠标悬停时一样），传 null 取消。 */
+    highlight(id) {
+      tourHot = id || null;
+    },
+    addActor,
     onLayout(listener) {
       layoutListeners.add(listener);
       return () => layoutListeners.delete(listener);

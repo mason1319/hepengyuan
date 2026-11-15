@@ -13,7 +13,9 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261114-preload";
+  const SCENE_URL = "/room/scene.js?v=20261115-voice";
+  /* 小人（御剑飞行的迷你何鹏远）：房间亮起来之后才加载，版本号和上面保持一致。 */
+  const AVATAR_URL = "/room/avatar.js?v=20261115-voice";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -66,7 +68,7 @@
       },
       nav: { about: "关于我", work: "履历与作品", posts: "文章与档案", film: "录像带", music: "录音机 · 原创音乐", online: "联系方式" },
       hints: {
-        desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · C 计算器 · N 名片 · M 录音机 · L 台灯",
+        desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · C 计算器 · N 名片 · M 录音机 · L 台灯 · G 小人带逛",
         calc: "数字键与 + − × ÷ 计算 · Enter 等于 · Backspace 退格 · Delete 清零 · ESC 放下",
         orbit: "拖动 转视角 · 右键拖动 平移 · 滚轮 缩放 · 双击 复位",
         card: "点名片或空格 翻面 · 拖动 转着看 · ESC 放回名片盒",
@@ -131,7 +133,7 @@
       },
       nav: { about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Videotapes", music: "Boombox · original music", online: "Contact" },
       hints: {
-        desk: "A about · W work · P posts · F tapes · O online · C calculator · N card · M recorder · L lamp",
+        desk: "A about · W work · P posts · F tapes · O online · C calculator · N card · M recorder · L lamp · G guided tour",
         calc: "Digits and + − × ÷ to calculate · Enter equals · Backspace delete · Delete clear · ESC put it down",
         orbit: "Drag to look around · right-drag to pan · scroll to zoom · double-click to reset",
         card: "Click the card or Space to flip · drag to turn it · ESC put it back",
@@ -175,7 +177,7 @@
       ],
       hotspots: {
         about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Tapes · promo film & media",
-        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", tape: "Boombox · play a cassette", card: "Business card · take one out", cassette: "Put it in the boombox", book: "Projects",
+        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", tape: "Boombox · play a cassette", card: "Business card · take one out", avatar: "Tap to talk · drag me", cassette: "Put it in the boombox", book: "Projects",
         deckPlay: "Play / pause", deckPause: "Pause", deckStop: "Stop · eject", deckNext: "Next track", deckPrev: "Previous track", deckRec: "Record key (just for fun)", calc: "Calculator · pick it up",
         tvPower: "TV on/off", tvPreset: "Channel presets 1–6", tvChannel: "Change channel", tvVolume: "Volume", pcPower: "Computer on/off", pcBright: "Screen brightness",
       },
@@ -201,7 +203,7 @@
       },
       nav: { about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Videokassetten", music: "Kassettenrekorder · eigene Musik", online: "Kontakt" },
       hints: {
-        desk: "A Über mich · W Werdegang · P Beiträge · F Kassetten · O Kontakt · C Rechner · N Karte · M Rekorder · L Lampe",
+        desk: "A Über mich · W Werdegang · P Beiträge · F Kassetten · O Kontakt · C Rechner · N Karte · M Rekorder · L Lampe · G Rundgang",
         calc: "Ziffern und + − × ÷ zum Rechnen · Enter gleich · Rücktaste löschen · Entf zurücksetzen · ESC weglegen",
         orbit: "Ziehen zum Umsehen · Rechts ziehen zum Verschieben · Scrollen zum Zoomen · Doppelklick zurücksetzen",
         card: "Karte anklicken oder Leertaste zum Umdrehen · ziehen zum Drehen · ESC zurücklegen",
@@ -245,7 +247,7 @@
       ],
       hotspots: {
         about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Kassetten · Imagefilm & Medien",
-        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", tape: "Kassettenrekorder · Kassette abspielen", card: "Visitenkarte · eine herausnehmen", cassette: "In den Rekorder legen", book: "Projekte",
+        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", tape: "Kassettenrekorder · Kassette abspielen", card: "Visitenkarte · eine herausnehmen", avatar: "Antippen zum Reden · zieh mich", cassette: "In den Rekorder legen", book: "Projekte",
         deckPlay: "Wiedergabe / Pause", deckPause: "Pause", deckStop: "Stopp · Auswurf", deckNext: "Nächster Titel", deckPrev: "Vorheriger Titel", deckRec: "Aufnahmetaste (nur zum Spaß)", calc: "Taschenrechner · in die Hand nehmen",
         tvPower: "Fernseher ein/aus", tvPreset: "Programmtasten 1–6", tvChannel: "Kanal wechseln", tvVolume: "Lautstärke", pcPower: "Computer ein/aus", pcBright: "Bildschirmhelligkeit",
       },
@@ -271,7 +273,7 @@
       },
       nav: { about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "비디오테이프", music: "카세트 · 창작 음악", online: "연락처" },
       hints: {
-        desk: "A 소개 · W 이력 · P 글 · F 테이프 · O 연락처 · C 계산기 · N 명함 · M 카세트 · L 스탠드",
+        desk: "A 소개 · W 이력 · P 글 · F 테이프 · O 연락처 · C 계산기 · N 명함 · M 카세트 · L 스탠드 · G 안내",
         calc: "숫자와 + − × ÷ 로 계산 · Enter 결과 · Backspace 지우기 · Delete 초기화 · ESC 내려놓기",
         orbit: "드래그로 둘러보기 · 오른쪽 드래그로 이동 · 스크롤로 확대 · 더블클릭으로 원위치",
         card: "명함을 누르거나 Space로 뒤집기 · 드래그로 돌려 보기 · ESC 명함 넣기",
@@ -315,7 +317,7 @@
       ],
       hotspots: {
         about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "테이프 · 홍보 영상과 미디어",
-        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", tape: "카세트 · 음악 듣기", card: "명함 · 한 장 꺼내기", cassette: "카세트에 넣기", book: "작업",
+        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", tape: "카세트 · 음악 듣기", card: "명함 · 한 장 꺼내기", avatar: "누르면 말해요 · 끌어 보세요", cassette: "카세트에 넣기", book: "작업",
         deckPlay: "재생 / 일시정지", deckPause: "일시정지", deckStop: "정지 · 꺼내기", deckNext: "다음 곡", deckPrev: "이전 곡", deckRec: "녹음 버튼(그냥 눌러 보기)", calc: "계산기 · 들어서 쓰기",
         tvPower: "TV 켜기/끄기", tvPreset: "채널 프리셋 1–6", tvChannel: "채널 바꾸기", tvVolume: "볼륨", pcPower: "컴퓨터 켜기/끄기", pcBright: "화면 밝기",
       },
@@ -1448,6 +1450,8 @@
   let view = "desk";
   let capability = null;
   let unLayout = null;
+  let guide = null; /* 小人：/room/avatar.js 的 start() 返回的控制器 */
+  let guideLoading = false;
 
   function ensureOverlay() {
     if (overlay) {
@@ -1661,6 +1665,7 @@
     }
     const previous = view;
     view = next;
+    guide?.setView(next);
     const token = (viewToken += 1);
     if (previous === "film") stopMedia();
     if (next === "film") startTape(Number.isInteger(tape) ? tape : 0);
@@ -1723,6 +1728,8 @@
         ui.credits.focus();
       } else if (view !== "desk") {
         openView("desk");
+      } else {
+        guide?.key("escape");
       }
       event.preventDefault();
       return;
@@ -1756,6 +1763,11 @@
     }
     if (view === "desk" && key === "v") {
       controller?.cycleDeskView();
+      event.preventDefault();
+      return;
+    }
+    /* G：小人带逛 / 停止；H：让小人说话。 */
+    if (view === "desk" && guide?.key(key)) {
       event.preventDefault();
       return;
     }
@@ -1914,9 +1926,34 @@
   }
 
   /* ---------------------------------------------------------------- 进出房间 */
+  /* 小人在房间亮起来之后才加载：不拖慢进房间；加载失败就没有小人，其它不受影响。 */
+  function loadGuide() {
+    if (guide || guideLoading || state !== "open" || !controller) return;
+    guideLoading = true;
+    import(AVATAR_URL)
+      .then((module) => {
+        guideLoading = false;
+        if (guide || state !== "open" || !controller || !overlay) return;
+        guide = module.start({
+          room: controller,
+          overlay,
+          lang: LANG,
+          coarse: matches("(pointer: coarse)"),
+          openView: (id) => openView(id),
+          session,
+        });
+        guide?.setView(view);
+      })
+      .catch(() => {
+        guideLoading = false;
+      });
+  }
+
   function teardown() {
     unLayout?.();
     unLayout = null;
+    guide?.dispose();
+    guide = null;
     clearItem();
     media.tape = -1;
     controller?.dispose();
@@ -2000,6 +2037,8 @@
       controller.start();
       root.setAttribute("data-room", "on");
       state = "open";
+      guide?.setView("desk");
+      window.setTimeout(loadGuide, 1200);
       return;
     }
 
@@ -2063,6 +2102,7 @@
     root.setAttribute("data-room", "on");
     state = "open";
     window.setTimeout(introduceRoom, 900);
+    window.setTimeout(loadGuide, 1200);
   }
 
   function leave({ target, persist }) {
@@ -2075,6 +2115,7 @@
     toggleSound(false);
     stopMusic(false);
     closePanels();
+    guide?.setView("away");
 
     setBackgroundInert(false);
     root.setAttribute("data-room", "leaving");

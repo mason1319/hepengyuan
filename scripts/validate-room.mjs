@@ -5,7 +5,7 @@
    3. 房间里出现的履历与首页逐字一致，不在 3D 场景里新增任何事实。 */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 
 const THREE_PATH = "assets/vendor/three-0.170.0.module.min.js";
 /* 来自 npm three@0.170.0 的 build/three.module.min.js，下载时已核对过 tarball 的 sha512。 */
@@ -14,7 +14,7 @@ const THREE_SHA256 = "08fd7545d13d2c7fb65ab691530a802dafefd638596501854f267d0fb1
 const failures = [];
 const fail = (message) => failures.push(message);
 
-for (const file of ["room/boot.js", "room/scene.js", THREE_PATH, "assets/vendor/three-LICENSE.txt"]) {
+for (const file of ["room/boot.js", "room/scene.js", "room/avatar.js", THREE_PATH, "assets/vendor/three-LICENSE.txt"]) {
   try {
     const info = await stat(file);
     if (!info.isFile() || info.size === 0) fail(`${file}: missing or empty`);
@@ -28,6 +28,7 @@ if (failures.length === 0) {
   const css = await readFile("styles.css", "utf8");
   const boot = await readFile("room/boot.js", "utf8");
   const scene = await readFile("room/scene.js", "utf8");
+  const avatar = await readFile("room/avatar.js", "utf8");
   const three = await readFile(THREE_PATH);
 
   if (three.length >= 1_000_000) fail(`${THREE_PATH}: vendored library must stay below 1 MB`);
@@ -48,7 +49,16 @@ if (failures.length === 0) {
   if (imports.length !== 1 || imports[0] !== `/${THREE_PATH}`) {
     fail(`room/scene.js: must import only /${THREE_PATH} (found ${JSON.stringify(imports)})`);
   }
-  for (const [name, source] of [["room/boot.js", boot], ["room/scene.js", scene]]) {
+  /* 小人模块不自己 import three.js：由 scene.js 通过 host 交进去，保证是同一份。 */
+  if (/^\s*import\s/m.test(avatar)) fail("room/avatar.js: must not import anything; three.js comes in through the host from scene.js");
+  if (!/export function start\(/.test(avatar)) fail("room/avatar.js: must export start()");
+  /* node --check 把 .js 当脚本解析，认不出 export：按模块语法检查。 */
+  try {
+    execFileSync(process.execPath, ["--input-type=module", "--check"], { input: avatar, stdio: "pipe" });
+  } catch (error) {
+    fail(`room/avatar.js: syntax error (${String(error.stderr || error.message).split("\n").find((line) => /Error/.test(line)) || "see node --check"})`);
+  }
+  for (const [name, source] of [["room/boot.js", boot], ["room/scene.js", scene], ["room/avatar.js", avatar]]) {
     if (/https?:\/\//.test(source)) fail(`${name}: must not reference external URLs (CSP is script-src 'self')`);
     if (/\beval\s*\(|new\s+Function\s*\(/.test(source)) fail(`${name}: eval / new Function is blocked by the site CSP`);
     if (/\.innerHTML\b|setAttribute\(\s*["']style["']|\.cssText\b|createElement\(\s*["']style["']/.test(source)) {
@@ -68,6 +78,30 @@ if (failures.length === 0) {
   if (bootTag && sceneVersion && bootTag[1] !== sceneVersion) {
     fail(`room version mismatch: index.html loads boot.js?v=${bootTag[1]} but boot.js loads scene.js?v=${sceneVersion}`);
   }
+  const avatarVersion = boot.match(/const AVATAR_URL = "\/room\/avatar\.js\?v=([\w-]+)";/)?.[1];
+  if (!avatarVersion) fail("room/boot.js: AVATAR_URL must point at /room/avatar.js with a ?v= version");
+  if (avatarVersion && sceneVersion && avatarVersion !== sceneVersion) {
+    fail(`room version mismatch: boot.js loads scene.js?v=${sceneVersion} but avatar.js?v=${avatarVersion}`);
+  }
+
+  /* ---- 小人说话只能用本人录音：登记在 VOICE 里的每句都要有对应文件，单个文件小于 1MB */
+  const voiceIds = [...(avatar.match(/const VOICE = new Set\(\[([\s\S]*?)\]\);/)?.[1] ?? "").matchAll(/"([\w-]+)"/g)].map((match) => match[1]);
+  for (const id of voiceIds) {
+    try {
+      const info = await stat(`assets/room/voice/${id}.mp3`);
+      if (info.size >= 1_000_000) fail(`assets/room/voice/${id}.mp3: voice clips must stay below 1 MB`);
+    } catch {
+      fail(`room/avatar.js: VOICE lists "${id}" but assets/room/voice/${id}.mp3 is missing`);
+    }
+  }
+  /* 反过来也一样：目录里不放没登记的录音（多半是切错的或被替换掉的），免得发布出去没人用。 */
+  for (const file of await readdir("assets/room/voice").catch(() => [])) {
+    if (file.startsWith(".")) continue;
+    if (!file.endsWith(".mp3") || !voiceIds.includes(file.slice(0, -4))) {
+      fail(`assets/room/voice/${file}: not listed in VOICE in room/avatar.js (only registered .mp3 clips belong here)`);
+    }
+  }
+  if (/speechSynthesis|SpeechSynthesisUtterance/.test(avatar)) fail("room/avatar.js: the avatar only speaks with recorded clips of He Pengyuan; do not use speech synthesis");
 
   for (const key of ["hpy-room", "hpy-room-seen"]) {
     if (!html.includes(`"${key}"`) || !boot.includes(`"${key}"`)) {
