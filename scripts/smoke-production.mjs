@@ -22,8 +22,8 @@ const checks = [
   { path: "/room/boot.js", type: "javascript", includes: "hpy-room" },
   { path: "/room/scene.js", type: "javascript", includes: "export async function mount" },
   { path: "/room/avatar.js", type: "javascript", includes: "export function start" },
-  { path: "/assets/room/voice/hello.mp3", type: "audio/mpeg", method: "HEAD" },
-  { path: "/assets/room/voice/stop-tv.mp3", type: "audio/mpeg", method: "HEAD" },
+  { path: "/assets/room/voice/hello.mp3", type: "audio/mpeg", minBytes: 10_000 },
+  { path: "/assets/room/voice/stop-tv.mp3", type: "audio/mpeg", minBytes: 10_000 },
   { path: "/assets/vendor/three-0.170.0.module.min.js", type: "javascript", includes: "SPDX-License-Identifier: MIT" },
 ];
 
@@ -43,6 +43,13 @@ for (const check of checks) {
     const length = Number(response.headers.get("content-length") || "0");
     if (!Number.isFinite(length) || length <= 0) {
       throw new Error(`${target.href} returned an empty or missing Content-Length.`);
+    }
+  } else if (check.minBytes) {
+    /* 静态资源（Workers Static Assets）的 HEAD 响应不带 Content-Length，只有 Worker 从 R2 发的 /media/* 才带。
+       所以仓库里的小二进制文件不用 HEAD，直接取回来量大小。 */
+    const size = (await response.arrayBuffer()).byteLength;
+    if (size < check.minBytes) {
+      throw new Error(`${target.href} is only ${size} bytes; expected at least ${check.minBytes}.`);
     }
   } else if (check.json) {
     const payload = await response.json();
