@@ -50,6 +50,18 @@ const MUSIC_ROUTES = new Map([
    所以这些文件在 wrangler.jsonc 里标成先过 Worker，由 handleVoiceClip 从 ASSETS 取出来自己切片应答。 */
 const VOICE_CLIP_PATH = /^\/assets\/room\/voice\/[\w-]+\.mp3$/;
 const VOICE_CLIP_CACHE = "public, max-age=604800"; /* 七天；换录音时 room/avatar.js 的 VOICE_REV 会改网址 */
+/* Aggie 官网上的两部片子，给 3D 房间的放映机用。由本站代取：访客的浏览器只跟本站打交道（CSP 不用为别的域名放开），
+   Aggie 那边换了片子这里自动跟着换。上游地址是写死的两条，访客改不了，不会被拿来代取别的东西。 */
+const AGGIE_FILMS = new Map([
+  ["/media/aggie/learning-15s.mp4", "https://aggieai.me/media/aggie-learning-15s.mp4"],
+  ["/media/aggie/brand-film.mp4", "https://aggieai.me/media/aggie-brand-promo.mp4"],
+]);
+/* 出口登记表：首页上带 data-go 的链接，发布时由 scripts/build.mjs 汇成 /projects.json。
+   /go/<id> 按它跳转（外站地址带上来源标记）并记一次数；POST 只记数，给页面上的 sendBeacon 用。 */
+const GO_PATH = /^\/go\/([a-z0-9-]{1,64})$/;
+const GO_SOURCES = new Set(["page", "room", "link"]);
+const GO_REGISTRY_TTL_MS = 60_000;
+let goRegistry = { loadedAt: 0, exits: null };
 const AGGIE_3A_ROUTE = "/aggie-3a/";
 const AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v6.html";
 
@@ -195,6 +207,11 @@ async function handleAdminApi(request, env, identity, baseUrl) {
     if (request.method === "PATCH") { assertSameOrigin(request, env); return jsonResponse({ item: await updateArticle(env, articleId, await readJson(request, ARTICLE_JSON_LIMIT_BYTES)) }); }
     if (request.method === "DELETE") { assertSameOrigin(request, env); return jsonResponse(await deleteArticle(env, articleId)); }
     return methodNotAllowed(["PATCH", "DELETE"]);
+  }
+
+  if (path === "/api/admin/go-stats") {
+    if (request.method !== "GET") return methodNotAllowed(["GET"]);
+    return jsonResponse({ identity: { email: identity.email }, since: "60d", items: await listGoClicks(env) });
   }
 
   if (path === "/api/admin/media") {
@@ -418,6 +435,98 @@ async function handleVoiceClip(request, env) {
   return new Response(body, { status: range ? 206 : 200, headers });
 }
 
+/* 代取 Aggie 的片子：把 Range / 条件请求头原样带给上游，状态码和长度、范围、ETag 带回来。 */
+async function handleRelayedFilm(request, upstream) {
+  if (request.method !== "GET" && request.method !== "HEAD") return methodNotAllowed(["GET", "HEAD"]);
+  const forward = new Headers();
+  for (const name of ["Range", "If-Range", "If-None-Match"]) {
+    const value = request.headers.get(name);
+    if (value) forward.set(name, value);
+  }
+  let response;
+  try {
+    response = await fetch(upstream, { method: request.method, headers: forward });
+  } catch (error) {
+    console.error("Relayed film fetch failed", error);
+    return textResponse("Film is temporarily unavailable", 502);
+  }
+  if (![200, 206, 304, 416].includes(response.status)) return textResponse("Film is temporarily unavailable", 502);
+
+  const headers = new Headers({
+    "Content-Type": "video/mp4",
+    "Accept-Ranges": "bytes",
+    "Cache-Control": FIXED_MEDIA_CACHE,
+    ...securityHeaders,
+  });
+  for (const name of ["Content-Length", "Content-Range", "ETag", "Last-Modified"]) {
+    const value = response.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  const bodyless = request.method === "HEAD" || response.status === 304;
+  return new Response(bodyless ? null : response.body, { status: response.status, headers });
+}
+
+async function loadGoExits(env, origin) {
+  if (goRegistry.exits && Date.now() - goRegistry.loadedAt < GO_REGISTRY_TTL_MS) return goRegistry.exits;
+  if (!env.ASSETS) return goRegistry.exits;
+  try {
+    const response = await env.ASSETS.fetch(new Request(new URL("/projects.json", origin)));
+    if (response.ok) {
+      const data = await response.json();
+      goRegistry = { loadedAt: Date.now(), exits: data?.exits && typeof data.exits === "object" ? data.exits : {} };
+    }
+  } catch (error) {
+    console.error("Exit registry could not be read", error);
+  }
+  return goRegistry.exits;
+}
+
+async function countGoClick(env, id, source) {
+  try {
+    await env.MEDIA_DB.prepare(
+      `INSERT INTO go_clicks (exit_id, day, source, clicks) VALUES (?1, ?2, ?3, 1)
+       ON CONFLICT(exit_id, day, source) DO UPDATE SET clicks = clicks + 1`,
+    ).bind(id, new Date().toISOString().slice(0, 10), source).run();
+  } catch (error) {
+    /* 记数失败不能挡住访客的跳转。 */
+    console.error("Exit click was not counted", error);
+  }
+}
+
+async function handleGo(request, env, ctx, id) {
+  if (request.method !== "GET" && request.method !== "HEAD" && request.method !== "POST") return methodNotAllowed(["GET", "HEAD", "POST"]);
+  const url = new URL(request.url);
+  const exit = (await loadGoExits(env, url.origin))?.[id];
+  if (!exit?.url) return textResponse("Unknown exit", 404);
+
+  const from = url.searchParams.get("from");
+  const source = GO_SOURCES.has(from) ? from : "link";
+  if (request.method !== "HEAD") {
+    const counting = countGoClick(env, id, source);
+    if (ctx?.waitUntil) ctx.waitUntil(counting);
+    else await counting;
+  }
+  const headers = { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow", ...securityHeaders };
+  if (request.method === "POST") return new Response(null, { status: 204, headers });
+
+  /* 目标只来自本站发布时生成的登记表，不接受任何来自请求的地址。外站带上来源标记，对方的统计里认得出“来自总部”。 */
+  const target = new URL(exit.url, url.origin);
+  if (target.origin !== url.origin) {
+    target.searchParams.set("utm_source", "hepengyuan.com");
+    target.searchParams.set("utm_medium", source);
+    target.searchParams.set("utm_campaign", id);
+  }
+  return new Response(null, { status: 302, headers: { Location: target.href, ...headers } });
+}
+
+async function listGoClicks(env) {
+  const since = new Date(Date.now() - 60 * 86_400_000).toISOString().slice(0, 10);
+  const result = await env.MEDIA_DB.prepare(
+    "SELECT exit_id AS id, day, source, clicks FROM go_clicks WHERE day >= ?1 ORDER BY day DESC, clicks DESC LIMIT 2000",
+  ).bind(since).all();
+  return result.results || [];
+}
+
 async function handleMediaPoster(request, env, row) {
   if (request.method !== "GET" && request.method !== "HEAD") return methodNotAllowed(["GET", "HEAD"]);
   if (!row.thumbnail_key) return textResponse("Media poster not found", 404);
@@ -472,10 +581,14 @@ async function handleAggie3AExperience(request, env) {
     .transform(new Response(object.body, { headers }));
 }
 
-async function handlePublicDynamic(request, env, baseUrl) {
+async function handlePublicDynamic(request, env, baseUrl, ctx) {
   const url = new URL(request.url);
   const path = url.pathname;
   const headOnly = request.method === "HEAD";
+
+  const goId = GO_PATH.exec(path)?.[1];
+  if (goId) return handleGo(request, env, ctx, goId);
+  if (AGGIE_FILMS.has(path)) return handleRelayedFilm(request, AGGIE_FILMS.get(path));
 
   if (path === "/aggie-3a" || path === "/aggie-3a/index.html") {
     return new Response(null, { status: 308, headers: { Location: AGGIE_3A_ROUTE, ...securityHeaders } });
@@ -591,7 +704,7 @@ function isPublicStaticPath(pathname) {
   return PUBLIC_STATIC_FILES.has(pathname) || pathname.startsWith("/assets/") || pathname.startsWith("/samples/");
 }
 
-async function routeRequest(request, env) {
+async function routeRequest(request, env, ctx) {
   const url = new URL(request.url);
   const path = url.pathname;
   const baseUrl = siteBase(env);
@@ -605,7 +718,7 @@ async function routeRequest(request, env) {
 
   if (VOICE_CLIP_PATH.test(path)) return handleVoiceClip(request, env);
 
-  const dynamic = await handlePublicDynamic(request, env, baseUrl);
+  const dynamic = await handlePublicDynamic(request, env, baseUrl, ctx);
   if (dynamic) return dynamic;
 
   if (isPublicStaticPath(path)) {
@@ -634,9 +747,9 @@ function errorResponse(request, error) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     try {
-      return await routeRequest(request, env);
+      return await routeRequest(request, env, ctx);
     } catch (error) {
       return errorResponse(request, error);
     }

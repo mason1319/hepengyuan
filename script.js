@@ -183,3 +183,33 @@ if (reducedMotion || !IntersectionObserverConstructor) {
     revealAll();
   }
 }
+
+/* 出口登记：带 data-go 的链接通往各个项目（Aggie 官网、演示、别的系统）。点的时候给本站记一次数——只记“哪个出口、
+   哪一天、从页面还是 3D 房间”，不记是谁；通往外站的地址顺便带上来源标记，对方的统计里认得出是从这里去的。
+   href 始终是真实地址：没有 JS、右键复制链接、搜索引擎看到的都是它，这里只在点击那一下补标记。 */
+try {
+  document.addEventListener("click", (event) => {
+    const link = event.target instanceof Element ? event.target.closest("a[data-go]") : null;
+    const id = link?.dataset?.go;
+    if (!id || !/^[a-z0-9-]{1,64}$/.test(id)) return;
+    const source = link.closest("#room") ? "room" : "page";
+    try {
+      navigator.sendBeacon?.(`/go/${id}?from=${source}`);
+    } catch {
+      /* 记不上数不影响跳转。 */
+    }
+    try {
+      const target = new URL(link.href);
+      if (target.origin !== window.location.origin && !target.searchParams.has("utm_source")) {
+        target.searchParams.set("utm_source", "hepengyuan.com");
+        target.searchParams.set("utm_medium", source);
+        target.searchParams.set("utm_campaign", id);
+        link.href = target.href;
+      }
+    } catch {
+      /* 地址解析不了就原样跳转。 */
+    }
+  }, true);
+} catch {
+  /* 没有 document（校验脚本里的最小环境）时跳过。 */
+}

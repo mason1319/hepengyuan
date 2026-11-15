@@ -15,6 +15,7 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /api/admin
+Disallow: /go/
 
 Sitemap: https://hepengyuan.com/sitemap.xml
 Sitemap: https://hepengyuan.com/sitemap-media.xml

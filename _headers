@@ -42,3 +42,7 @@
 /llms.txt
   Cache-Control: public, max-age=3600
   Access-Control-Allow-Origin: *
+
+/projects.json
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *

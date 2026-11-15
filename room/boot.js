@@ -13,14 +13,15 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261116-guard";
+  const SCENE_URL = "/room/scene.js?v=20261116-cinema2";
   /* 小人（御剑飞行的迷你何鹏远）：房间亮起来之后才加载，版本号和上面保持一致。 */
-  const AVATAR_URL = "/room/avatar.js?v=20261116-guard";
+  const AVATAR_URL = "/room/avatar.js?v=20261116-cinema2";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
   const SEEN_KEY = "hpy-room-seen"; /* 本次会话已经进过房间，回到首页不再自动弹出 */
   const INTRO_KEY = "hpy-room-intro"; /* 本次会话已经在手机上演示过左右拖动 */
+  const LIGHT_KEY = "hpy-room-light"; /* 本次访问里房间停在 "day"（晴天午后）还是 "night"（雨夜） */
   const NOTICE_KEY = "hpy-static-notice"; /* 访客关掉的那条提示的原因（旧版本存的是 "off"）；只压住同一个原因的开场提示 */
   const FADE_MS = 460;
   /* scene.js 依赖的 three.js；打开房间时和 scene.js 一起预取，两个文件并行下载，而不是等 scene.js 到了才开始拉 three.js。
@@ -53,7 +54,7 @@
   const STRINGS = {
     zh: {
       menu: { about: "关于", work: "履历", posts: "文章", film: "录像带", music: "音乐", online: "联系", services: "服务" },
-      buttons: { back: "回到桌面", notepad: "放下记事本", eject: "退带", hangup: "挂断", calc: "放下计算器", cardBack: "放回名片盒", flip: "翻面", play: "播放", pause: "暂停", next: "下一段", credits: "致谢", soundOn: "声音：开", soundOff: "声音：关", lofi: "静态版", view: "视角" },
+      buttons: { back: "回到桌面", notepad: "放下记事本", eject: "退带", hangup: "挂断", calc: "放下计算器", cardBack: "放回名片盒", flip: "翻面", play: "播放", pause: "暂停", next: "下一段", credits: "致谢", soundOn: "声音：开", soundOff: "声音：关", lofi: "静态版", view: "视角", light: "天色" },
       noticeIntro: "个人网站是互联网上少数还能好玩的地方，所以这里还有一个可交互的版本。",
       reasons: {
         "no-webgl": "你的浏览器没有提供 WebGL 2，所以看到的是这个静态版本。",
@@ -68,7 +69,7 @@
       },
       nav: { about: "关于我", work: "履历与作品", posts: "文章与档案", film: "录像带", music: "录音机 · 原创音乐", online: "联系方式" },
       hints: {
-        desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · C 计算器 · N 名片 · M 录音机 · L 台灯 · G 小人带逛",
+        desk: "A 关于 · W 履历 · P 文章 · F 录像带 · O 联系 · C 计算器 · N 名片 · M 录音机 · L 台灯 · T 天色 · R 放映机 · G 小人带逛",
         calc: "数字键与 + − × ÷ 计算 · Enter 等于 · Backspace 退格 · Delete 清零 · ESC 放下",
         orbit: "拖动 转视角 · 右键拖动 平移 · 滚轮 缩放 · 双击 复位",
         card: "点名片或空格 翻面 · 拖动 转着看 · ESC 放回名片盒",
@@ -97,6 +98,8 @@
       next: "下一段（→）",
       sound: "雨声",
       lofi: "切到静态版，并记住这个选择",
+      cinema: { name: "放映机", pick: "选一盘胶片", again: "再放一遍", menu: "换一盘", exits: "接着去", loading: "正在上片…", failed: "这盘片子暂时取不到", own: "何鹏远的宣传片", hint: "1–9 选片 · 空格 暂停 / 继续 · ESC 关掉放映机", back: "关掉放映机" },
+      light: { day: "天色：现在是晴天午后。拉一下灯绳回到雨夜", night: "天色：现在是雨夜。拉一下灯绳换成晴天午后" },
       loading: "正在布置房间…",
       loadingSlow: "网络有点慢，还在下载 3D 房间…",
       skip: "先看静态版",
@@ -118,7 +121,7 @@
     },
     en: {
       menu: { about: "ABOUT", work: "WORK", posts: "POSTS", film: "FILM", music: "MUSIC", online: "ONLINE", services: "SERVICES" },
-      buttons: { back: "BACK TO DESK", notepad: "PUT DOWN NOTEPAD", eject: "EJECT", hangup: "HANG UP", calc: "PUT DOWN CALCULATOR", cardBack: "PUT CARD BACK", flip: "FLIP", play: "PLAY", pause: "PAUSE", next: "NEXT", credits: "CREDITS", soundOn: "SOUND ON", soundOff: "SOUND OFF", lofi: "LO-FI", view: "VIEW" },
+      buttons: { back: "BACK TO DESK", notepad: "PUT DOWN NOTEPAD", eject: "EJECT", hangup: "HANG UP", calc: "PUT DOWN CALCULATOR", cardBack: "PUT CARD BACK", flip: "FLIP", play: "PLAY", pause: "PAUSE", next: "NEXT", credits: "CREDITS", soundOn: "SOUND ON", soundOff: "SOUND OFF", lofi: "LO-FI", view: "VIEW", light: "LIGHT" },
       noticeIntro: "Personal websites are one of the few places on the internet that can still be fun, so there is also an interactive version here. ",
       reasons: {
         "no-webgl": "Your browser doesn't provide WebGL 2, so you're seeing this static version.",
@@ -133,7 +136,7 @@
       },
       nav: { about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Videotapes", music: "Boombox · original music", online: "Contact" },
       hints: {
-        desk: "A about · W work · P posts · F tapes · O online · C calculator · N card · M recorder · L lamp · G guided tour",
+        desk: "A about · W work · P posts · F tapes · O online · C calculator · N card · M recorder · L lamp · T light · R projector · G guided tour",
         calc: "Digits and + − × ÷ to calculate · Enter equals · Backspace delete · Delete clear · ESC put it down",
         orbit: "Drag to look around · right-drag to pan · scroll to zoom · double-click to reset",
         card: "Click the card or Space to flip · drag to turn it · ESC put it back",
@@ -162,6 +165,8 @@
       next: "Next (→)",
       sound: "Rain sound",
       lofi: "Switch to the static version and remember this choice",
+      cinema: { name: "Projector", pick: "Pick a reel", again: "Play again", menu: "Other reels", exits: "Next stop", loading: "Threading the film…", failed: "This reel can't be fetched right now", own: "He Pengyuan's promo film", hint: "1–9 pick a reel · Space pause / resume · ESC switch the projector off", back: "SWITCH PROJECTOR OFF" },
+      light: { day: "Light: a sunny afternoon now. Pull the cord for the rainy night", night: "Light: a rainy night now. Pull the cord for a sunny afternoon" },
       loading: "Setting up the room…",
       loadingSlow: "Slow connection — still downloading the 3D room…",
       skip: "SKIP TO STATIC VERSION",
@@ -177,7 +182,7 @@
       ],
       hotspots: {
         about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Tapes · promo film & media",
-        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", tape: "Boombox · play a cassette", card: "Business card · take one out", avatar: "Tap to talk · drag me", cassette: "Put it in the boombox", book: "Projects",
+        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", cord: "Pull cord · change the light", projector: "Projector · films on the wall", tape: "Boombox · play a cassette", card: "Business card · take one out", avatar: "Tap to talk · drag me", cassette: "Put it in the boombox", book: "Projects",
         deckPlay: "Play / pause", deckPause: "Pause", deckStop: "Stop · eject", deckNext: "Next track", deckPrev: "Previous track", deckRec: "Record key (just for fun)", calc: "Calculator · pick it up",
         tvPower: "TV on/off", tvPreset: "Channel presets 1–6", tvChannel: "Change channel", tvVolume: "Volume", pcPower: "Computer on/off", pcBright: "Screen brightness",
       },
@@ -188,7 +193,7 @@
     },
     de: {
       menu: { about: "ÜBER MICH", work: "WERDEGANG", posts: "BEITRÄGE", film: "FILM", music: "MUSIK", online: "KONTAKT", services: "LEISTUNGEN" },
-      buttons: { back: "ZUM SCHREIBTISCH", notepad: "NOTIZBLOCK WEGLEGEN", eject: "AUSWERFEN", hangup: "AUFLEGEN", calc: "RECHNER WEGLEGEN", cardBack: "KARTE ZURÜCKLEGEN", flip: "UMDREHEN", play: "ABSPIELEN", pause: "PAUSE", next: "WEITER", credits: "CREDITS", soundOn: "TON AN", soundOff: "TON AUS", lofi: "LO-FI", view: "ANSICHT" },
+      buttons: { back: "ZUM SCHREIBTISCH", notepad: "NOTIZBLOCK WEGLEGEN", eject: "AUSWERFEN", hangup: "AUFLEGEN", calc: "RECHNER WEGLEGEN", cardBack: "KARTE ZURÜCKLEGEN", flip: "UMDREHEN", play: "ABSPIELEN", pause: "PAUSE", next: "WEITER", credits: "CREDITS", soundOn: "TON AN", soundOff: "TON AUS", lofi: "LO-FI", view: "ANSICHT", light: "LICHT" },
       noticeIntro: "Persönliche Websites gehören zu den wenigen Orten im Internet, die noch Spaß machen dürfen – deshalb gibt es hier auch eine interaktive Version. ",
       reasons: {
         "no-webgl": "Dein Browser bietet kein WebGL 2, deshalb siehst du diese statische Version.",
@@ -203,7 +208,7 @@
       },
       nav: { about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Videokassetten", music: "Kassettenrekorder · eigene Musik", online: "Kontakt" },
       hints: {
-        desk: "A Über mich · W Werdegang · P Beiträge · F Kassetten · O Kontakt · C Rechner · N Karte · M Rekorder · L Lampe · G Rundgang",
+        desk: "A Über mich · W Werdegang · P Beiträge · F Kassetten · O Kontakt · C Rechner · N Karte · M Rekorder · L Lampe · T Licht · R Projektor · G Rundgang",
         calc: "Ziffern und + − × ÷ zum Rechnen · Enter gleich · Rücktaste löschen · Entf zurücksetzen · ESC weglegen",
         orbit: "Ziehen zum Umsehen · Rechts ziehen zum Verschieben · Scrollen zum Zoomen · Doppelklick zurücksetzen",
         card: "Karte anklicken oder Leertaste zum Umdrehen · ziehen zum Drehen · ESC zurücklegen",
@@ -232,6 +237,8 @@
       next: "Weiter (→)",
       sound: "Regengeräusch",
       lofi: "Zur statischen Version wechseln und diese Wahl merken",
+      cinema: { name: "Projektor", pick: "Eine Filmrolle wählen", again: "Noch einmal", menu: "Andere Rollen", exits: "Weiter zu", loading: "Film wird eingelegt …", failed: "Diese Rolle ist gerade nicht abrufbar", own: "Imagefilm von He Pengyuan", hint: "1–9 Rolle wählen · Leertaste Pause / weiter · ESC Projektor aus", back: "PROJEKTOR AUS" },
+      light: { day: "Licht: jetzt ein sonniger Nachmittag. An der Schnur ziehen für die Regennacht", night: "Licht: jetzt eine Regennacht. An der Schnur ziehen für einen sonnigen Nachmittag" },
       loading: "Der Raum wird eingerichtet …",
       loadingSlow: "Langsame Verbindung – der 3D-Raum lädt noch …",
       skip: "ZUR STATISCHEN VERSION",
@@ -247,7 +254,7 @@
       ],
       hotspots: {
         about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Kassetten · Imagefilm & Medien",
-        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", tape: "Kassettenrekorder · Kassette abspielen", card: "Visitenkarte · eine herausnehmen", avatar: "Antippen zum Reden · zieh mich", cassette: "In den Rekorder legen", book: "Projekte",
+        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", cord: "Zugschalter · Licht wechseln", projector: "Projektor · Filme an der Wand", tape: "Kassettenrekorder · Kassette abspielen", card: "Visitenkarte · eine herausnehmen", avatar: "Antippen zum Reden · zieh mich", cassette: "In den Rekorder legen", book: "Projekte",
         deckPlay: "Wiedergabe / Pause", deckPause: "Pause", deckStop: "Stopp · Auswurf", deckNext: "Nächster Titel", deckPrev: "Vorheriger Titel", deckRec: "Aufnahmetaste (nur zum Spaß)", calc: "Taschenrechner · in die Hand nehmen",
         tvPower: "Fernseher ein/aus", tvPreset: "Programmtasten 1–6", tvChannel: "Kanal wechseln", tvVolume: "Lautstärke", pcPower: "Computer ein/aus", pcBright: "Bildschirmhelligkeit",
       },
@@ -258,7 +265,7 @@
     },
     ko: {
       menu: { about: "소개", work: "이력", posts: "글", film: "영상", music: "음악", online: "연락처", services: "서비스" },
-      buttons: { back: "책상으로", notepad: "메모장 내려놓기", eject: "꺼내기", hangup: "끊기", calc: "계산기 내려놓기", cardBack: "명함 넣기", flip: "뒤집기", play: "재생", pause: "일시정지", next: "다음", credits: "크레딧", soundOn: "소리 켬", soundOff: "소리 끔", lofi: "정적 버전", view: "시점" },
+      buttons: { back: "책상으로", notepad: "메모장 내려놓기", eject: "꺼내기", hangup: "끊기", calc: "계산기 내려놓기", cardBack: "명함 넣기", flip: "뒤집기", play: "재생", pause: "일시정지", next: "다음", credits: "크레딧", soundOn: "소리 켬", soundOff: "소리 끔", lofi: "정적 버전", view: "시점", light: "조명" },
       noticeIntro: "개인 웹사이트는 인터넷에서 아직 재미있을 수 있는 몇 안 되는 곳이라, 여기에는 인터랙티브 버전도 있습니다. ",
       reasons: {
         "no-webgl": "브라우저가 WebGL 2를 지원하지 않아 정적 버전을 보고 계십니다.",
@@ -273,7 +280,7 @@
       },
       nav: { about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "비디오테이프", music: "카세트 · 창작 음악", online: "연락처" },
       hints: {
-        desk: "A 소개 · W 이력 · P 글 · F 테이프 · O 연락처 · C 계산기 · N 명함 · M 카세트 · L 스탠드 · G 안내",
+        desk: "A 소개 · W 이력 · P 글 · F 테이프 · O 연락처 · C 계산기 · N 명함 · M 카세트 · L 스탠드 · T 조명 · R 영사기 · G 안내",
         calc: "숫자와 + − × ÷ 로 계산 · Enter 결과 · Backspace 지우기 · Delete 초기화 · ESC 내려놓기",
         orbit: "드래그로 둘러보기 · 오른쪽 드래그로 이동 · 스크롤로 확대 · 더블클릭으로 원위치",
         card: "명함을 누르거나 Space로 뒤집기 · 드래그로 돌려 보기 · ESC 명함 넣기",
@@ -302,6 +309,8 @@
       next: "다음(→)",
       sound: "빗소리",
       lofi: "정적 버전으로 바꾸고 이 선택 기억하기",
+      cinema: { name: "영사기", pick: "필름을 고르세요", again: "다시 보기", menu: "다른 필름", exits: "이어서 가기", loading: "필름을 거는 중…", failed: "이 필름을 지금 불러올 수 없어요", own: "허펑위안 홍보 영상", hint: "1–9 필름 선택 · 스페이스 일시정지 / 계속 · ESC 영사기 끄기", back: "영사기 끄기" },
+      light: { day: "조명: 지금은 맑은 오후. 줄을 당기면 비 오는 밤으로", night: "조명: 지금은 비 오는 밤. 줄을 당기면 맑은 오후로" },
       loading: "방을 꾸미는 중…",
       loadingSlow: "연결이 느려 3D 방을 아직 내려받는 중…",
       skip: "정적 버전 먼저 보기",
@@ -317,7 +326,7 @@
       ],
       hotspots: {
         about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "테이프 · 홍보 영상과 미디어",
-        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", tape: "카세트 · 음악 듣기", card: "명함 · 한 장 꺼내기", avatar: "누르면 말해요 · 끌어 보세요", cassette: "카세트에 넣기", book: "작업",
+        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", cord: "당김줄 스위치 · 빛 바꾸기", projector: "영사기 · 벽에 영화 상영", tape: "카세트 · 음악 듣기", card: "명함 · 한 장 꺼내기", avatar: "누르면 말해요 · 끌어 보세요", cassette: "카세트에 넣기", book: "작업",
         deckPlay: "재생 / 일시정지", deckPause: "일시정지", deckStop: "정지 · 꺼내기", deckNext: "다음 곡", deckPrev: "이전 곡", deckRec: "녹음 버튼(그냥 눌러 보기)", calc: "계산기 · 들어서 쓰기",
         tvPower: "TV 켜기/끄기", tvPreset: "채널 프리셋 1–6", tvChannel: "채널 바꾸기", tvVolume: "볼륨", pcPower: "컴퓨터 켜기/끄기", pcBright: "화면 밝기",
       },
@@ -498,6 +507,7 @@
       const url = new URL(window.location.href);
       url.searchParams.delete("room");
       url.searchParams.delete("static");
+      url.searchParams.delete("show");
       window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
     } catch {
       /* 地址栏清不掉不影响功能。 */
@@ -518,6 +528,8 @@
   function linkFrom(anchor, className, text) {
     const link = element("a", className, text ?? textOf(anchor));
     link.href = anchor.getAttribute("href");
+    /* 出口登记的 id 跟着走：在房间里点这个链接，同样会被记一次数（见 /script.js）。 */
+    if (anchor.dataset?.go) link.dataset.go = anchor.dataset.go;
     return link;
   }
 
@@ -1537,6 +1549,7 @@
       about: buildAbout(),
       posts: buildPosts(),
       film: buildFilm(),
+      cinema: buildCinema(),
       online: buildOnline(),
       work: buildWork(),
       calc: buildCalc(),
@@ -1586,18 +1599,22 @@
       if (view !== "desk") openView("desk");
       else controller?.cycleDeskView();
     });
+    /* 天色：和房间里那根灯绳是同一个开关，给手机和键盘一个好点的入口。 */
+    const lightButton = element("button", "room-btn room-light", T.buttons.light);
+    lightButton.type = "button";
+    lightButton.addEventListener("click", () => controller?.toggleLight());
     const lofi = element("button", "room-btn room-lofi", T.buttons.lofi);
     lofi.type = "button";
     lofi.title = T.lofi;
     lofi.setAttribute("aria-label", `${T.buttons.lofi}: ${T.lofi}`);
     lofi.addEventListener("click", () => leave({ target: "#top", persist: true }));
-    buttons.append(back, flipButton, play, next, credits, viewButton, soundButton, lofi);
+    buttons.append(back, flipButton, play, next, credits, viewButton, lightButton, soundButton, lofi);
     dock.append(keys, buttons);
     /* 窄屏照 Felix 手机版：声音和静态版挪到顶部右侧；宽屏放回右下角那一排。 */
     const narrow = window.matchMedia ? window.matchMedia("(max-width: 719px)") : null;
     const placeTools = () => {
-      if (narrow?.matches) tools.prepend(viewButton, soundButton, lofi);
-      else buttons.append(viewButton, soundButton, lofi);
+      if (narrow?.matches) tools.prepend(viewButton, lightButton, soundButton, lofi);
+      else buttons.append(viewButton, lightButton, soundButton, lofi);
     };
     placeTools();
     narrow?.addEventListener?.("change", placeTools);
@@ -1631,9 +1648,10 @@
     overlay.addEventListener("keydown", onKey);
     document.body.append(overlay);
     ui = {
-      navButtons, panels, tip, keys, back, flip: flipButton, play, next, sound: soundButton, credits, creditsPanel, hint, status, skip,
+      navButtons, panels, tip, keys, back, flip: flipButton, play, next, sound: soundButton, light: lightButton, credits, creditsPanel, hint, status, skip,
       unbind: () => narrow?.removeEventListener?.("change", placeTools),
     };
+    syncLight(session.get(LIGHT_KEY) === "day" ? "day" : "night");
     calcShow();
     return overlay;
   }
@@ -1657,7 +1675,8 @@
     /* 太窄时，按物件真实大小投影出来的屏幕读不清：改成铺满中间的固定面板。 */
     const minWidth = Math.min(420, stageWidth * 0.62);
     /* 录像带的字幕层必须贴着电视屏幕，不能改成铺满的面板。 */
-    const fixed = id !== "film" && (!rect || rect.width < minWidth || stageWidth < 720);
+    /* 放映机的画面同样必须贴着幕布。 */
+    const fixed = id !== "film" && id !== "cinema" && (!rect || rect.width < minWidth || stageWidth < 720);
     panel.classList.toggle("is-fixed", fixed);
     if (fixed) {
       panel.style.left = "";
@@ -1681,6 +1700,175 @@
     }
   }
 
+  /* ---------------------------------------------------------------- 放映机：在幕布上放首页登记的片子
+     片子只来自首页：带 data-film 的链接（必须是本站地址），外加 #personal-film 的宣传片。放完按 data-film-next 和
+     data-film-exits 给出下一步；出口是首页上带 data-go 的链接，这里原样复制。不在 room/ 里写任何片子的地址或标题。 */
+  const cinema = { films: [], current: null, panel: null, video: null, menu: null, card: null, heading: null, status: null };
+
+  function collectFilms() {
+    const films = [];
+    for (const link of document.querySelectorAll("main a[data-film]")) {
+      const src = sameOrigin(link.getAttribute("href"));
+      const id = link.dataset.film;
+      if (!src || !id) continue;
+      films.push({
+        id, src, title: textOf(link), length: link.dataset.filmLength || "", next: link.dataset.filmNext || "",
+        exits: (link.dataset.filmExits || "").split(/\s+/).filter(Boolean),
+      });
+    }
+    const promo = collectTapes()[0]?.items?.[0];
+    if (promo?.src) films.push({ id: "promo", src: promo.src, title: promo.title || T.cinema.own, length: "", next: "", exits: [] });
+    return films;
+  }
+
+  function buildCinema() {
+    const panel = element("section", "room-screen room-cinema");
+    panel.dataset.view = "cinema";
+    panel.setAttribute("aria-label", T.cinema.name);
+    const heading = element("h2", "cin-h", T.cinema.pick);
+    heading.tabIndex = -1;
+    const menu = element("div", "cin-menu");
+    const video = element("video", "cin-video");
+    video.setAttribute("playsinline", "");
+    video.playsInline = true;
+    video.preload = "none";
+    video.hidden = true;
+    const status = element("p", "cin-status");
+    status.setAttribute("role", "status");
+    const card = element("div", "cin-card");
+    card.hidden = true;
+    panel.append(heading, menu, video, status, card);
+    Object.assign(cinema, { panel, video, menu, card, heading, status });
+    video.addEventListener("ended", () => showFilmCard(false));
+    video.addEventListener("error", () => {
+      if (cinema.current) showFilmCard(true);
+    });
+    video.addEventListener("playing", () => {
+      status.textContent = "";
+    });
+    video.addEventListener("click", toggleFilmPause);
+    return panel;
+  }
+
+  const filmButton = (film, className = "cin-b") => {
+    const button = element("button", className, `▶ ${film.title}`);
+    button.type = "button";
+    button.dataset.film = film.id;
+    if (film.length) button.append(element("small", "", film.length));
+    button.addEventListener("click", () => playFilm(film));
+    return button;
+  };
+
+  /* 放映机转起来：房间压暗、界面按夜里的样子显示；停了恢复访客自己选的天色。 */
+  function runProjector(on) {
+    controller?.setProjector(on);
+    if (on) {
+      if (overlay) overlay.dataset.light = "night";
+    } else syncLight(session.get(LIGHT_KEY) === "day" ? "day" : "night");
+  }
+
+  function showFilmMenu() {
+    if (!cinema.panel) return;
+    cinema.current = null;
+    cinema.video.pause();
+    cinema.video.removeAttribute("src");
+    cinema.video.load();
+    cinema.video.hidden = true;
+    cinema.card.hidden = true;
+    cinema.status.textContent = "";
+    cinema.heading.hidden = false;
+    cinema.menu.hidden = false;
+    cinema.menu.replaceChildren(...cinema.films.map((film) => filmButton(film)));
+    runProjector(false);
+  }
+
+  function playFilm(film) {
+    cinema.current = film;
+    cinema.menu.hidden = true;
+    cinema.card.hidden = true;
+    cinema.heading.hidden = true;
+    cinema.status.textContent = T.cinema.loading;
+    cinema.video.hidden = false;
+    cinema.video.src = film.src;
+    runProjector(true);
+    /* 在这一次点击里开始放：手机只允许点按时出声。被拦下就留在画面上，等访客再点一下画面。 */
+    cinema.video.play()?.catch?.(() => {
+      if (cinema.current === film) cinema.status.textContent = T.filmTapPlay;
+    });
+  }
+
+  function toggleFilmPause() {
+    if (!cinema.current || cinema.video.hidden) return;
+    if (cinema.video.paused) cinema.video.play()?.catch?.(() => {});
+    else cinema.video.pause();
+  }
+
+  /* 一盘放完（或者取不到）：灯亮回来，幕布上给出下一步——再放一遍、接着放下一盘、换一盘，以及这盘片子登记的出口。 */
+  function showFilmCard(failed) {
+    const film = cinema.current;
+    if (!film) return;
+    cinema.video.pause();
+    cinema.video.hidden = true;
+    cinema.status.textContent = "";
+    runProjector(false);
+    const actions = element("div", "cin-row");
+    if (!failed) {
+      const again = element("button", "cin-b cin-ghost", T.cinema.again);
+      again.type = "button";
+      again.addEventListener("click", () => playFilm(film));
+      actions.append(again);
+    }
+    const next = cinema.films.find((candidate) => candidate.id === film.next);
+    if (next) actions.prepend(filmButton(next));
+    const other = element("button", "cin-b cin-ghost", T.cinema.menu);
+    other.type = "button";
+    other.addEventListener("click", () => {
+      showFilmMenu();
+      cinema.menu.querySelector("button")?.focus({ preventScroll: true });
+    });
+    actions.append(other);
+    const parts = [element("p", "cin-t", failed ? T.cinema.failed : film.title), actions];
+    const exits = film.exits.map((id) => document.querySelector(`main a[data-go="${id}"]`)).filter(Boolean);
+    if (exits.length) {
+      const row = element("div", "cin-row");
+      for (const anchor of exits) {
+        const link = linkFrom(anchor, "cin-b", `${textOf(anchor)} ↗`);
+        link.target = "_blank";
+        link.rel = "noopener";
+        row.append(link);
+      }
+      parts.push(element("p", "cin-k", T.cinema.exits), row);
+    }
+    cinema.card.replaceChildren(...parts);
+    cinema.card.hidden = false;
+    cinema.card.querySelector("button, a")?.focus({ preventScroll: true });
+  }
+
+  /* 离开放映视图、离开房间、页面转到后台：停片、关机、灯亮回来。 */
+  function stopCinema() {
+    if (!cinema.panel || (!cinema.current && cinema.video.hidden)) return;
+    showFilmMenu();
+  }
+
+  /* 天色（雨夜 / 晴天午后）：界面跟着换——白天画面亮，顶部和底部的衬底压深，按钮换成太阳。 */
+  function syncLight(mode) {
+    const day = mode === "day";
+    if (overlay) overlay.dataset.light = day ? "day" : "night";
+    if (ui?.light) {
+      const label = day ? T.light.day : T.light.night;
+      ui.light.setAttribute("aria-label", label);
+      ui.light.title = label;
+      ui.light.setAttribute("aria-pressed", String(day));
+    }
+  }
+
+  /* 场景里拉了灯绳（点绳子、按 T、点按钮都会到这里）：记在本次访问里，下次进房间还是这个天色。 */
+  function onLight(mode) {
+    const next = mode === "day" ? "day" : "night";
+    session.set(LIGHT_KEY, next);
+    syncLight(next);
+  }
+
   let viewToken = 0;
   async function openView(next, { fromHistory = false, tape = null } = {}) {
     if (state !== "open" || !controller) return;
@@ -1694,6 +1882,11 @@
     const token = (viewToken += 1);
     if (previous === "film") stopMedia();
     if (next === "film") startTape(Number.isInteger(tape) ? tape : 0);
+    if (previous === "cinema") stopCinema();
+    if (next === "cinema") {
+      cinema.films = collectFilms();
+      showFilmMenu();
+    }
 
     closePanels();
     placeTapeVideo();
@@ -1703,9 +1896,9 @@
       if (id === next) button.setAttribute("aria-current", "true");
       else button.removeAttribute("aria-current");
     }
-    ui.keys.textContent = next === "desk" ? DESK_HINT : HINTS[next] || "";
+    ui.keys.textContent = next === "desk" ? DESK_HINT : next === "cinema" ? T.cinema.hint : HINTS[next] || "";
     ui.back.hidden = next === "desk";
-    ui.back.textContent = backLabel(next);
+    ui.back.textContent = next === "cinema" ? `${T.cinema.back}${ESC}` : backLabel(next);
     ui.play.hidden = next !== "film";
     ui.next.hidden = next !== "film";
     ui.flip.hidden = next !== "card";
@@ -1773,6 +1966,20 @@
     }
     /* 焦点在面板按钮上时，空格和 Enter 交给按钮本身。 */
     const onButton = event.target instanceof Element && Boolean(event.target.closest("button"));
+    if (view === "cinema") {
+      /* 焦点在按钮或出口链接上时，空格和 Enter 归它们自己。 */
+      if ((onButton || (event.target instanceof Element && event.target.closest("a"))) && (key === " " || key === "spacebar" || key === "enter")) return;
+      if (key === " " || key === "spacebar") {
+        toggleFilmPause();
+        event.preventDefault();
+        return;
+      }
+      if (/^[1-9]$/.test(key) && !cinema.menu.hidden && cinema.films[Number(key) - 1]) {
+        playFilm(cinema.films[Number(key) - 1]);
+        event.preventDefault();
+        return;
+      }
+    }
     if (view === "music" && !(onButton && (key === " " || key === "enter"))) {
       let handled = true;
       if (key === " " || key === "spacebar") toggleMusic();
@@ -1826,6 +2033,16 @@
         event.preventDefault();
         return;
       }
+    }
+    if (key === "t" && view === "desk") {
+      controller?.toggleLight();
+      event.preventDefault();
+      return;
+    }
+    if (key === "r" && view === "desk") {
+      openView("cinema");
+      event.preventDefault();
+      return;
     }
     const nav = NAV.find((item) => item.key === key);
     if (nav) {
@@ -1888,6 +2105,10 @@
     }
     if (id === "calc") {
       openView("calc");
+      return;
+    }
+    if (id === "projector") {
+      openView("cinema");
       return;
     }
     if (id === "card") {
@@ -2114,6 +2335,8 @@
         reducedMotion: matches("(prefers-reduced-motion: reduce)"),
         posterUrl: POSTER_URL,
         labels: { hotspots: T.hotspots, tvInsert: T.tvInsert },
+        light: session.get(LIGHT_KEY) === "day" ? "day" : "night",
+        onLight,
         onHover,
         onPick,
         onFail: fail,
@@ -2151,6 +2374,7 @@
     controller.start();
     root.setAttribute("data-room", "on");
     state = "open";
+    if (pendingShow) window.setTimeout(showRequestedFilm, 600);
     window.setTimeout(introduceRoom, 900);
     window.setTimeout(loadGuide, 1200);
   }
@@ -2162,6 +2386,7 @@
     if (persist) local.set(PREF_KEY, "off");
     session.set(SEEN_KEY, "1");
     if (view === "film") stopMedia();
+    stopCinema();
     toggleSound(false);
     stopMusic(false);
     closePanels();
@@ -2209,9 +2434,24 @@
     }, FADE_MS);
   }
 
+  /* 直达链接 ?show=<片子 id>（比如别的项目页脚上的“在何鹏远的放映室里看”）：房间打开后直接到放映机前，
+     那一盘排在第一个并拿到焦点。不自动播放：出声必须由访客自己点。 */
+  let pendingShow = null;
+  function showRequestedFilm() {
+    const wanted = pendingShow;
+    pendingShow = null;
+    if (!wanted || state !== "open") return;
+    openView("cinema").then(() => {
+      cinema.menu?.querySelector(`button[data-film="${wanted}"]`)?.focus({ preventScroll: true });
+    });
+  }
+
   /* ---------------------------------------------------------------- 启动 */
   function init() {
     const query = new URLSearchParams(window.location.search);
+    const show = query.get("show");
+    pendingShow = show && /^[a-z0-9-]{1,64}$/.test(show) ? show : null;
+    if (pendingShow) cleanUrl();
     const forced = query.get("room") === "1";
     const declined = query.get("room") === "0" || query.has("static");
 
@@ -2247,6 +2487,7 @@
     window.addEventListener("pagehide", () => {
       controller?.stop();
       if (view === "film") stopMedia();
+      if (cinema.video && !cinema.video.paused) cinema.video.pause();
       toggleSound(false);
       if (music.audio && !music.audio.paused) music.audio.pause();
     });
@@ -2280,6 +2521,8 @@
 
     root.removeAttribute("data-room");
     showPills(capability.webgl);
+    /* 进不了房间时，直达链接至少把访客带到首页上登记这些片子的地方。 */
+    if (pendingShow) document.querySelector("#aggie-films")?.scrollIntoView({ block: "center" });
     if (wantsRoom) showNotice(capability.reason, capability.webgl);
     else if (preference === "auto-off") showNotice("slow", capability.webgl);
   }
