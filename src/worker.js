@@ -40,6 +40,11 @@ const PROMO_VIDEO_MOBILE_KEY = "public/promo/pengyuan-personal-promo-720p.mp4";
 const MUSIC_ROUTES = new Map([
   ["/media/music/lai-zi-gao-wei-de-ni.mp3", "public/music/lai-zi-gao-wei-de-ni.mp3"],
 ]);
+/* 3D 房间里小人的本人录音（仓库里的 assets/room/voice/*.mp3）。文件跟着静态资源发布，但静态资源层不理会 Range：
+   请求 bytes=0-1 也整份返回 200。苹果的文档要求给 iOS 播的音视频必须支持分段请求，Safari 播音频前也确实先发这个探测。
+   所以这些文件在 wrangler.jsonc 里标成先过 Worker，由 handleVoiceClip 从 ASSETS 取出来自己切片应答。 */
+const VOICE_CLIP_PATH = /^\/assets\/room\/voice\/[\w-]+\.mp3$/;
+const VOICE_CLIP_CACHE = "public, max-age=604800"; /* 七天；换录音时 room/avatar.js 的 VOICE_REV 会改网址 */
 const AGGIE_3A_ROUTE = "/aggie-3a/";
 const AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v6.html";
 
@@ -364,6 +369,48 @@ async function handleMediaFile(request, env, row) {
   return new Response(object.body, { status: range ? 206 : 200, headers });
 }
 
+async function handleVoiceClip(request, env) {
+  if (request.method !== "GET" && request.method !== "HEAD") return methodNotAllowed(["GET", "HEAD"]);
+  if (!env.ASSETS) return textResponse("Static asset binding is missing.", 503);
+
+  /* 不把 Range 和条件请求头转给静态资源层：每次都拿整份，范围和 304 在这里算。每个文件只有几十 KB。 */
+  const url = new URL(request.url);
+  const asset = await env.ASSETS.fetch(new Request(new URL(url.pathname, url.origin), { method: "GET" }));
+  if (asset.status !== 200) return textResponse("Voice clip not found", 404);
+
+  const bytes = await asset.arrayBuffer();
+  const size = bytes.byteLength;
+  const etag = asset.headers.get("ETag");
+  const headers = new Headers({
+    "Content-Type": "audio/mpeg",
+    "Accept-Ranges": "bytes",
+    "Cache-Control": VOICE_CLIP_CACHE,
+    ...securityHeaders,
+  });
+  if (etag) headers.set("ETag", etag);
+
+  /* If-Range 对不上（文件换过了）就当没有 Range，整份重发。 */
+  const ifRange = request.headers.get("If-Range");
+  let range;
+  try {
+    range = parseByteRange(ifRange && ifRange !== etag ? null : request.headers.get("Range"), size);
+  } catch (error) {
+    if (error instanceof MediaError && error.status === 416) {
+      return textResponse(error.message, 416, { "Content-Range": `bytes */${size}`, "Accept-Ranges": "bytes" });
+    }
+    throw error;
+  }
+
+  if (!range && etag && request.headers.get("If-None-Match") === etag) {
+    return new Response(null, { status: 304, headers });
+  }
+
+  if (range) headers.set("Content-Range", `bytes ${range.start}-${range.end}/${size}`);
+  headers.set("Content-Length", String(range ? range.length : size));
+  const body = request.method === "HEAD" ? null : range ? bytes.slice(range.start, range.end + 1) : bytes;
+  return new Response(body, { status: range ? 206 : 200, headers });
+}
+
 async function handleMediaPoster(request, env, row) {
   if (request.method !== "GET" && request.method !== "HEAD") return methodNotAllowed(["GET", "HEAD"]);
   if (!row.thumbnail_key) return textResponse("Media poster not found", 404);
@@ -545,6 +592,8 @@ async function routeRequest(request, env) {
     if (request.method !== "GET" && request.method !== "HEAD") return methodNotAllowed(["GET", "HEAD"]);
     return handleAdminAsset(request, env);
   }
+
+  if (VOICE_CLIP_PATH.test(path)) return handleVoiceClip(request, env);
 
   const dynamic = await handlePublicDynamic(request, env, baseUrl);
   if (dynamic) return dynamic;

@@ -23,13 +23,18 @@ const checks = [
   { path: "/room/scene.js", type: "javascript", includes: "export async function mount" },
   { path: "/room/avatar.js", type: "javascript", includes: "export function start" },
   { path: "/assets/room/voice/hello.mp3", type: "audio/mpeg", minBytes: 10_000 },
+  { path: "/assets/room/voice/hello.mp3", type: "audio/mpeg", range: true },
   { path: "/assets/room/voice/stop-tv.mp3", type: "audio/mpeg", minBytes: 10_000 },
   { path: "/assets/vendor/three-0.170.0.module.min.js", type: "javascript", includes: "SPDX-License-Identifier: MIT" },
 ];
 
 for (const check of checks) {
   const target = new URL(check.path, origin);
-  const response = await fetch(target, { method: check.method || "GET", signal: AbortSignal.timeout(20_000) });
+  const response = await fetch(target, {
+    method: check.method || "GET",
+    headers: check.range ? { Range: "bytes=0-1" } : undefined,
+    signal: AbortSignal.timeout(20_000),
+  });
   const contentType = response.headers.get("content-type") || "";
 
   if (!response.ok) {
@@ -39,7 +44,14 @@ for (const check of checks) {
     throw new Error(`${target.href} returned unexpected Content-Type: ${contentType || "missing"}.`);
   }
 
-  if (check.method === "HEAD") {
+  if (check.range) {
+    /* iPhone 播音视频前先发 bytes=0-1 探测；苹果要求服务器答 206。静态资源层做不到，这些文件要由 Worker 代答。 */
+    const contentRange = response.headers.get("content-range") || "";
+    const size = (await response.arrayBuffer()).byteLength;
+    if (response.status !== 206 || !/^bytes 0-1\/\d+$/.test(contentRange) || size !== 2) {
+      throw new Error(`${target.href} ignored a byte-range request: ${response.status}, Content-Range "${contentRange}", ${size} bytes.`);
+    }
+  } else if (check.method === "HEAD") {
     const length = Number(response.headers.get("content-length") || "0");
     if (!Number.isFinite(length) || length <= 0) {
       throw new Error(`${target.href} returned an empty or missing Content-Length.`);
