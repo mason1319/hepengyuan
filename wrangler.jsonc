@@ -31,6 +31,7 @@
       "/media/poster/*",
       "/media/promo/*",
       "/media/music/*",
+      "/assets/room/voice/*",
       "/travel",
       "/travel/*",
       "/learning",

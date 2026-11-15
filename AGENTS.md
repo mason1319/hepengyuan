@@ -48,7 +48,7 @@
 - 录像带（FILM）里的影像只能来自两处：首页 `#personal-film` 的宣传片，以及 `/api/media.json`（服务端只返回已发布条目，`boot.js` 只接受本站同源地址）。不要在 `room/` 里写死任何影像地址、标题、地点或日期；带子侧标只写栏目名（宣传片 / 旅行 / 学习），条目标题只在播放时显示。
 - 改 `room/` 下任何文件后，同步更新 `index.html` 里 `boot.js?v=` 与 `room/boot.js` 里 `SCENE_URL`、`AVATAR_URL` 的版本号（三处必须一致）。
 - 小人的台词写在 `room/avatar.js` 的 `STRINGS`（四种语言）：只有招呼、玩笑和对房间物件的说明，不写任何履历事实。平时不说脏话，五秒内被连戳三下或被拎起来才爆粗口，用词限于口头禅，不针对任何人。
-- 小人出声只能用何鹏远本人的录音：`assets/room/voice/<台词 id>.mp3`（单个文件小于 1MB），并把 id 登记进 `room/avatar.js` 的 `VOICE`；没有录音的台词只出文字气泡。不得用机器合成或克隆的声音，校验脚本会拒绝 `speechSynthesis`，也会拒绝目录里没登记的文件。录音是普通话，四种语言的页面共用，气泡里的译文当字幕；改了某句中文台词的意思要重录那一句。录音文件不带任何元数据（手机录音的文件名和标签里可能有地点），单声道 mp3；替换已有录音后把 `VOICE_REV` 加一（`/assets/` 缓存七天）。只有访客点了小人、拖了小人或开始带逛才出声，进房间时自动出的招呼和小人自己逛到某处时的介绍不出声；有录音的气泡里带「静音」开关。
+- 小人出声只能用何鹏远本人的录音：`assets/room/voice/<台词 id>.mp3`（单个文件小于 1MB），并把 id 登记进 `room/avatar.js` 的 `VOICE`；没有录音的台词只出文字气泡。不得用机器合成或克隆的声音，校验脚本会拒绝 `speechSynthesis`，也会拒绝目录里没登记的文件。录音是普通话，四种语言的页面共用，气泡里的译文当字幕；改了某句中文台词的意思要重录那一句。录音文件不带任何元数据（手机录音的文件名和标签里可能有地点），单声道 mp3；替换已有录音后把 `VOICE_REV` 加一（`/assets/` 缓存七天）。只有访客点了小人、拖了小人或开始带逛才出声，进房间时自动出的招呼和小人自己逛到某处时的介绍不出声；有录音的气泡里带「静音」开关。iPhone 的 Safari 和微信只允许在点按事件（touchend / click / 按键）里开始出声：`avatar.js` 在房间里任何一次点按时给那个复用的 `Audio` 解锁（`prime`），某句没放出来时把声音按钮变成「点这里出声」并在那次点击里重说；改这段逻辑要保留这三层。录音文件在静态资源里，但由 Worker 的 `handleVoiceClip` 应答（`wrangler.jsonc` 的 `run_worker_first` 里有 `/assets/room/voice/*`），因为静态资源层不支持 Range。
 - 旅行国家、城市、日期、标题与媒体内容只能来自何鹏远本人确认；草稿不得进入公开 HTML、JSON、sitemap 或链接。
 - 图片公开上传前必须生成去除 EXIF/GPS 的 WebP 公开版；视频必须有真实 poster 才能发布。
 - 后台与 `/api/admin/*` 必须同时受 Cloudflare Access 和 Worker 端 JWT 签名、issuer、AUD、管理员邮箱校验保护。
@@ -71,6 +71,7 @@
 - `workers_dev` 和 `preview_urls` 必须保持关闭，避免绕过生产域名上的 Access。
 - `.dev.vars` 仅供 localhost 显式启用 `ADMIN_DEV_BYPASS=true`，绝不能提交或部署。
 - 没有域名和站长账号时，不能完成 Search Console、Bing Webmaster Tools 或 IndexNow 提交。
+- Workers Static Assets 不理会 Range 请求（`bytes=0-1` 也整份返回 200，HEAD 也不带 `Content-Length`）。苹果要求给 iOS 播放的音视频支持分段请求，所以凡是要用 `<audio>` / `<video>` 播的文件，要么放 R2 由 `handleMediaFile` 提供，要么像小人录音那样在 `run_worker_first` 里登记、由 Worker 代答 206；`scripts/smoke-production.mjs` 的 `range: true` 检查的就是这一点。
 - 房间的降级判断不要用 `navigator.connection.effectiveType === "3g"`：它按往返延迟估算，跨境访问时很多带宽正常的访客都会被报成 3g。
 - 房间的帧率看门狗阈值必须低于 30fps：省电模式和部分移动浏览器会把刷新率锁在 30。
 - 国内手机（尤其微信里）不开 VPN 直连 Cloudflare 时，房间约 230KB 的场景常要下十几秒。所以 `boot.js` 打开房间时用 modulepreload 把 three.js（`THREE_URL`，必须与 `scene.js` 的 import 一致）和 `scene.js` 并行预取；下载限时 30 秒、搭建限时 15 秒，超过 6 秒就显示“网络有点慢”和秒数，并给出「先看静态版」（只离开这一次，不记偏好）。失败时静态页提示会写明是下载超时、搭建超时还是哪条报错，让访客截图就能定位。不要再改回一个总的短限时。

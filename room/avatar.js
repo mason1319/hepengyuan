@@ -20,7 +20,7 @@ const MUTE_KEY = "hpy-room-mute"; /* 本次会话里访客把小人静音了 */
    录的是普通话，四种语言的页面都播这一份，气泡里的译文当字幕。重录某一句后把 VOICE_REV 加一，
    否则访客浏览器会继续用缓存里的旧录音（/assets/ 缓存七天）。 */
 const VOICE_DIR = "/assets/room/voice/";
-const VOICE_REV = "1";
+const VOICE_REV = "2";
 const VOICE = new Set([
   "hello",
   "greet1", "greet2", "greet3", "greet4", "greet5", "greet6", "greet7", "greet8",
@@ -34,7 +34,7 @@ const VOICE = new Set([
 
 const STRINGS = {
   zh: {
-    ui: { tour: "带我逛逛", next: "下一个", stop: "不逛了", open: "打开看看", mute: "静音", unmute: "开声音" },
+    ui: { tour: "带我逛逛", next: "下一个", stop: "不逛了", open: "打开看看", mute: "静音", unmute: "开声音", tapSound: "点这里出声", noSound: "放不出声" },
     hello: "嗨！我是迷你版何鹏远，正在御剑巡房。点我说话，拖我也行。",
     greet: [
       "别戳啦，我在御剑飞行，驾照还没考下来。",
@@ -71,7 +71,7 @@ const STRINGS = {
     },
   },
   en: {
-    ui: { tour: "Show me around", next: "Next", stop: "Stop", open: "Open it", mute: "Mute", unmute: "Sound on" },
+    ui: { tour: "Show me around", next: "Next", stop: "Stop", open: "Open it", mute: "Mute", unmute: "Sound on", tapSound: "Tap for sound", noSound: "No sound" },
     hello: "Hi! I'm mini He Pengyuan, patrolling the room on a flying sword. Tap me to chat, or drag me around.",
     greet: [
       "Stop poking, I'm flying a sword here and I don't have a licence yet.",
@@ -108,7 +108,7 @@ const STRINGS = {
     },
   },
   de: {
-    ui: { tour: "Führ mich herum", next: "Weiter", stop: "Stopp", open: "Öffnen", mute: "Ton aus", unmute: "Ton an" },
+    ui: { tour: "Führ mich herum", next: "Weiter", stop: "Stopp", open: "Öffnen", mute: "Ton aus", unmute: "Ton an", tapSound: "Für Ton tippen", noSound: "Kein Ton" },
     hello: "Hi! Ich bin der Mini-He-Pengyuan und drehe auf dem fliegenden Schwert meine Runde. Tipp mich an oder zieh mich herum.",
     greet: [
       "Hör auf zu stupsen, ich fliege hier Schwert und habe noch keinen Führerschein.",
@@ -145,7 +145,7 @@ const STRINGS = {
     },
   },
   ko: {
-    ui: { tour: "둘러보기", next: "다음", stop: "그만", open: "열어 보기", mute: "음소거", unmute: "소리 켜기" },
+    ui: { tour: "둘러보기", next: "다음", stop: "그만", open: "열어 보기", mute: "음소거", unmute: "소리 켜기", tapSound: "눌러서 소리 켜기", noSound: "소리 안 남" },
     hello: "안녕하세요! 미니 허펑위안이에요. 날아다니는 검을 타고 방을 순찰 중입니다. 저를 누르면 말하고, 끌어서 옮길 수도 있어요.",
     greet: [
       "그만 찔러요. 검 타는 중인데 아직 면허도 없다고요.",
@@ -707,6 +707,10 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
   let voiceEnd = null; /* 结束当前这句录音：播完、出错或被打断时调用 */
   let speech = Promise.resolve(false); /* 当前这句录音；播完得到 true，没播成或被打断得到 false */
   let muted = session?.get(MUTE_KEY) === "1";
+  let primed = false; /* 这个 Audio 已经真的放出过声音：之后不在点按里也能接着播 */
+  let trouble = null; /* 当前这句没放出来：{ why, sure }。sure = 是在气泡按钮的点击里试的，不是时机问题 */
+  let soundBtn = null; /* 当前气泡里的声音按钮 */
+  let lastLine = null; /* 当前气泡这句，「点这里出声」时再说一遍 */
   let said = 0;
   let introduced = false;
   let refocus = false;
@@ -783,52 +787,129 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
     voiceEnd?.(false);
   }
 
-  /* 只播本人录音；没有录音或已静音就返回 null，只出文字。第一次必须在点击里调用，手机才允许出声；
-     之后一直复用同一个 Audio，带逛时不在点击里也能接着说。返回的 Promise 在这句结束时兑现。 */
-  function speak(id) {
+  /* 只播本人录音；没有录音或已静音就返回 null，只出文字。返回的 Promise 在这句结束时兑现（播完为 true）。
+     iPhone 的 Safari 和微信只允许在“点按”事件（touchend / click / 按键）里开始出声；同一个 Audio 放出过一次，
+     之后带逛时不在点按里也能接着说，所以一直复用这一个。sure：这次是在气泡按钮的点击里调用的。 */
+  function speak(id, sure = false) {
     quiet();
+    trouble = null;
     if (!voiced(id)) return null;
     audio ||= new Audio();
     audio.src = voiceUrl(id);
     speech = new Promise((resolve) => {
       let timer = 0;
+      let tries = 0;
       const finish = (played) => {
         if (voiceEnd !== finish) return;
         voiceEnd = null;
         window.clearTimeout(timer);
         audio.removeEventListener("ended", onEnded);
-        audio.removeEventListener("error", onFailed);
+        audio.removeEventListener("error", onError);
         resolve(played === true);
       };
+      /* 没放出来：记下原因，气泡里的声音按钮变成「点这里出声」（那个按钮的点击一定算点按）。 */
+      const fail = (why) => {
+        if (voiceEnd !== finish) return;
+        trouble = { why, sure };
+        finish(false);
+        showSound();
+      };
       const onEnded = () => finish(true);
-      const onFailed = () => finish(false);
+      const onError = () => fail(`E${audio.error?.code ?? 0}`);
+      /* 可以试不止一次：第一次不在点按里被拦下，紧接着的 touchend / click 里再试（见 prime）。只认最后一次的结果。 */
+      finish.retry = () => {
+        const mine = ++tries;
+        let started = null;
+        try {
+          started = audio.play();
+        } catch (error) {
+          fail(error?.name || "error");
+          return;
+        }
+        started?.then?.(
+          () => {
+            if (voiceEnd !== finish) return;
+            primed = true;
+            bubble.dataset.sound = "on";
+          },
+          (error) => {
+            if (mine !== tries || error?.name === "AbortError") return;
+            fail(error?.name === "NotAllowedError" ? "blocked" : error?.name || "error");
+          },
+        );
+      };
       voiceEnd = finish;
-      timer = window.setTimeout(onFailed, 20000); /* 网络卡住时别让带逛一直等下去 */
+      timer = window.setTimeout(() => fail("timeout"), 20000); /* 网络卡住时别让带逛一直等下去 */
       audio.addEventListener("ended", onEnded);
-      audio.addEventListener("error", onFailed);
-      audio.play()?.catch?.(onFailed);
+      audio.addEventListener("error", onError);
+      finish.retry();
     });
     return speech;
   }
 
-  /* 有录音的台词，气泡里带一个静音开关：访客可能在办公室或地铁上。本次会话内记住。 */
+  /* 房间里任何一次触摸、点击或按键，都顺手给这个 Audio 解锁（WebKit 在带用户手势的 load() / play() 里
+     解除“必须点按才能出声”的限制）。这样点小人时即使 click 没按时到、走了 400ms 的后备路径，也还能出声。
+     要是这时正有一句等着出声——拖起小人那声是手指移动时触发的，不算点按——就在这次点按里把它放出来。 */
+  function prime() {
+    if (primed || muted) return;
+    try {
+      audio ||= new Audio();
+      if (voiceEnd?.retry) voiceEnd.retry();
+      else audio.load();
+    } catch {
+      /* 解不了锁也没关系：气泡里还有「点这里出声」。 */
+    }
+  }
+  const PRIME_EVENTS = ["touchend", "pointerup", "click", "keydown"];
+  for (const type of PRIME_EVENTS) overlay.addEventListener(type, prime, { capture: true, passive: true });
+
+  /* 有录音的台词，气泡里带一个声音按钮。平时是静音开关（访客可能在办公室或地铁上，本次会话内记住）；
+     这句没放出来时变成「点这里出声」，点它就在这次点击里把这句再说一遍；连这样都放不出来，就写明原因，
+     让访客截图就能定位（blocked = 被浏览器拦下，E4 = 文件放不了，timeout = 没下载下来）。 */
+  function showSound() {
+    bubble.dataset.sound = trouble ? trouble.why : muted ? "muted" : primed ? "on" : "";
+    if (!soundBtn) return;
+    const alert = Boolean(trouble) && !muted;
+    soundBtn.classList.toggle("is-alert", alert);
+    soundBtn.textContent = !alert
+      ? muted ? T.ui.unmute : T.ui.mute
+      : trouble.sure ? `${T.ui.noSound} · ${trouble.why}` : T.ui.tapSound;
+    if (!bubble.hidden) size = { w: bubble.offsetWidth, h: bubble.offsetHeight };
+  }
+
+  function again() {
+    const current = lastLine;
+    if (!current) return;
+    if (current.stop && tour === current.stop) {
+      window.clearTimeout(tour.timer);
+      sayStop(current.stop, true);
+    } else {
+      say(current.id, current.text, { ...current.options, sure: true });
+    }
+  }
+
   function soundButton() {
     const button = element("button", "say-b say-mute", muted ? T.ui.unmute : T.ui.mute);
     button.type = "button";
     button.addEventListener("click", () => {
+      if (trouble && !muted) {
+        again();
+        return;
+      }
       muted = !muted;
       session?.set(MUTE_KEY, muted ? "1" : "0");
       if (muted) quiet();
-      button.textContent = muted ? T.ui.unmute : T.ui.mute;
+      showSound();
     });
     return button;
   }
 
   /* buttons: [文字, 回调, 是否主按钮]；counter: 带逛时的「3/10」。有录音就返回 speak() 的 Promise。 */
-  function say(id, text, { buttons = [], counter = "", hold = 0, voice = true } = {}) {
+  function say(id, text, { buttons = [], counter = "", hold = 0, voice = true, sure = false } = {}) {
     window.clearTimeout(hideTimer);
     const mine = ++said;
-    const spoken = voice ? speak(id) : (quiet(), null);
+    const spoken = voice ? speak(id, sure) : (quiet(), null);
+    lastLine = { id, text, options: { buttons, counter, hold, voice }, stop: null };
     const giveFocus = releaseFocus() || refocus;
     refocus = false;
     line.replaceChildren();
@@ -840,9 +921,11 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
       button.addEventListener("click", handler);
       return button;
     }));
-    if (voice && VOICE.has(id)) acts.append(soundButton());
+    soundBtn = voice && VOICE.has(id) ? soundButton() : null;
+    if (soundBtn) acts.append(soundBtn);
     acts.hidden = acts.childElementCount === 0;
     bubble.hidden = false;
+    showSound();
     if (giveFocus && document.activeElement === overlay) acts.querySelector(".is-main")?.focus({ preventScroll: true });
     size = { w: bubble.offsetWidth, h: bubble.offsetHeight };
     place();
@@ -894,6 +977,36 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
     say("tourEnd", T.tourEnd);
   }
 
+  /* 到站后说这一站的介绍，说完再去下一站；没出声（没录音、静音、浏览器不让播）就按读完文字的时间算。
+     「点这里出声」重试时会再调用一次，所以只认最后一次说的那句。 */
+  function sayStop(current, sure = false) {
+    const { index } = current;
+    const [id, , , target] = TOUR[index];
+    const buttons = [[index + 1 < TOUR.length ? T.ui.next : T.ui.stop, () => tourStep(index + 1), true]];
+    if (target) {
+      buttons.push([T.ui.open, () => {
+        stopTour();
+        openView(target);
+      }]);
+    }
+    if (index + 1 < TOUR.length) buttons.push([T.ui.stop, () => stopTour(true)]);
+    const shown = performance.now();
+    const spoken = say(`stop-${id}`, T.stops[id], { buttons, counter: `${index + 1}/${TOUR.length}`, hold: 60000, sure });
+    lastLine.stop = current;
+    current.spoken = spoken;
+    warm(index + 1 < TOUR.length ? `stop-${TOUR[index + 1][0]}` : "tourEnd");
+    const advance = (played) => {
+      if (tour !== current || current.spoken !== spoken) return;
+      const since = performance.now() - shown;
+      const rest = played ? Math.max(1400, 6000 - since) : Math.max(0, 7600 - since);
+      current.timer = window.setTimeout(() => {
+        if (tour === current) tourStep(index + 1);
+      }, rest);
+    };
+    if (spoken) spoken.then(advance);
+    else advance(false);
+  }
+
   /* keep：上一句（“发车”）还在说，就别打断它——先飞着，等它说完再介绍这一站。 */
   function tourStep(index, keep = false) {
     if (index >= TOUR.length) {
@@ -901,37 +1014,15 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
       return;
     }
     window.clearTimeout(tour?.timer);
-    const current = (tour = { index, timer: 0 });
-    const [id, preset, hot, target] = TOUR[index];
+    const current = (tour = { index, timer: 0, spoken: null });
+    const [id, preset, hot] = TOUR[index];
     if (!keep) hide();
     room.setDeskView(preset);
     room.highlight(hot);
     warm(`stop-${id}`);
     const breath = keep ? speech.then(() => new Promise((resolve) => window.setTimeout(resolve, 450))) : speech;
     Promise.all([actor.go(id), breath]).then(([arrived]) => {
-      if (tour !== current || !arrived) return;
-      const buttons = [[index + 1 < TOUR.length ? T.ui.next : T.ui.stop, () => tourStep(index + 1), true]];
-      if (target) {
-        buttons.push([T.ui.open, () => {
-          stopTour();
-          openView(target);
-        }]);
-      }
-      if (index + 1 < TOUR.length) buttons.push([T.ui.stop, () => stopTour(true)]);
-      const shown = performance.now();
-      const spoken = say(`stop-${id}`, T.stops[id], { buttons, counter: `${index + 1}/${TOUR.length}`, hold: 60000 });
-      warm(index + 1 < TOUR.length ? `stop-${TOUR[index + 1][0]}` : "tourEnd");
-      /* 说完这句再去下一站；没出声（没录音、静音、浏览器不让播）就按读完文字的时间算。 */
-      const advance = (played) => {
-        if (tour !== current) return;
-        const since = performance.now() - shown;
-        const rest = played ? Math.max(1400, 6000 - since) : Math.max(0, 7600 - since);
-        current.timer = window.setTimeout(() => {
-          if (tour === current) tourStep(index + 1);
-        }, rest);
-      };
-      if (spoken) spoken.then(advance);
-      else advance(false);
+      if (tour === current && arrived) sayStop(current);
     });
   }
 
@@ -1027,6 +1118,7 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
       window.clearTimeout(tour?.timer);
       tour = null;
       quiet();
+      for (const type of PRIME_EVENTS) overlay.removeEventListener(type, prime, { capture: true });
       bubble.remove();
       actor.onFrame = null;
     },

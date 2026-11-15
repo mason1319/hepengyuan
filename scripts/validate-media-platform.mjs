@@ -20,7 +20,7 @@ import {
   renderStoryPage,
   safeJsonLd,
 } from "../src/render.js";
-import { parseByteRange, publicFeedPayload } from "../src/worker.js";
+import worker, { parseByteRange, publicFeedPayload } from "../src/worker.js";
 
 const requiredFiles = [
   "admin/index.html",
@@ -103,6 +103,7 @@ for (const expected of [
   '"/admin/*"',
   '"/media/promo/*"',
   '"/aggie-3a/*"',
+  '"/assets/room/voice/*"',
 ]) {
   assert(wrangler.includes(expected), `wrangler.jsonc is missing ${expected}`);
 }
@@ -234,6 +235,58 @@ assert(matchesFileSignature(movHeader, "video/quicktime"), "valid MOV signature 
 assert(JSON.stringify(parseByteRange("bytes=0-99", 1000)) === JSON.stringify({ offset: 0, length: 100, start: 0, end: 99 }), "explicit byte range is incorrect");
 assert(JSON.stringify(parseByteRange("bytes=-50", 1000)) === JSON.stringify({ offset: 950, length: 50, start: 950, end: 999 }), "suffix byte range is incorrect");
 await expectMediaError(() => parseByteRange("bytes=1000-1001", 1000), 416, "out-of-bounds byte range");
+
+/* 小人的录音在静态资源里，但静态资源层不理会 Range；iPhone 播音频要 206，所以由 Worker 代答。 */
+{
+  const clip = Uint8Array.from({ length: 1000 }, (_, index) => index % 251);
+  const assetRequests = [];
+  const voiceEnv = {
+    ASSETS: {
+      async fetch(request) {
+        assetRequests.push(request);
+        if (new URL(request.url).pathname !== "/assets/room/voice/hello.mp3") return new Response("missing", { status: 404 });
+        return new Response(clip, { headers: { "Content-Type": "audio/mpeg", ETag: '"clip-v1"' } });
+      },
+    },
+  };
+  const voice = (path, init) => worker.fetch(new Request(`https://hepengyuan.com${path}`, init), voiceEnv);
+  const bodyOf = async (response) => [...new Uint8Array(await response.arrayBuffer())];
+
+  const full = await voice("/assets/room/voice/hello.mp3?v=2");
+  assert(full.status === 200 && full.headers.get("Content-Length") === "1000", "voice clip: a plain GET must return the whole file with its length");
+  assert(full.headers.get("Accept-Ranges") === "bytes" && full.headers.get("Content-Type") === "audio/mpeg", "voice clip: missing Accept-Ranges or audio type");
+  assert(full.headers.get("Cache-Control")?.includes("max-age=604800") && full.headers.get("ETag") === '"clip-v1"', "voice clip: cache headers or ETag were lost");
+  assert((await bodyOf(full)).join() === [...clip].join(), "voice clip: full body differs from the asset");
+
+  const probe = await voice("/assets/room/voice/hello.mp3", { headers: { Range: "bytes=0-1" } });
+  assert(probe.status === 206 && probe.headers.get("Content-Range") === "bytes 0-1/1000" && probe.headers.get("Content-Length") === "2", "voice clip: the bytes=0-1 probe iPhones send must get a 206");
+  assert((await bodyOf(probe)).join() === "0,1", "voice clip: the 0-1 probe returned the wrong bytes");
+
+  const middle = await voice("/assets/room/voice/hello.mp3", { headers: { Range: "bytes=500-509" } });
+  assert((await bodyOf(middle)).join() === [...clip.slice(500, 510)].join() && middle.headers.get("Content-Range") === "bytes 500-509/1000", "voice clip: a middle range returned the wrong bytes");
+
+  const tail = await voice("/assets/room/voice/hello.mp3", { headers: { Range: "bytes=-4" } });
+  assert(tail.status === 206 && (await bodyOf(tail)).join() === [...clip.slice(996)].join(), "voice clip: suffix range is incorrect");
+
+  const openEnded = await voice("/assets/room/voice/hello.mp3", { headers: { Range: "bytes=990-" } });
+  assert(openEnded.headers.get("Content-Range") === "bytes 990-999/1000" && openEnded.headers.get("Content-Length") === "10", "voice clip: open-ended range is incorrect");
+
+  const beyond = await voice("/assets/room/voice/hello.mp3", { headers: { Range: "bytes=1000-" } });
+  assert(beyond.status === 416 && beyond.headers.get("Content-Range") === "bytes */1000", "voice clip: an out-of-bounds range must be 416");
+
+  const head = await voice("/assets/room/voice/hello.mp3", { method: "HEAD" });
+  assert(head.status === 200 && head.headers.get("Content-Length") === "1000" && (await head.arrayBuffer()).byteLength === 0, "voice clip: HEAD must carry the length and no body");
+
+  const notModified = await voice("/assets/room/voice/hello.mp3", { headers: { "If-None-Match": '"clip-v1"' } });
+  assert(notModified.status === 304, "voice clip: a matching If-None-Match must return 304");
+
+  const staleRange = await voice("/assets/room/voice/hello.mp3", { headers: { Range: "bytes=0-1", "If-Range": '"clip-v0"' } });
+  assert(staleRange.status === 200 && staleRange.headers.get("Content-Length") === "1000", "voice clip: a stale If-Range must fall back to the whole file");
+
+  assert((await voice("/assets/room/voice/nope.mp3")).status === 404, "voice clip: a missing clip must be 404");
+  assert((await voice("/assets/room/voice/hello.mp3", { method: "POST" })).status === 405, "voice clip: only GET and HEAD are allowed");
+  assert(assetRequests.every((request) => !request.headers.has("Range") && request.method === "GET" && !new URL(request.url).search), "voice clip: the asset layer must be asked for the whole file, without Range or query");
+}
 
 const publicItem = mapPublicRow(
   {
