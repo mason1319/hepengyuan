@@ -10,8 +10,9 @@ export const MIME_TYPES = Object.freeze({
   "image/avif": { mediaType: "image", extension: "avif" },
   "video/mp4": { mediaType: "video", extension: "mp4" },
   "video/webm": { mediaType: "video", extension: "webm" },
-  "video/quicktime": { mediaType: "video", extension: "mov" },
 });
+/* MOV（video/quicktime）故意不在名单里：media 表的 CHECK 只收 MP4 / WebM，硬收只会在入库时报 500；
+   iPhone 的 MOV 又常是 HEVC（多数安卓和微信放不了），还带拍摄地点。后台会提示先导出为 MP4（H.264）。 */
 
 export class MediaError extends Error {
   constructor(status, message) {
@@ -49,7 +50,10 @@ export function validateCreateInput(input) {
   const mimeInfo = MIME_TYPES[mimeType];
 
   if (!mimeInfo) {
-    throw new MediaError(415, "只支持 JPEG、PNG、WebP、AVIF、MP4、WebM 和 MOV 文件。SVG 与 HTML 不允许上传。");
+    if (mimeType === "video/quicktime") {
+      throw new MediaError(415, "MOV 不能直接上传：请先导出为 MP4（H.264），并去掉位置信息。");
+    }
+    throw new MediaError(415, "只支持 JPEG、PNG、WebP、AVIF、MP4 和 WebM 文件。SVG 与 HTML 不允许上传。");
   }
 
   const fileSize = Number(input.fileSize);
@@ -63,7 +67,7 @@ export function validateCreateInput(input) {
   }
 
   if (category === "learning" && mimeInfo.mediaType !== "video") {
-    throw new MediaError(400, "学习视频分类只接受 MP4、WebM 或 MOV 视频。");
+    throw new MediaError(400, "学习视频分类只接受 MP4 或 WebM 视频。");
   }
 
   const slug = String(input.slug || "").trim().toLowerCase();

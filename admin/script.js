@@ -6,8 +6,15 @@ const allowedTypes = new Set([
   "image/avif",
   "video/mp4",
   "video/webm",
-  "video/quicktime",
 ]);
+/* 「补封面」只在浏览器里读本地视频截一帧，不上传原片，所以本地 MOV 仍然可用。 */
+const posterSourceTypes = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+/* MOV 不能上传：数据库只收 MP4 / WebM；iPhone 的 MOV 常是 HEVC（多数安卓和微信放不了），还带拍摄地点。 */
+const MOV_MESSAGE = "MOV 不能直接上传：请先在手机或电脑上导出为 MP4（H.264）。导出时记得去掉位置信息。";
+const UNSUPPORTED_MESSAGE = "文件格式不支持。iPhone HEIC 请先导出为 JPEG。";
+function unsupportedMessage(file) {
+  return fileMimeType(file) === "video/quicktime" ? MOV_MESSAGE : UNSUPPORTED_MESSAGE;
+}
 
 function fileMimeType(file) {
   const declared = String(file?.type || "").trim().toLowerCase();
@@ -276,13 +283,13 @@ function updateFileState() {
   clearValidationState(fileInput);
   fileInput.setCustomValidity("");
   fileHelp.removeAttribute("data-error");
-  fileHelp.textContent = "支持 JPEG / PNG / WebP / AVIF / MP4 / WebM / MOV；iPhone HEIC 仍请先导出为 JPEG";
+  fileHelp.textContent = "支持 JPEG / PNG / WebP / AVIF / MP4 / WebM；iPhone 的 HEIC 请先导出为 JPEG，MOV 请先导出为 MP4";
   fileDrop.dataset.active = file ? "true" : "false";
   fileName.textContent = file ? `${file.name} · ${formatBytes(file.size)}` : "选择本地照片或视频";
   altInput.required = info?.mediaType === "image";
 
   if (file && !info) {
-    fileInput.setCustomValidity("文件格式不支持。iPhone HEIC 请先导出为 JPEG；MOV 可直接上传。");
+    fileInput.setCustomValidity(unsupportedMessage(file));
     fileInput.setAttribute("aria-invalid", "true");
     fileDrop.dataset.invalid = "true";
     fileHelp.textContent = fileInput.validationMessage;
@@ -626,7 +633,7 @@ function renderMediaItem(item) {
       picker.accept = "video/mp4,video/webm,video/quicktime,.mov";
       picker.addEventListener("change", async () => {
         const localVideo = picker.files?.[0];
-        if (!localVideo || !allowedTypes.has(fileMimeType(localVideo)) || !fileMimeType(localVideo).startsWith("video/") || rowMutationInProgress || !article.isConnected) return;
+        if (!localVideo || !posterSourceTypes.has(fileMimeType(localVideo)) || rowMutationInProgress || !article.isConnected) return;
         setRowMutationBusy(true);
         libraryStatus.textContent = `正在为“${item.title}”重新生成封面…`;
         try {
@@ -739,13 +746,13 @@ form.addEventListener("submit", async (event) => {
   if (!file) {
     fileInput.setCustomValidity("请选择一个本地照片或视频文件。");
   } else if (!info) {
-    fileInput.setCustomValidity("文件格式不支持。iPhone HEIC 请先导出为 JPEG；MOV 可直接上传。");
+    fileInput.setCustomValidity(unsupportedMessage(file));
   } else {
     fileInput.setCustomValidity("");
   }
 
   if (file && info && form.elements.category.value === "learning" && info.mediaType !== "video") {
-    fileInput.setCustomValidity("学习视频分类只接受 MP4、WebM 或 MOV 视频。");
+    fileInput.setCustomValidity("学习视频分类只接受 MP4 或 WebM 视频。");
   }
 
   altInput.required = info?.mediaType === "image";
@@ -819,15 +826,16 @@ const articlePreview = document.querySelector("[data-article-preview-box]");
 let articleItems = [];
 function articleValues(status = "draft") { const data = new FormData(articleForm); return { title: data.get("title"), slug: data.get("slug"), category: data.get("category"), excerpt: data.get("excerpt"), content: data.get("content"), pinned: data.get("pinned") === "on", status }; }
 function articleMessage(message, error = false) { articleStatus.textContent = message; articleStatus.dataset.error = error ? "true" : "false"; }
-function resetArticleForm() { articleForm.reset(); articleForm.elements.id.value = ""; articlePreview.hidden = true; articleMessage("已准备新文章。"); }
-function fillArticle(item) { articleForm.elements.id.value = item.id; ["title", "slug", "category", "excerpt", "content"].forEach((key) => { articleForm.elements[key].value = item[key] || ""; }); articleForm.elements.pinned.checked = item.pinned; articlePreview.hidden = true; articleMessage(`正在编辑：${item.title}`); articleForm.elements.title.focus(); }
+function resetArticleForm() { articleForm.reset(); articleForm.elements.id.value = ""; articleLoadedAt = null; articlePreview.hidden = true; articleMessage("已准备新文章。"); }
+let articleLoadedAt = null; /* 表单里这篇文章读到时的 updatedAt；保存时带给服务端，对不上就拒绝覆盖 */
+function fillArticle(item) { articleForm.elements.id.value = item.id; articleLoadedAt = item.updatedAt || null; ["title", "slug", "category", "excerpt", "content"].forEach((key) => { articleForm.elements[key].value = item[key] || ""; }); articleForm.elements.pinned.checked = item.pinned; articlePreview.hidden = true; articleMessage(`正在编辑：${item.title}`); articleForm.elements.title.focus(); }
 function renderArticles() { articleList.replaceChildren(); if (!articleItems.length) { articleList.textContent = "还没有文章。先写一篇草稿。"; return; } articleItems.forEach((item) => { const row = document.createElement("article"); row.className = "article-row"; row.innerHTML = `<div><h3></h3><small></small></div><div class="article-row-actions"><button class="quiet-action" type="button" data-edit>编辑</button><button class="publish-action" type="button" data-toggle></button><button class="delete-action" type="button" data-remove>删除</button></div>`; row.querySelector("h3").textContent = item.title; row.querySelector("small").textContent = `${item.status === "published" ? "已发布" : "草稿"} · ${item.category} · ${item.slug}`; row.querySelector("[data-edit]").onclick = () => fillArticle(item); row.querySelector("[data-toggle]").textContent = item.status === "published" ? "转草稿" : "发布"; row.querySelector("[data-toggle]").onclick = () => mutateArticle(item, item.status === "published" ? "draft" : "published"); row.querySelector("[data-remove]").onclick = async () => { if (!confirm(`确定删除“${item.title}”？`)) return; try { await apiRequest(`/api/admin/articles/${encodeURIComponent(item.id)}`, { method: "DELETE" }); await loadArticles(); articleMessage("文章已删除。"); } catch (error) { articleMessage(error.message, true); } }; articleList.append(row); }); }
 async function loadArticles() { try { const payload = await apiRequest("/api/admin/articles"); articleItems = payload.items || []; if (payload.identity?.email) identityLabel.textContent = payload.identity.email; renderArticles(); } catch (error) { articleMessage(error.message, true); } }
-async function mutateArticle(item, status) { try { await apiRequest(`/api/admin/articles/${encodeURIComponent(item.id)}`, { method: "PATCH", body: JSON.stringify({ title: item.title, slug: item.slug, category: item.category, excerpt: item.excerpt, content: item.content, pinned: item.pinned, status }) }); await loadArticles(); articleMessage(status === "published" ? "文章已发布。" : "已转为草稿。"); } catch (error) { articleMessage(error.message, true); } }
+async function mutateArticle(item, status) { try { const result = await apiRequest(`/api/admin/articles/${encodeURIComponent(item.id)}`, { method: "PATCH", body: JSON.stringify({ title: item.title, slug: item.slug, category: item.category, excerpt: item.excerpt, content: item.content, pinned: item.pinned, status, expectedUpdatedAt: item.updatedAt }) }); if (articleForm.elements.id.value === item.id) articleLoadedAt = result.item.updatedAt || null; await loadArticles(); articleMessage(status === "published" ? "文章已发布。" : "已转为草稿。"); } catch (error) { if (error.status === 409) await loadArticles(); articleMessage(error.status === 409 ? "这篇文章已在别处修改过，列表已刷新，请再点一次。" : error.message, true); } }
 if (articleForm) {
   document.querySelector("[data-article-new]").onclick = resetArticleForm;
   document.querySelector("[data-article-preview]").onclick = () => { const values = articleValues(); articlePreview.replaceChildren(); const title = document.createElement("h3"); title.textContent = values.title || "未填写标题"; const body = document.createElement("p"); body.textContent = values.content || "未填写正文"; articlePreview.append(title, body); articlePreview.hidden = false; };
-  for (const [selector, status] of [["[data-article-save]", "draft"], ["[data-article-publish]", "published"]]) document.querySelector(selector).onclick = async () => { if (!articleForm.reportValidity()) return; const id = articleForm.elements.id.value; try { const payload = articleValues(status); const result = await apiRequest(id ? `/api/admin/articles/${encodeURIComponent(id)}` : "/api/admin/articles", { method: id ? "PATCH" : "POST", body: JSON.stringify(payload) }); articleForm.elements.id.value = result.item.id; await loadArticles(); articleMessage(status === "published" ? "文章已发布，公开地址已生成。" : "草稿已保存。"); } catch (error) { articleMessage(error.message, true); } };
+  for (const [selector, status] of [["[data-article-save]", "draft"], ["[data-article-publish]", "published"]]) document.querySelector(selector).onclick = async () => { if (!articleForm.reportValidity()) return; const id = articleForm.elements.id.value; try { const payload = articleValues(status); if (id && articleLoadedAt) payload.expectedUpdatedAt = articleLoadedAt; const result = await apiRequest(id ? `/api/admin/articles/${encodeURIComponent(id)}` : "/api/admin/articles", { method: id ? "PATCH" : "POST", body: JSON.stringify(payload) }); articleForm.elements.id.value = result.item.id; articleLoadedAt = result.item.updatedAt || null; await loadArticles(); articleMessage(status === "published" ? "文章已发布，公开地址已生成。" : "草稿已保存。"); } catch (error) { if (error.status === 409 && id) { await loadArticles(); articleMessage("没有保存：这篇文章已在别处修改过。你写的内容还在表单里，请先复制出来，再点列表里的「编辑」载入最新版本。", true); } else articleMessage(error.message, true); } };
   loadArticles();
 }
 

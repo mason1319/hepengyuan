@@ -11,6 +11,8 @@ const checks = [
   { path: "/travel/", type: "text/html", includes: "旅行影像" },
   { path: "/learning/", type: "text/html", includes: "学习视频" },
   { path: "/sitemap-media.xml", type: "application/xml", includes: "urlset" },
+  /* 公开的文章接口：不能带后台登录邮箱。 */
+  { path: "/api/articles.json", type: "application/json", includes: '"items"', excludes: "createdByEmail" },
   { path: "/aggie-3a/", type: "text/html", includes: "Aggie速记英语3A大作 · V6" },
   { path: "/aggie-3a/", type: "text/html", includes: '<script id="hpy-aggie-guard"' },
   { path: "/media/promo/pengyuan-personal-promo.mp4", type: "video/mp4", method: "HEAD" },
@@ -72,6 +74,9 @@ for (const check of checks) {
     const body = await response.text();
     if (!body.includes(check.includes)) {
       throw new Error(`${target.href} is missing the expected public content.`);
+    }
+    if (check.excludes && body.includes(check.excludes)) {
+      throw new Error(`${target.href} exposes "${check.excludes}", which must not be public.`);
     }
   }
 

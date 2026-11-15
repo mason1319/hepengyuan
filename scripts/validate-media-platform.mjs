@@ -3,7 +3,9 @@ import { webcrypto } from "node:crypto";
 
 import { AGGIE_GUARD_SCRIPT, AGGIE_GUARD_TAG } from "../src/aggie-guard.js";
 import { verifyAccessIdentity } from "../src/auth.js";
+import { mapPublicArticle, updateArticle } from "../src/article-store.js";
 import {
+  MIME_TYPES,
   UPLOAD_PART_SIZE,
   abortMultipartUpload,
   deleteMedia,
@@ -193,12 +195,20 @@ const validVideo = validateCreateInput({
 assert(validVideo.totalParts === 2, "multipart part count is incorrect");
 assert(validVideo.durationSeconds === 62.5, "video duration was not preserved");
 
-const validMov = validateCreateInput({
-  ...validVideo,
-  slug: "iphone-travel-video",
-  mimeType: "video/quicktime",
-});
-assert(validMov.extension === "mov" && validMov.mediaType === "video", "MOV video was rejected");
+/* MOV 不收：media 表的 CHECK 只允许 MP4 / WebM，硬收只会在入库时变成 500。要给出能照着做的提示。 */
+{
+  let movError = null;
+  try {
+    validateCreateInput({ ...validVideo, slug: "iphone-travel-video", mimeType: "video/quicktime" });
+  } catch (error) {
+    movError = error;
+  }
+  assert(movError?.status === 415 && /MP4/.test(movError.message), "MOV uploads must be refused up front with a message that says to export MP4");
+  const mediaSchema = await readFile("migrations/0001_media.sql", "utf8");
+  for (const mimeType of Object.keys(MIME_TYPES)) {
+    assert(mediaSchema.includes(`'${mimeType}'`), `media-store accepts ${mimeType} but the media table's CHECK does not`);
+  }
+}
 
 const validImage = validateCreateInput({
   category: "travel",
@@ -286,6 +296,77 @@ await expectMediaError(() => parseByteRange("bytes=1000-1001", 1000), 416, "out-
   assert((await voice("/assets/room/voice/nope.mp3")).status === 404, "voice clip: a missing clip must be 404");
   assert((await voice("/assets/room/voice/hello.mp3", { method: "POST" })).status === 405, "voice clip: only GET and HEAD are allowed");
   assert(assetRequests.every((request) => !request.headers.has("Range") && request.method === "GET" && !new URL(request.url).search), "voice clip: the asset layer must be asked for the whole file, without Range or query");
+}
+
+/* 宣传片和音乐：固定路由可以缓存一天；同一个键换过文件后，旧的 If-Range 必须拿到整份新文件。 */
+{
+  const film = Uint8Array.from({ length: 500 }, (_, index) => index % 199);
+  const mediaEnv = {
+    MEDIA_BUCKET: {
+      async head(key) {
+        return key === "public/promo/pengyuan-personal-promo-720p.mp4" ? { size: film.length, httpEtag: '"film-v2"' } : null;
+      },
+      async get(key, options) {
+        if (key !== "public/promo/pengyuan-personal-promo-720p.mp4") return null;
+        const range = options?.range;
+        return { body: range ? film.slice(range.offset, range.offset + range.length) : film };
+      },
+    },
+  };
+  const promo = (init) => worker.fetch(new Request("https://hepengyuan.com/media/promo/pengyuan-personal-promo-720p.mp4", init), mediaEnv);
+  const ranged = await promo({ headers: { Range: "bytes=10-19", "If-Range": '"film-v2"' } });
+  assert(ranged.status === 206 && ranged.headers.get("Content-Range") === "bytes 10-19/500", "promo video: a matching If-Range must still get the requested range");
+  assert(ranged.headers.get("Cache-Control") === "public, max-age=86400", "promo video: fixed media routes should be cacheable for a day");
+  const replaced = await promo({ headers: { Range: "bytes=10-19", "If-Range": '"film-v1"' } });
+  assert(replaced.status === 200 && replaced.headers.get("Content-Length") === "500" && !replaced.headers.has("Content-Range"), "promo video: a stale If-Range must fall back to the whole file");
+  assert((await promo({ headers: { Range: "bytes=0-1" } })).status === 206, "promo video: a plain range request must still be 206");
+}
+
+/* 公开的文章接口不能带后台登录邮箱和内部 id；后台保存时旧版本不能盖掉新版本；长文章要存得下。 */
+{
+  const articleRow = {
+    id: "0b9f3c1e-internal", slug: "hello", title: "标题", excerpt: "摘要", content: "正文", category: "notes", status: "published", pinned: 0,
+    created_at: "2026-11-01T00:00:00.000Z", updated_at: "2026-11-02T00:00:00.000Z", published_at: "2026-11-01T00:00:00.000Z", created_by_email: "admin@example.com",
+  };
+  const writes = [];
+  const articleEnv = {
+    MEDIA_DB: {
+      prepare(sql) {
+        const statement = {
+          bind: () => statement,
+          all: async () => ({ results: [articleRow] }),
+          first: async () => articleRow,
+          run: async () => { writes.push(sql); return {}; },
+        };
+        return statement;
+      },
+    },
+  };
+  const feed = await worker.fetch(new Request("https://hepengyuan.com/api/articles.json"), articleEnv);
+  const feedText = await feed.text();
+  assert(feed.status === 200 && JSON.parse(feedText).items[0].slug === "hello", "articles feed: published articles are missing");
+  assert(!feedText.includes("admin@example.com") && !feedText.includes("createdByEmail"), "articles feed: the admin sign-in email must not be public");
+  assert(!feedText.includes("0b9f3c1e-internal"), "articles feed: internal ids must not be public");
+  const publicArticle = mapPublicArticle(articleRow);
+  assert(publicArticle.title === "标题" && publicArticle.url === "/blog/hello/" && !("id" in publicArticle), "public article mapping lost fields or kept the id");
+
+  const edit = { slug: "hello", title: "标题", content: "新的正文", category: "notes", status: "draft" };
+  let conflict = null;
+  try {
+    await updateArticle(articleEnv, articleRow.id, { ...edit, expectedUpdatedAt: "2026-11-01T12:00:00.000Z" });
+  } catch (error) {
+    conflict = error;
+  }
+  assert(conflict?.status === 409 && writes.length === 0, "article update: a stale expectedUpdatedAt must be refused without writing");
+  await updateArticle(articleEnv, articleRow.id, { ...edit, expectedUpdatedAt: articleRow.updated_at });
+  assert(writes.length === 1, "article update: a matching expectedUpdatedAt must be saved");
+
+  const adminScript = await readFile("admin/script.js", "utf8");
+  assert((adminScript.match(/expectedUpdatedAt/g) || []).length >= 2, "admin: both the list toggle and the editor must send expectedUpdatedAt");
+  const workerText = await readFile("src/worker.js", "utf8");
+  const articleLimitKiB = Number(/ARTICLE_JSON_LIMIT_BYTES = (\d+) \* 1024/.exec(workerText)?.[1] || 0);
+  assert(articleLimitKiB * 1024 >= 100000 * 4, "worker: the article JSON limit must fit a 100000-character body");
+  assert((workerText.match(/readJson\(request, ARTICLE_JSON_LIMIT_BYTES\)/g) || []).length === 2, "worker: article create and update must use the larger JSON limit");
 }
 
 const publicItem = mapPublicRow(

@@ -1,4 +1,5 @@
-import { cp, mkdir, readFile, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const projectRoot = resolve(process.cwd());
@@ -33,6 +34,27 @@ await cp(resolve(projectRoot, "samples"), resolve(outputDirectory, "samples"), {
 await cp(resolve(projectRoot, "admin"), resolve(outputDirectory, "admin"), { recursive: true });
 for (const page of ["terms", "policy", "faqs", "services", "room", "en", "de", "ko"]) {
   await cp(resolve(projectRoot, page), resolve(outputDirectory, page), { recursive: true });
+}
+
+/* 样式表和脚本的网址带内容指纹：内容不变网址不变，内容一变网址就变。
+   所以 _headers 才敢让浏览器把它们缓存一周——回访时不用再为这两个文件各等一个来回（样式表还会挡住首屏）。
+   源文件里的 ?v=… 只是给人看的；发布出去的页面一律换成指纹，忘了改版本号也不会让访客拿到旧样式。 */
+const fingerprinted = ["styles.css", "script.js", "policy.css"];
+const fingerprints = new Map();
+for (const file of fingerprinted) {
+  const digest = createHash("sha256").update(await readFile(resolve(outputDirectory, file))).digest("hex");
+  fingerprints.set(file, digest.slice(0, 10));
+}
+const fingerprintedPages = ["index.html", "en/index.html", "de/index.html", "ko/index.html", "services/index.html", "policy/index.html", "terms/index.html", "faqs/index.html"];
+const assetReference = /((?:href|src)=")\/(styles\.css|script\.js|policy\.css)(?:\?v=[^"]*)?"/g;
+for (const page of fingerprintedPages) {
+  const pagePath = resolve(outputDirectory, page);
+  const source = await readFile(pagePath, "utf8");
+  const rewritten = source.replace(assetReference, (_match, attribute, file) => `${attribute}/${file}?v=${fingerprints.get(file)}"`);
+  if (!rewritten.includes(`/styles.css?v=${fingerprints.get("styles.css")}"`)) {
+    throw new Error(`${page} does not reference the fingerprinted stylesheet.`);
+  }
+  await writeFile(pagePath, rewritten);
 }
 
 const html = await readFile(resolve(outputDirectory, "index.html"), "utf8");
