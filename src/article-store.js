@@ -25,14 +25,23 @@ function map(row) {
   return { id: row.id, slug: row.slug, title: row.title, excerpt: row.excerpt || "", content: row.content || "", category: row.category, status: row.status, pinned: Boolean(row.pinned), createdAt: row.created_at, updatedAt: row.updated_at, publishedAt: row.published_at, createdByEmail: row.created_by_email, url: `/blog/${encodeURIComponent(row.slug)}/` };
 }
 
+/* 公开页面和 /api/articles.json 用的版本：不带内部 id，也不带后台登录邮箱。
+   只有 /api/admin/* 才返回完整的 map(row)。 */
+export function mapPublicArticle(row) {
+  const item = map(row);
+  if (!item) return null;
+  const { id: _id, createdByEmail: _createdByEmail, ...publicItem } = item;
+  return publicItem;
+}
+
 export async function listPublishedArticles(env, limit = 20) {
   const result = await env.MEDIA_DB.prepare("SELECT * FROM articles WHERE status = 'published' ORDER BY pinned DESC, published_at DESC, updated_at DESC LIMIT ?").bind(Math.min(50, Math.max(1, Number(limit) || 20))).all();
-  return (result.results || []).map(map);
+  return (result.results || []).map(mapPublicArticle);
 }
 
 export async function findPublishedArticle(env, slug) {
   const result = await env.MEDIA_DB.prepare("SELECT * FROM articles WHERE slug = ? AND status = 'published' LIMIT 1").bind(slug).first();
-  return map(result);
+  return mapPublicArticle(result);
 }
 
 export async function listAdminArticles(env) {
@@ -57,6 +66,12 @@ export async function createArticle(env, payload, identity) {
 export async function updateArticle(env, id, payload) {
   const existing = await env.MEDIA_DB.prepare("SELECT * FROM articles WHERE id = ?").bind(id).first();
   if (!existing) throw new ArticleError(404, "文章不存在。");
+  /* 后台带上它读到的 updatedAt：对不上说明这篇文章已在别处（另一台设备、另一个标签页）保存过，
+     拒绝这次整篇覆盖，免得旧内容盖掉新内容。 */
+  const expected = payload?.expectedUpdatedAt;
+  if (expected !== undefined && expected !== null && String(expected) !== String(existing.updated_at)) {
+    throw new ArticleError(409, "这篇文章已在别处修改过。请先刷新文章列表，再重新操作。");
+  }
   const value = normalize(payload);
   const now = new Date().toISOString();
   const publishedAt = value.status === "published" ? (existing.published_at || now) : null;

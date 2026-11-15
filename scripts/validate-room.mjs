@@ -120,6 +120,19 @@ if (failures.length === 0) {
   }
   if (/<html[^>]*data-room/.test(html)) fail("index.html: data-room must never be server-rendered; it is set by script only");
   if (!css.includes('html[data-room="boot"] body::before')) fail("styles.css: boot cover rule for html[data-room] is missing");
+  /* 黑色遮罩上要有字；遮罩超时撤掉后晚到的 boot.js 不能再把静态页盖住。 */
+  if (!css.includes('html[data-room="boot"] body::after{content:"')) fail("styles.css: the boot cover must say what the visitor is waiting for");
+  if (!html.includes('"data-room-late"') || !boot.includes('"data-room-late"')) {
+    fail("index.html and room/boot.js must both use data-room-late so a late boot.js does not cover the static page");
+  }
+  /* 这一次出了事退回静态版，必须说明原因：关过提示也不能让它永久沉默。 */
+  if (/NOTICE_KEY\) === "off"\) return/.test(boot) || !boot.includes("showNotice(reason, canRetry, detail, true)")) {
+    fail("room/boot.js: a dismissed notice must not silence the reason for a failure that just happened");
+  }
+  /* 从别的页面返回、整页重载、失败退出之后，历史记录里不能留着会自己弹出来的视图标记。 */
+  if ((boot.match(/dropRoomHistory\(\)/g) || []).length < 3) fail("room/boot.js: the room's history marker must be cleared on load and on teardown");
+  if (!/pageshow[\s\S]{0,600}openView\("desk"\)/.test(boot)) fail("room/boot.js: a bfcache restore must return to the desk through openView");
+  if (!boot.includes("room-skiplink") || !css.includes(".room-skiplink:focus{")) fail("the room needs a keyboard skip link to the static version as its first Tab stop");
   if (!/@media print\{[^}]*\.room\{display:none !important\}/.test(css.replace(/\n\s*/g, ""))
     && !/\.room\{display:none !important\}/.test(css)) {
     fail("styles.css: the room overlay must be hidden when printing");

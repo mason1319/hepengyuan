@@ -13,15 +13,15 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261115-voice2";
+  const SCENE_URL = "/room/scene.js?v=20261116-guard";
   /* 小人（御剑飞行的迷你何鹏远）：房间亮起来之后才加载，版本号和上面保持一致。 */
-  const AVATAR_URL = "/room/avatar.js?v=20261115-voice2";
+  const AVATAR_URL = "/room/avatar.js?v=20261116-guard";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
   const SEEN_KEY = "hpy-room-seen"; /* 本次会话已经进过房间，回到首页不再自动弹出 */
   const INTRO_KEY = "hpy-room-intro"; /* 本次会话已经在手机上演示过左右拖动 */
-  const NOTICE_KEY = "hpy-static-notice"; /* "off" 静态版提示已被关掉 */
+  const NOTICE_KEY = "hpy-static-notice"; /* 访客关掉的那条提示的原因（旧版本存的是 "off"）；只压住同一个原因的开场提示 */
   const FADE_MS = 460;
   /* scene.js 依赖的 three.js；打开房间时和 scene.js 一起预取，两个文件并行下载，而不是等 scene.js 到了才开始拉 three.js。
      必须和 scene.js 里的 import 一致（校验脚本会对）。 */
@@ -453,10 +453,15 @@
     if (box) box.hidden = true;
   }
 
-  function showNotice(reason, canRetry, detail = "") {
-    if (local.get(NOTICE_KEY) === "off") return;
+  /* always：访客刚才还在房间里，是这一次出了事（加载失败、帧率太低、渲染被中断）才退回来的，必须说明原因。
+     不带 always 的是打开页面时的例行说明（设备偏好、上次跑不动）：访客关过同一条就不再重复。 */
+  let noticeReason = "";
+  function showNotice(reason, canRetry, detail = "", always = false) {
+    const dismissed = local.get(NOTICE_KEY);
+    if (!always && (dismissed === "off" || dismissed === reason)) return null;
     const box = document.querySelector("#bm-warn");
-    if (!box) return;
+    if (!box) return null;
+    noticeReason = reason;
 
     const text = box.querySelector(".ph-warn-t");
     if (text && T.reasons[reason]) {
@@ -472,10 +477,20 @@
       close.hidden = false;
       close.addEventListener("click", () => {
         box.hidden = true;
-        local.set(NOTICE_KEY, "off");
+        local.set(NOTICE_KEY, noticeReason || "off");
       });
     }
     box.hidden = false;
+    return box;
+  }
+
+  /* 房间留在历史记录里的标记（{ hpyRoom: 视图 }）：房间不在了就清掉，免得之后按返回时某个视图自己弹出来。 */
+  function dropRoomHistory() {
+    try {
+      if (window.history.state?.hpyRoom) window.history.replaceState(null, "");
+    } catch {
+      /* 历史记录不可用时没有东西要清。 */
+    }
   }
 
   function cleanUrl() {
@@ -1133,7 +1148,10 @@
   function loadArchiveTapes() {
     if (media.feed) return media.feed;
     media.feed = fetch("/api/media.json", { headers: { accept: "application/json" }, credentials: "same-origin" })
-      .then((response) => (response.ok ? response.json() : null))
+      .then((response) => {
+        if (!response.ok) throw new Error(`media feed ${response.status}`);
+        return response.json();
+      })
       .then((feed) => {
         const items = Array.isArray(feed?.items) ? feed.items : [];
         for (const archive of ARCHIVES) {
@@ -1146,7 +1164,8 @@
         syncTapes();
       })
       .catch(() => {
-        /* 影像档案拿不到时，只有宣传片这一盒带。 */
+        /* 影像档案拿不到时，只有宣传片这一盒带。不把失败记下来：下次进房间再取一次。 */
+        media.feed = null;
       });
     return media.feed;
   }
@@ -1464,6 +1483,12 @@
     overlay.setAttribute("role", "region");
     overlay.setAttribute("aria-label", T.overlay);
 
+    /* 键盘和读屏用户的第一站：不必 Tab 过整排导航才找到「静态版」。平时看不见，聚焦时才显示。 */
+    const skipLink = element("button", "room-btn room-skiplink", T.buttons.lofi);
+    skipLink.type = "button";
+    skipLink.setAttribute("aria-label", `${T.buttons.lofi}: ${T.lofi}`);
+    skipLink.addEventListener("click", () => leave({ target: "#top", persist: true }));
+
     stage = element("div", "room-stage");
 
     const hud = element("header", "room-hud");
@@ -1602,7 +1627,7 @@
     hint.hidden = true;
     hint.setAttribute("aria-hidden", "true");
 
-    overlay.append(stage, ...Object.values(panels), hud, tip, creditsPanel, dock, status, skip, hint);
+    overlay.append(skipLink, stage, ...Object.values(panels), hud, tip, creditsPanel, dock, status, skip, hint);
     overlay.addEventListener("keydown", onKey);
     document.body.append(overlay);
     ui = {
@@ -1735,8 +1760,8 @@
       return;
     }
     if (view === "calc" && key in CALC_KEYS && CALC_KEYS[key]) {
-      /* 焦点在计算器按键上时，Enter / 空格交给按键本身。 */
-      if (key === "enter" && event.target instanceof Element && event.target.closest(".calc-key")) return;
+      /* 焦点在任何按钮或链接上时（计算器按键、「放下计算器」、导航、静态版），Enter 交给它本身，不当成“=”。 */
+      if (key === "enter" && event.target instanceof Element && event.target.closest("button, a")) return;
       calcPress(CALC_KEYS[key]);
       event.preventDefault();
       return;
@@ -1813,6 +1838,8 @@
       return;
     }
     if (view === "film") {
+      /* 焦点在按钮上时，空格和 Enter 交给按钮本身，不拿去暂停。 */
+      if (onButton && (key === " " || key === "spacebar" || key === "enter")) return;
       if (key === " " || key === "spacebar") togglePause();
       else if (key === "arrowright") step(1);
       else if (key === "arrowleft") step(-1);
@@ -1973,17 +2000,34 @@
     setBackgroundInert(false);
     root.removeAttribute("data-room");
     state = "idle";
+    dropRoomHistory();
   }
 
   /* 加载失败、运行太慢、上下文丢失：统一退回静态版并说明原因。
      detail 写明这次具体卡在哪（下载超时 / 搭建超时 / 报错），方便访客截图告诉我们。 */
   function fail(reason, detail = "") {
+    const inRoom = state === "open" || state === "opening";
+    const hadFocus = Boolean(overlay?.contains(document.activeElement));
     teardown();
+    if (!inRoom) {
+      /* 访客已经点了「静态版」在看静态页，场景只是留在后台（切 App 回来时浏览器可能收走它的显存）：
+         悄悄拆掉就行，不在静态页上冒出一条“3D 渲染被中断”。下次点 HI-FI 会重新加载。 */
+      showPills(Boolean(capability?.webgl));
+      return;
+    }
     session.set(SEEN_KEY, "1");
     if (reason === "slow") local.set(PREF_KEY, "auto-off");
     const canRetry = reason !== "no-webgl" && Boolean(capability?.webgl);
     showPills(canRetry);
-    showNotice(reason, canRetry, detail);
+    const box = showNotice(reason, canRetry, detail, true);
+    /* 遮罩拆掉后焦点会掉到 body：交给说明这次原因的提示（读屏会念出来），没有提示就交给页首。 */
+    if (hadFocus) {
+      const target = box || document.querySelector("#top");
+      if (target) {
+        if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+        target.focus({ preventScroll: true });
+      }
+    }
   }
 
   function describeFailure(error) {
@@ -2028,7 +2072,13 @@
     hideNotice();
     showPills(false);
     root.setAttribute("data-room", "loading");
-    ensureOverlay();
+    try {
+      ensureOverlay();
+    } catch (error) {
+      /* 遮罩都没搭起来：别把页面锁在“加载中”。 */
+      fail("load-failed", describeFailure(error));
+      return;
+    }
     setBackgroundInert(true);
     overlay.focus({ preventScroll: true });
 
@@ -2173,6 +2223,8 @@
     if (forced || declined) cleanUrl();
 
     capability = probe();
+    /* 整页重新载入后，这一条历史记录上可能还留着上次房间里的视图标记。 */
+    dropRoomHistory();
 
     document.addEventListener("click", (event) => {
       const link = event.target instanceof Element ? event.target.closest(`a[href="${HOME}?room=1"]`) : null;
@@ -2186,11 +2238,11 @@
     window.addEventListener("popstate", onPopState);
     window.addEventListener("pageshow", (event) => {
       if (!event.persisted || !controller || state !== "open") return;
-      controller.reset();
-      if (media.tape >= 0) stopMedia();
-      view = "desk";
-      closePanels();
       controller.start();
+      /* 从别的页面按返回回到这里：回书桌要走 openView，界面、小人和历史记录才会一起复位。
+         只改 view 的话，「回到桌面」按钮会留在那儿、点了没反应，历史里还剩一条会自己弹出来的视图。 */
+      if (media.tape >= 0 && view !== "film") stopMedia();
+      if (view !== "desk") openView("desk");
     });
     window.addEventListener("pagehide", () => {
       controller?.stop();
@@ -2209,6 +2261,17 @@
       && window.location.hash.length <= 1
       && !AUTOMATED
     );
+
+    /* 这个脚本超过 6 秒才到：首页那层黑色遮罩已经自己撤掉，访客正在看静态页。
+       不再把页面盖住，留在静态版并说明是网络慢；想进房间可以点提示里的链接或 HI-FI。 */
+    const late = root.hasAttribute("data-room-late");
+    root.removeAttribute("data-room-late");
+    if (late && !forced) {
+      root.removeAttribute("data-room");
+      showPills(capability.webgl);
+      if (wantsRoom && capability.ok) showNotice("slow-network", capability.webgl);
+      return;
+    }
 
     if (wantsRoom && (capability.ok || (forced && capability.webgl))) {
       open({ forced });

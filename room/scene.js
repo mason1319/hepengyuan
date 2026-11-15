@@ -3688,6 +3688,14 @@ export async function mount({
   let armed = null;
   let armTimer = 0;
 
+  /* 抬手事件丢了（切到别的 App、被系统手势打断）时，残留的触点会让之后的单指操作一直被当成多指：
+     点物件没反应、拖动变成缩放。回到书桌或页面转到后台时清掉。 */
+  function clearPointers() {
+    if (gesture?.dragging) actor?.drop();
+    pointers.clear();
+    gesture = null;
+  }
+
   function disarm() {
     if (!armed) return;
     armed = null;
@@ -4059,6 +4067,7 @@ export async function mount({
     stage.style.cursor = "";
     setHover(null);
     tourHot = null;
+    clearPointers();
     actor?.reset();
   }
 
@@ -4215,7 +4224,8 @@ export async function mount({
     last = now;
     update(dt, realDt);
     renderer.render(scene, camera);
-    watchdog(dt);
+    /* 看门狗要真实的帧间隔：dt 已被夹到 0.1 秒，传它的话“跳过卡顿帧”的判断永远不成立。 */
+    watchdog(realDt);
   }
 
   function resume() {
@@ -4231,8 +4241,10 @@ export async function mount({
   }
 
   const onVisibility = () => {
-    if (document.hidden) pause();
-    else if (wantRunning) resume();
+    if (document.hidden) {
+      pause();
+      clearPointers();
+    } else if (wantRunning) resume();
   };
 
   const onContextLost = (event) => {

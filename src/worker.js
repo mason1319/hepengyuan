@@ -28,8 +28,13 @@ import {
 } from "./render.js";
 
 const JSON_LIMIT_BYTES = 64 * 1024;
+/* 文章正文最多 10 万字（article-store.js），中文按 UTF-8 每字 3 字节，再加 JSON 转义，64KB 远远不够。 */
+const ARTICLE_JSON_LIMIT_BYTES = 512 * 1024;
 const CANONICAL_SITE = "https://hepengyuan.com";
 const REVOCABLE_PUBLIC_CACHE = "public, no-cache, max-age=0, must-revalidate";
+/* 宣传片和音乐是固定路由、不会被“转为草稿”，可以让浏览器留一天，重看和拖动进度不必每段都回源确认。
+   换文件（同一个 R2 键重传）后，访客最多一天内还会拿到旧文件；handleMediaFile 认 If-Range，不会新旧片段拼在一起。 */
+const FIXED_MEDIA_CACHE = "public, max-age=86400";
 const PROMO_VIDEO_ROUTE = "/media/promo/pengyuan-personal-promo.mp4";
 const PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4";
 /* 手机版宣传片：720p、约 1.3 Mbps（17 MB）。国内手机不开 VPN 直连时，1080p（约 7 Mbps）常常加载不动。
@@ -123,14 +128,14 @@ function methodNotAllowed(allowed) {
   return jsonResponse({ error: "请求方法不允许。" }, 405, { Allow: allowed.join(", ") });
 }
 
-async function readJson(request) {
+async function readJson(request, limitBytes = JSON_LIMIT_BYTES) {
   const declaredLength = Number(request.headers.get("Content-Length"));
-  if (Number.isFinite(declaredLength) && declaredLength > JSON_LIMIT_BYTES) {
+  if (Number.isFinite(declaredLength) && declaredLength > limitBytes) {
     throw new MediaError(413, "请求内容过大。");
   }
 
   const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > JSON_LIMIT_BYTES) {
+  if (new TextEncoder().encode(text).byteLength > limitBytes) {
     throw new MediaError(413, "请求内容过大。");
   }
 
@@ -182,12 +187,12 @@ async function handleAdminApi(request, env, identity, baseUrl) {
 
   if (path === "/api/admin/articles") {
     if (request.method === "GET") return jsonResponse({ identity: { email: identity.email }, items: await listAdminArticles(env) });
-    if (request.method === "POST") { assertSameOrigin(request, env); return jsonResponse({ item: await createArticle(env, await readJson(request), identity) }, 201); }
+    if (request.method === "POST") { assertSameOrigin(request, env); return jsonResponse({ item: await createArticle(env, await readJson(request, ARTICLE_JSON_LIMIT_BYTES), identity) }, 201); }
     return methodNotAllowed(["GET", "POST"]);
   }
   const articleId = pathSegment(path, "/api/admin/articles/");
   if (articleId) {
-    if (request.method === "PATCH") { assertSameOrigin(request, env); return jsonResponse({ item: await updateArticle(env, articleId, await readJson(request)) }); }
+    if (request.method === "PATCH") { assertSameOrigin(request, env); return jsonResponse({ item: await updateArticle(env, articleId, await readJson(request, ARTICLE_JSON_LIMIT_BYTES)) }); }
     if (request.method === "DELETE") { assertSameOrigin(request, env); return jsonResponse(await deleteArticle(env, articleId)); }
     return methodNotAllowed(["PATCH", "DELETE"]);
   }
@@ -329,9 +334,12 @@ async function handleMediaFile(request, env, row) {
   const head = await env.MEDIA_BUCKET.head(row.object_key);
   if (!head) return textResponse("Media file not found", 404);
 
+  const etag = head.httpEtag || head.etag;
+  /* If-Range 对不上（同一个键换过文件）就当没有 Range，整份重发，免得浏览器把新文件的片段接到旧片段后面。 */
+  const ifRange = request.headers.get("If-Range");
   let range;
   try {
-    range = parseByteRange(request.headers.get("Range"), head.size);
+    range = parseByteRange(ifRange && ifRange !== etag ? null : request.headers.get("Range"), head.size);
   } catch (error) {
     if (error instanceof MediaError && error.status === 416) {
       return textResponse(error.message, 416, { "Content-Range": `bytes */${head.size}`, "Accept-Ranges": "bytes" });
@@ -339,11 +347,10 @@ async function handleMediaFile(request, env, row) {
     throw error;
   }
 
-  const etag = head.httpEtag || head.etag;
   const headers = new Headers({
     "Content-Type": row.mime_type,
     "Accept-Ranges": "bytes",
-    "Cache-Control": REVOCABLE_PUBLIC_CACHE,
+    "Cache-Control": row.cacheControl || REVOCABLE_PUBLIC_CACHE,
     "Content-Disposition": `inline; filename="${row.slug}.${row.mime_type === "video/quicktime" ? "mov" : row.mime_type === "audio/mpeg" ? "mp3" : row.mime_type.split("/")[1].replace("jpeg", "jpg")}"`,
     ...securityHeaders,
   });
@@ -535,6 +542,7 @@ async function handlePublicDynamic(request, env, baseUrl) {
       slug: "pengyuan-personal-promo",
       mime_type: "video/mp4",
       object_key: PROMO_VIDEO_KEY,
+      cacheControl: FIXED_MEDIA_CACHE,
     });
   }
 
@@ -543,6 +551,7 @@ async function handlePublicDynamic(request, env, baseUrl) {
       slug: "pengyuan-personal-promo-720p",
       mime_type: "video/mp4",
       object_key: PROMO_VIDEO_MOBILE_KEY,
+      cacheControl: FIXED_MEDIA_CACHE,
     });
   }
 
@@ -551,6 +560,7 @@ async function handlePublicDynamic(request, env, baseUrl) {
       slug: path.split("/").pop().replace(/\.mp3$/, ""),
       mime_type: "audio/mpeg",
       object_key: MUSIC_ROUTES.get(path),
+      cacheControl: FIXED_MEDIA_CACHE,
     });
   }
 

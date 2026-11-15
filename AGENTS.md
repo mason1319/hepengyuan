@@ -52,6 +52,11 @@
 - 旅行国家、城市、日期、标题与媒体内容只能来自何鹏远本人确认；草稿不得进入公开 HTML、JSON、sitemap 或链接。
 - 图片公开上传前必须生成去除 EXIF/GPS 的 WebP 公开版；视频必须有真实 poster 才能发布。
 - 后台与 `/api/admin/*` 必须同时受 Cloudflare Access 和 Worker 端 JWT 签名、issuer、AUD、管理员邮箱校验保护。
+- 公开接口和公开页面不得带后台登录邮箱或内部 id：文章走 `mapPublicArticle`，影像走 `mapPublicRow`；只有 `/api/admin/*` 返回完整记录。
+- 后台只收 MP4 / WebM 视频，MOV 一律拒收并提示先导出为 MP4（H.264）：`media` 表的 CHECK 不含 `video/quicktime`，iPhone 的 MOV 常是 HEVC 且带拍摄地点。`src/media-store.js` 的 `MIME_TYPES` 必须是这张表 CHECK 的子集（校验脚本会查）。
+- 后台改文章（保存、发布、转草稿）都带上读到时的 `updatedAt`（`expectedUpdatedAt`），服务端对不上就回 409，不让旧内容盖掉别处刚保存的新内容。
+- 房间退回静态版时：这一次出的事（加载失败、帧率太低、渲染被中断）必须说明原因，访客以前关过提示也要显示（`showNotice` 的 `always`）；关掉提示只压住同一原因的开场说明。访客已经点了「静态版」之后后台场景再出事，只悄悄拆掉，不在静态页上弹提示。
+- 房间里第一个 Tab 停靠点是「静态版」跳转（`.room-skiplink`）；焦点在按钮或链接上时，Enter / 空格归那个控件，全局快捷键不得抢。
 
 ## Deployment
 
@@ -75,4 +80,7 @@
 - 房间的降级判断不要用 `navigator.connection.effectiveType === "3g"`：它按往返延迟估算，跨境访问时很多带宽正常的访客都会被报成 3g。
 - 房间的帧率看门狗阈值必须低于 30fps：省电模式和部分移动浏览器会把刷新率锁在 30。
 - 国内手机（尤其微信里）不开 VPN 直连 Cloudflare 时，房间约 230KB 的场景常要下十几秒。所以 `boot.js` 打开房间时用 modulepreload 把 three.js（`THREE_URL`，必须与 `scene.js` 的 import 一致）和 `scene.js` 并行预取；下载限时 30 秒、搭建限时 15 秒，超过 6 秒就显示“网络有点慢”和秒数，并给出「先看静态版」（只离开这一次，不记偏好）。失败时静态页提示会写明是下载超时、搭建超时还是哪条报错，让访客截图就能定位。不要再改回一个总的短限时。
+- `styles.css`、`script.js`、`policy.css` 的网址在 `scripts/build.mjs` 里换成内容指纹（`?v=<sha256 前 10 位>`），`_headers` 让它们缓存一周；源文件里的 `?v=` 只是给人看的，不必手改。新增引用这三个文件的页面时，把它加进 `build.mjs` 的 `fingerprintedPages`。`room/` 下的三个脚本仍然靠手改版本号（见上）。
+- 首页内联脚本给会进房间的访客先盖一层黑色遮罩（上面写着「正在布置房间…」，文字在 `styles.css` 里按 `:lang()` 给四种语言）。`boot.js` 超过 6 秒没到，遮罩自己撤掉并打上 `data-room-late`；晚到的 `boot.js` 看到它就不再打开房间，留在静态版并提示网络慢。
+- 宣传片和音乐是固定路由，`handleMediaFile` 让浏览器缓存一天（`FIXED_MEDIA_CACHE`）；同一个 R2 键换文件后，访客最多一天内还会拿到旧文件。后台发布的影像仍然不缓存，转为草稿立即生效。
 - 宣传片有两个版本：1080p（R2 `public/promo/pengyuan-personal-promo-1080p.mp4`，电脑用）和 720p（`public/promo/pengyuan-personal-promo-720p.mp4`，约 1.3 Mbps，手机用）。国内手机不开 VPN 直连 Cloudflare 时，1080p 的码率常常加载不动。首页用 `<source media>` 让手机选 720p，3D 房间按同样规则挑选；换宣传片时两个文件都要重新编码上传（H.264、`-movflags +faststart`）。

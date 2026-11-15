@@ -52,7 +52,7 @@
 
         /* 预判这位访客是否会进 hi-fi 房间：会的话先盖上遮罩，免得静态页闪一下再被盖住。
            这里只做便宜的判断，真正的能力检测和降级在 /room/boot.js。
-           boot.js 没能接手时，6 秒后自动撤掉遮罩，静态页照常可用。 */
+           boot.js 没能接手时，6 秒后自动撤掉遮罩，静态页照常可用；之后 boot.js 才到的话，它不会再打开房间。 */
         try {
           var query = new URLSearchParams(location.search);
           var forced = query.get("room") === "1";
@@ -70,7 +70,11 @@
           if (candidate) {
             root.setAttribute("data-room", "boot");
             setTimeout(function () {
-              if (root.getAttribute("data-room") === "boot") root.removeAttribute("data-room");
+              if (root.getAttribute("data-room") === "boot") {
+                root.removeAttribute("data-room");
+                /* 告诉晚到的 boot.js：访客已经在看静态页了，别再把页面盖住。 */
+                root.setAttribute("data-room-late", "1");
+              }
             }, 6000);
           }
         } catch (error) {
@@ -83,7 +87,7 @@
     <link rel="preload" href="/assets/fonts/fira-sans-400-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles.css?v=20261112-room">
     <script src="/script.js?v=20261112-room" defer></script>
-    <script src="/room/boot.js?v=20261115-voice2" defer></script>
+    <script src="/room/boot.js?v=20261116-guard" defer></script>
 
     <script type="application/ld+json">
       {
