@@ -13,9 +13,9 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261116-huali";
+  const SCENE_URL = "/room/scene.js?v=20261116-voice2";
   /* 小人（御剑飞行的迷你何鹏远）：房间亮起来之后才加载，版本号和上面保持一致。 */
-  const AVATAR_URL = "/room/avatar.js?v=20261116-huali";
+  const AVATAR_URL = "/room/avatar.js?v=20261116-voice2";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */

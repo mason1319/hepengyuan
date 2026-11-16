@@ -30,6 +30,9 @@ const VOICE = new Set([
   "tourStart", "tourEnd", "tourStop",
   "stop-about", "stop-photos", "stop-shelf", "stop-game", "stop-work",
   "stop-tv", "stop-calc", "stop-card", "stop-online", "stop-music",
+  "stop-relics", "stop-armchair", "stop-cord", "stop-projector",
+  "cute1", "cute2", "cute3",
+  "rogue1", "rogue2", "rogue3",
 ]);
 
 const STRINGS = {
@@ -54,9 +57,9 @@ const STRINGS = {
     ],
     grab: ["哎哎哎——放我下来！", "卧槽，谁拎我？！", "轻点轻点，我恐高！"],
     drop: ["……行吧，这儿风景也不错。", "下次拎之前打个招呼，谢谢。", "还好我会御剑，摔不着。"],
-    /* 撒娇和耍赖：没有录音，只出文字气泡。 */
-    cute: ["哎呀～再陪我玩一会儿嘛。", "人家飞了一天了，夸我一句好不好？", "你别走嘛，我给你放电影看。"],
-    rogue: ["不管不管，我就躺这儿了，谁也别想让我起来。", "我不飞了，除非你夸我。", "累了，耍个赖，五秒钟就好。"],
+    /* 撒娇和耍赖：被访客戳出来的才出声；小人自己落地时赖的那一句只出文字。 */
+    cute: ["哎呀，再陪我玩一会儿嘛！", "人家飞了一天咯，夸我一句好不好嘛？", "你别走嘛，我给你放电影看。"],
+    rogue: ["不管不管，我就躺在这儿，谁也别想让我起来。", "我不飞了，除非你夸我。", "哎呀，累了。耍个赖，五秒钟就好。"],
     tourStart: "坐稳了，发车！带你把这屋逛一圈。",
     tourEnd: "逛完啦！剩下的随便点，我接着飞。",
     tourStop: "好嘞，你自己逛，有事戳我。",
@@ -71,11 +74,11 @@ const STRINGS = {
       card: "名片盒里是我的名片，抽一张，还能翻面。",
       online: "电话和调制解调器管「联系」和「服务」。拨号上网，够复古吧。",
       music: "录音机里的磁带是我写的歌，点一下就放。",
-      relics: "这张旧桌子上是九十年代家里的老物件：电风扇、暖水瓶、搪瓷缸、算盘、煤油灯，还有罗盘、貔貅、文昌塔这些摆件。电风扇可以点开关。",
-      armchair: "这把是海南黄花梨的圈椅：扶手从靠背一路弯下来，连成一整圈。墙上挂的是工笔牡丹《花开富贵》。",
-      projector: "这台老放映机是真的在转：片盘、胶片、光柱一样不少。要不要我放一段给你看？",
+      relics: "这张旧桌子是九十年代家里的老物件，有电风扇、暖水瓶、搪瓷缸、算盘、煤油灯，还有罗盘、貔貅、文昌塔这些摆件。电风扇可以点开关哟。",
+      armchair: "这把是海南黄花梨的圈椅，扶手从靠背一路弯下来，连成一整圈。挂在墙上的是工笔的牡丹《花开富贵》。",
+      projector: "这台老放映机是真的在转，它的片盘、胶片、光柱一样都不少。要不要我放一段给你看呢？",
       screen: "幕布上放的是 Aggie 的短片和我的宣传片。镜头可以拖着转，凑近了看片盘。",
-      cord: "这根是灯绳。拉一下，雨夜变晴天；再拉一下又变回来。",
+      cord: "这个灯绳拉一下，雨夜就变成晴天了；再拉一下，又变回来了。",
     },
   },
   en: {
@@ -1205,9 +1208,19 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
     if (taps.length >= 3) {
       /* 五秒里被戳三下以上：烦了，爆粗口。 */
       actor.emote("shake");
-      say(...next("swear"));
-      /* 骂完往地上一躺，耍赖。 */
-      actor.pose("tantrum", 3.2);
+      const swore = say(...next("swear"));
+      const mine = said;
+      warm(`rogue${(turn.rogue % T.rogue.length) + 1}`);
+      /* 骂完往地上一躺，耍赖；骂的那句说完再接一句赖皮话（是访客戳出来的，可以出声）。
+         中间又被戳、开始带逛或离开书桌，就不接了。 */
+      actor.pose("tantrum", 8);
+      const sulk = () => {
+        if (said !== mine || tour || view !== "desk") return;
+        actor.pose("tantrum", 4.6);
+        say(...next("rogue"), { hold: 4200 });
+      };
+      if (swore) swore.then((played) => played && window.setTimeout(sulk, 350));
+      else window.setTimeout(sulk, 3000);
       return;
     }
     turn.poke += 1;
@@ -1225,6 +1238,7 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
       say(...next("greet"), { buttons: [tourButton()] });
     }
     warm(`greet${(turn.greet % T.greet.length) + 1}`);
+    if ((turn.poke + 1) % 3 === 0) warm(`cute${(turn.cute % T.cute.length) + 1}`);
     warm("tourStart");
   }
 
