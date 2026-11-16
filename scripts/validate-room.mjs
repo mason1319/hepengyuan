@@ -163,6 +163,18 @@ if (failures.length === 0) {
     fail("the projector view must read its films from the homepage and be backed by the wall screen in the scene");
   }
   if ((boot.match(/      cinema: \{ name: "/g) || []).length !== 4) fail("room/boot.js: every language needs the projector strings");
+  /* 小人：带逛的每一站都要在场景里登记落脚点，并且四种语言都有介绍；它能替访客做的事要在启动器里接住。 */
+  const avatarSource = await readFile("room/avatar.js", "utf8");
+  const tourIds = [...(avatarSource.match(/const TOUR = \[([\s\S]*?)\n\];/)?.[1] ?? "").matchAll(/\["([a-z]+)"/g)].map((match) => match[1]);
+  if (tourIds.length < 10) fail("room/avatar.js: the guided tour list could not be read");
+  const perchBlock = scene.match(/const perches = \{([\s\S]*?)\n  \};/)?.[1] ?? "";
+  for (const id of tourIds) {
+    if (!new RegExp(`\\n\\s+${id}: \\{ pos:`).test(perchBlock)) fail(`room/scene.js: the tour stop "${id}" has no perch for the avatar`);
+    if ((avatarSource.match(new RegExp(`\\n      ${id}: "`, "g")) || []).length !== 4) fail(`room/avatar.js: the tour stop "${id}" needs its line in all four languages`);
+  }
+  for (const [, , action] of (avatarSource.match(/const STOP_ACTIONS = \{([^}]*)\}/)?.[1] ?? "").matchAll(/(\w+): \["\w+", "(\w+)"\]/g)) {
+    if (!boot.includes(`id === "${action}"`)) fail(`room/boot.js: guideAct does not handle the avatar action "${action}"`);
+  }
   if (!boot.includes("room-skiplink") || !css.includes(".room-skiplink:focus{")) fail("the room needs a keyboard skip link to the static version as its first Tab stop");
   if (!/@media print\{[^}]*\.room\{display:none !important\}/.test(css.replace(/\n\s*/g, ""))
     && !/\.room\{display:none !important\}/.test(css)) {

@@ -13,9 +13,9 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261116-cinema2";
+  const SCENE_URL = "/room/scene.js?v=20261116-nanmu";
   /* 小人（御剑飞行的迷你何鹏远）：房间亮起来之后才加载，版本号和上面保持一致。 */
-  const AVATAR_URL = "/room/avatar.js?v=20261116-cinema2";
+  const AVATAR_URL = "/room/avatar.js?v=20261116-nanmu";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -98,7 +98,7 @@
       next: "下一段（→）",
       sound: "雨声",
       lofi: "切到静态版，并记住这个选择",
-      cinema: { name: "放映机", pick: "选一盘胶片", again: "再放一遍", menu: "换一盘", exits: "接着去", loading: "正在上片…", failed: "这盘片子暂时取不到", own: "何鹏远的宣传片", hint: "1–9 选片 · 空格 暂停 / 继续 · ESC 关掉放映机", back: "关掉放映机" },
+      cinema: { name: "放映机", views: ["放映员位", "特写", "观众席"], pick: "选一盘胶片", again: "再放一遍", menu: "换一盘", exits: "接着去", loading: "正在上片…", failed: "这盘片子暂时取不到", own: "何鹏远的宣传片", hint: "拖动 转视角 · 滚轮 缩放 · 右键拖动 平移 · 1–9 选片 · 空格 暂停 · ESC 关掉放映机", back: "关掉放映机" },
       light: { day: "天色：现在是晴天午后。拉一下灯绳回到雨夜", night: "天色：现在是雨夜。拉一下灯绳换成晴天午后" },
       loading: "正在布置房间…",
       loadingSlow: "网络有点慢，还在下载 3D 房间…",
@@ -165,7 +165,7 @@
       next: "Next (→)",
       sound: "Rain sound",
       lofi: "Switch to the static version and remember this choice",
-      cinema: { name: "Projector", pick: "Pick a reel", again: "Play again", menu: "Other reels", exits: "Next stop", loading: "Threading the film…", failed: "This reel can't be fetched right now", own: "He Pengyuan's promo film", hint: "1–9 pick a reel · Space pause / resume · ESC switch the projector off", back: "SWITCH PROJECTOR OFF" },
+      cinema: { name: "Projector", views: ["Projectionist", "Close-up", "Audience"], pick: "Pick a reel", again: "Play again", menu: "Other reels", exits: "Next stop", loading: "Threading the film…", failed: "This reel can't be fetched right now", own: "He Pengyuan's promo film", hint: "Drag to look around · wheel to zoom · right-drag to pan · 1–9 pick a reel · Space pause · ESC switch off", back: "SWITCH PROJECTOR OFF" },
       light: { day: "Light: a sunny afternoon now. Pull the cord for the rainy night", night: "Light: a rainy night now. Pull the cord for a sunny afternoon" },
       loading: "Setting up the room…",
       loadingSlow: "Slow connection — still downloading the 3D room…",
@@ -182,7 +182,7 @@
       ],
       hotspots: {
         about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Tapes · promo film & media",
-        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", cord: "Pull cord · change the light", projector: "Projector · films on the wall", tape: "Boombox · play a cassette", card: "Business card · take one out", avatar: "Tap to talk · drag me", cassette: "Put it in the boombox", book: "Projects",
+        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", cord: "Pull cord · change the light", projector: "Projector · films on the wall", fan: "Table fan · on / off", tape: "Boombox · play a cassette", card: "Business card · take one out", avatar: "Tap to talk · drag me", cassette: "Put it in the boombox", book: "Projects",
         deckPlay: "Play / pause", deckPause: "Pause", deckStop: "Stop · eject", deckNext: "Next track", deckPrev: "Previous track", deckRec: "Record key (just for fun)", calc: "Calculator · pick it up",
         tvPower: "TV on/off", tvPreset: "Channel presets 1–6", tvChannel: "Change channel", tvVolume: "Volume", pcPower: "Computer on/off", pcBright: "Screen brightness",
       },
@@ -237,7 +237,7 @@
       next: "Weiter (→)",
       sound: "Regengeräusch",
       lofi: "Zur statischen Version wechseln und diese Wahl merken",
-      cinema: { name: "Projektor", pick: "Eine Filmrolle wählen", again: "Noch einmal", menu: "Andere Rollen", exits: "Weiter zu", loading: "Film wird eingelegt …", failed: "Diese Rolle ist gerade nicht abrufbar", own: "Imagefilm von He Pengyuan", hint: "1–9 Rolle wählen · Leertaste Pause / weiter · ESC Projektor aus", back: "PROJEKTOR AUS" },
+      cinema: { name: "Projektor", views: ["Vorführer", "Nahaufnahme", "Publikum"], pick: "Eine Filmrolle wählen", again: "Noch einmal", menu: "Andere Rollen", exits: "Weiter zu", loading: "Film wird eingelegt …", failed: "Diese Rolle ist gerade nicht abrufbar", own: "Imagefilm von He Pengyuan", hint: "Ziehen dreht die Ansicht · Mausrad zoomt · Rechtsziehen verschiebt · 1–9 Rolle · Leertaste Pause · ESC aus", back: "PROJEKTOR AUS" },
       light: { day: "Licht: jetzt ein sonniger Nachmittag. An der Schnur ziehen für die Regennacht", night: "Licht: jetzt eine Regennacht. An der Schnur ziehen für einen sonnigen Nachmittag" },
       loading: "Der Raum wird eingerichtet …",
       loadingSlow: "Langsame Verbindung – der 3D-Raum lädt noch …",
@@ -254,7 +254,7 @@
       ],
       hotspots: {
         about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Kassetten · Imagefilm & Medien",
-        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", cord: "Zugschalter · Licht wechseln", projector: "Projektor · Filme an der Wand", tape: "Kassettenrekorder · Kassette abspielen", card: "Visitenkarte · eine herausnehmen", avatar: "Antippen zum Reden · zieh mich", cassette: "In den Rekorder legen", book: "Projekte",
+        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", cord: "Zugschalter · Licht wechseln", projector: "Projektor · Filme an der Wand", fan: "Tischventilator · an / aus", tape: "Kassettenrekorder · Kassette abspielen", card: "Visitenkarte · eine herausnehmen", avatar: "Antippen zum Reden · zieh mich", cassette: "In den Rekorder legen", book: "Projekte",
         deckPlay: "Wiedergabe / Pause", deckPause: "Pause", deckStop: "Stopp · Auswurf", deckNext: "Nächster Titel", deckPrev: "Vorheriger Titel", deckRec: "Aufnahmetaste (nur zum Spaß)", calc: "Taschenrechner · in die Hand nehmen",
         tvPower: "Fernseher ein/aus", tvPreset: "Programmtasten 1–6", tvChannel: "Kanal wechseln", tvVolume: "Lautstärke", pcPower: "Computer ein/aus", pcBright: "Bildschirmhelligkeit",
       },
@@ -309,7 +309,7 @@
       next: "다음(→)",
       sound: "빗소리",
       lofi: "정적 버전으로 바꾸고 이 선택 기억하기",
-      cinema: { name: "영사기", pick: "필름을 고르세요", again: "다시 보기", menu: "다른 필름", exits: "이어서 가기", loading: "필름을 거는 중…", failed: "이 필름을 지금 불러올 수 없어요", own: "허펑위안 홍보 영상", hint: "1–9 필름 선택 · 스페이스 일시정지 / 계속 · ESC 영사기 끄기", back: "영사기 끄기" },
+      cinema: { name: "영사기", views: ["영사 기사 자리", "클로즈업", "객석"], pick: "필름을 고르세요", again: "다시 보기", menu: "다른 필름", exits: "이어서 가기", loading: "필름을 거는 중…", failed: "이 필름을 지금 불러올 수 없어요", own: "허펑위안 홍보 영상", hint: "드래그 회전 · 휠 확대 · 오른쪽 드래그 이동 · 1–9 필름 · 스페이스 일시정지 · ESC 끄기", back: "영사기 끄기" },
       light: { day: "조명: 지금은 맑은 오후. 줄을 당기면 비 오는 밤으로", night: "조명: 지금은 비 오는 밤. 줄을 당기면 맑은 오후로" },
       loading: "방을 꾸미는 중…",
       loadingSlow: "연결이 느려 3D 방을 아직 내려받는 중…",
@@ -326,7 +326,7 @@
       ],
       hotspots: {
         about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "테이프 · 홍보 영상과 미디어",
-        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", cord: "당김줄 스위치 · 빛 바꾸기", projector: "영사기 · 벽에 영화 상영", tape: "카세트 · 음악 듣기", card: "명함 · 한 장 꺼내기", avatar: "누르면 말해요 · 끌어 보세요", cassette: "카세트에 넣기", book: "작업",
+        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", cord: "당김줄 스위치 · 빛 바꾸기", projector: "영사기 · 벽에 영화 상영", fan: "선풍기 · 켜기 / 끄기", tape: "카세트 · 음악 듣기", card: "명함 · 한 장 꺼내기", avatar: "누르면 말해요 · 끌어 보세요", cassette: "카세트에 넣기", book: "작업",
         deckPlay: "재생 / 일시정지", deckPause: "일시정지", deckStop: "정지 · 꺼내기", deckNext: "다음 곡", deckPrev: "이전 곡", deckRec: "녹음 버튼(그냥 눌러 보기)", calc: "계산기 · 들어서 쓰기",
         tvPower: "TV 켜기/끄기", tvPreset: "채널 프리셋 1–6", tvChannel: "채널 바꾸기", tvVolume: "볼륨", pcPower: "컴퓨터 켜기/끄기", pcBright: "화면 밝기",
       },
@@ -1644,7 +1644,8 @@
     hint.hidden = true;
     hint.setAttribute("aria-hidden", "true");
 
-    overlay.append(skipLink, stage, ...Object.values(panels), hud, tip, creditsPanel, dock, status, skip, hint);
+    overlay.append(skipLink, stage, ...Object.values(panels), hud, tip, creditsPanel, buildCinebar(), dock, status, skip, hint);
+    if (!CINEMA_ONSCREEN) overlay.append(cinema.video);
     overlay.addEventListener("keydown", onKey);
     document.body.append(overlay);
     ui = {
@@ -1702,8 +1703,13 @@
 
   /* ---------------------------------------------------------------- 放映机：在幕布上放首页登记的片子
      片子只来自首页：带 data-film 的链接（必须是本站地址），外加 #personal-film 的宣传片。放完按 data-film-next 和
-     data-film-exits 给出下一步；出口是首页上带 data-go 的链接，这里原样复制。不在 room/ 里写任何片子的地址或标题。 */
-  const cinema = { films: [], current: null, panel: null, video: null, menu: null, card: null, heading: null, status: null };
+     data-film-exits 给出下一步；出口是首页上带 data-go 的链接，这里原样复制。不在 room/ 里写任何片子的地址或标题。
+
+     放映角是自由镜头：拖动旋转、滚轮 / 双指缩放、右键 / 双指平移，底部一条小面板选片和换机位，不挡幕布。
+     电脑上，影片是幕布上的一层视频贴图，镜头怎么转它都在幕布上，放映机、片盘、光柱同时看得见。
+     手机和平板上（iPhone 和微信把视频画进 3D 不可靠），放片时镜头改成正对幕布、把 <video> 直接摆在幕布的位置。 */
+  const cinema = { films: [], current: null, state: "menu", watching: false, panel: null, video: null, status: null, bar: null, title: null, body: null, views: null };
+  const CINEMA_ONSCREEN = matches("(pointer: coarse)");
 
   function collectFilms() {
     const films = [];
@@ -1721,33 +1727,63 @@
     return films;
   }
 
+  /* 幕布上的面板只给手机用（里面是那块直接显示的视频）；<video> 本身所有设备共用。
+     视频必须留在页面里、不能 display:none，有些 iPhone 不给脱离文档的视频解码。 */
   function buildCinema() {
     const panel = element("section", "room-screen room-cinema");
     panel.dataset.view = "cinema";
     panel.setAttribute("aria-label", T.cinema.name);
-    const heading = element("h2", "cin-h", T.cinema.pick);
+    const heading = element("h2", "sr-only", T.cinema.name);
     heading.tabIndex = -1;
-    const menu = element("div", "cin-menu");
-    const video = element("video", "cin-video");
+    const video = element("video", CINEMA_ONSCREEN ? "cin-video" : "room-tape-video");
     video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    video.setAttribute("x5-playsinline", "");
     video.playsInline = true;
     video.preload = "none";
-    video.hidden = true;
     const status = element("p", "cin-status");
     status.setAttribute("role", "status");
-    const card = element("div", "cin-card");
-    card.hidden = true;
-    panel.append(heading, menu, video, status, card);
-    Object.assign(cinema, { panel, video, menu, card, heading, status });
-    video.addEventListener("ended", () => showFilmCard(false));
+    panel.append(heading, status);
+    if (CINEMA_ONSCREEN) panel.prepend(video);
+    Object.assign(cinema, { panel, video, status, current: null, state: "menu", watching: false });
+    video.addEventListener("ended", () => endFilm(false));
     video.addEventListener("error", () => {
-      if (cinema.current) showFilmCard(true);
+      if (cinema.current) endFilm(true);
     });
     video.addEventListener("playing", () => {
       status.textContent = "";
+      if (cinema.current) setFilmState("playing");
+    });
+    video.addEventListener("pause", () => {
+      if (cinema.current && cinema.state === "playing" && !video.ended) setFilmState("paused");
+    });
+    video.addEventListener("timeupdate", () => {
+      if (video.duration > 0) controller?.setFilmProgress(video.currentTime / video.duration);
     });
     video.addEventListener("click", toggleFilmPause);
     return panel;
+  }
+
+  /* 底部的放映面板：片名、选片 / 暂停 / 片尾的下一步，以及三个机位。 */
+  function buildCinebar() {
+    const bar = element("section", "room-cinebar");
+    bar.hidden = true;
+    bar.setAttribute("aria-label", T.cinema.name);
+    const title = element("p", "cb-title");
+    title.setAttribute("aria-live", "polite");
+    const body = element("div", "cb-body");
+    const views = element("div", "cb-views");
+    T.cinema.views.forEach((label, index) => {
+      const button = element("button", "cin-b cin-ghost", label);
+      button.type = "button";
+      button.addEventListener("click", () => {
+        if (!cinema.watching) controller?.corner(index);
+      });
+      views.append(button);
+    });
+    bar.append(title, body, views);
+    Object.assign(cinema, { bar, title, body, views });
+    return bar;
   }
 
   const filmButton = (film, className = "cin-b") => {
@@ -1759,6 +1795,52 @@
     return button;
   };
 
+  const barButton = (label, onClick, className = "cin-b cin-ghost") => {
+    const button = element("button", className, label);
+    button.type = "button";
+    button.addEventListener("click", onClick);
+    return button;
+  };
+
+  function renderCinebar() {
+    if (!cinema.bar) return;
+    const film = cinema.current;
+    const nodes = [];
+    if (!film || cinema.state === "menu") {
+      cinema.title.textContent = T.cinema.pick;
+      nodes.push(...cinema.films.map((candidate) => filmButton(candidate)));
+    } else if (cinema.state === "playing" || cinema.state === "paused" || cinema.state === "loading") {
+      cinema.title.textContent = cinema.state === "loading" ? `${film.title} · ${T.cinema.loading}` : film.title;
+      /* 触屏上没有空格键：去掉文字里“（空格）”这样的按键提示。 */
+      const label = cinema.state === "paused" ? T.play : T.pause;
+      nodes.push(barButton(CINEMA_ONSCREEN ? label.replace(/\s*[（(][^（()）]*[）)]\s*$/, "") : label, toggleFilmPause, "cin-b"), barButton(T.cinema.menu, showFilmMenu));
+    } else {
+      const failed = cinema.state === "failed";
+      cinema.title.textContent = failed ? T.cinema.failed : film.title;
+      const next = cinema.films.find((candidate) => candidate.id === film.next);
+      if (next) nodes.push(filmButton(next));
+      if (!failed) nodes.push(barButton(T.cinema.again, () => playFilm(film)));
+      nodes.push(barButton(T.cinema.menu, showFilmMenu));
+      for (const anchor of film.exits.map((id) => document.querySelector(`main a[data-go="${id}"]`)).filter(Boolean)) {
+        const link = linkFrom(anchor, "cin-b", `${textOf(anchor)} ↗`);
+        link.target = "_blank";
+        link.rel = "noopener";
+        nodes.push(link);
+      }
+    }
+    cinema.body.replaceChildren(...nodes);
+    /* 手机上放片时镜头锁在幕布正前方，机位按钮先收起。 */
+    cinema.views.hidden = cinema.watching;
+  }
+
+  function setFilmState(state) {
+    if (cinema.state === state) return;
+    const hadFocus = cinema.bar?.contains(document.activeElement);
+    cinema.state = state;
+    renderCinebar();
+    if (hadFocus) cinema.body.querySelector("button, a")?.focus({ preventScroll: true });
+  }
+
   /* 放映机转起来：房间压暗、界面按夜里的样子显示；停了恢复访客自己选的天色。 */
   function runProjector(on) {
     controller?.setProjector(on);
@@ -1767,87 +1849,105 @@
     } else syncLight(session.get(LIGHT_KEY) === "day" ? "day" : "night");
   }
 
-  function showFilmMenu() {
-    if (!cinema.panel) return;
+  /* 手机：镜头正对幕布，把视频面板摆到幕布上；收起时回到放映员位。 */
+  function watchOnScreen(on) {
+    if (!CINEMA_ONSCREEN || cinema.watching === on) return;
+    cinema.watching = on;
+    const panel = cinema.panel;
+    if (on) {
+      controller?.goTo("cinema").then(() => {
+        if (!cinema.watching || view !== "cinema") return;
+        placePanel("cinema");
+        panel.hidden = false;
+        panel.inert = false;
+        requestAnimationFrame(() => panel.classList.add("is-open"));
+      });
+    } else {
+      panel.classList.remove("is-open");
+      panel.inert = true;
+      panel.hidden = true;
+      if (view === "cinema" && state === "open") controller?.corner(0);
+    }
+  }
+
+  /* 停片、关机、收起画面，不动镜头。 */
+  function resetFilm() {
+    if (!cinema.video) return;
     cinema.current = null;
+    cinema.state = "menu";
     cinema.video.pause();
     cinema.video.removeAttribute("src");
     cinema.video.load();
-    cinema.video.hidden = true;
-    cinema.card.hidden = true;
     cinema.status.textContent = "";
-    cinema.heading.hidden = false;
-    cinema.menu.hidden = false;
-    cinema.menu.replaceChildren(...cinema.films.map((film) => filmButton(film)));
+    controller?.setWallVideo(null);
+    controller?.setFilmProgress(0);
     runProjector(false);
+  }
+
+  function showFilmMenu() {
+    resetFilm();
+    watchOnScreen(false);
+    renderCinebar();
+    cinema.body?.querySelector("button")?.focus({ preventScroll: true });
   }
 
   function playFilm(film) {
     cinema.current = film;
-    cinema.menu.hidden = true;
-    cinema.card.hidden = true;
-    cinema.heading.hidden = true;
+    cinema.state = "loading";
     cinema.status.textContent = T.cinema.loading;
-    cinema.video.hidden = false;
     cinema.video.src = film.src;
+    controller?.setFilmProgress(0);
     runProjector(true);
-    /* 在这一次点击里开始放：手机只允许点按时出声。被拦下就留在画面上，等访客再点一下画面。 */
+    if (CINEMA_ONSCREEN) watchOnScreen(true);
+    else controller?.setWallVideo(cinema.video);
+    /* 在这一次点击里开始放：手机只允许点按时出声。被拦下就留在画面上，等访客再点一下。 */
     cinema.video.play()?.catch?.(() => {
       if (cinema.current === film) cinema.status.textContent = T.filmTapPlay;
     });
+    renderCinebar();
   }
 
   function toggleFilmPause() {
-    if (!cinema.current || cinema.video.hidden) return;
+    if (!cinema.current || !cinema.video.getAttribute("src")) return;
     if (cinema.video.paused) cinema.video.play()?.catch?.(() => {});
     else cinema.video.pause();
   }
 
-  /* 一盘放完（或者取不到）：灯亮回来，幕布上给出下一步——再放一遍、接着放下一盘、换一盘，以及这盘片子登记的出口。 */
-  function showFilmCard(failed) {
-    const film = cinema.current;
-    if (!film) return;
+  /* 一盘放完（或者取不到）：灯亮回来，面板上给出下一步——接着放下一盘、再放一遍、换一盘，以及这盘片子登记的出口。 */
+  function endFilm(failed) {
+    if (!cinema.current) return;
     cinema.video.pause();
-    cinema.video.hidden = true;
-    cinema.status.textContent = "";
+    controller?.setWallVideo(null);
     runProjector(false);
-    const actions = element("div", "cin-row");
-    if (!failed) {
-      const again = element("button", "cin-b cin-ghost", T.cinema.again);
-      again.type = "button";
-      again.addEventListener("click", () => playFilm(film));
-      actions.append(again);
-    }
-    const next = cinema.films.find((candidate) => candidate.id === film.next);
-    if (next) actions.prepend(filmButton(next));
-    const other = element("button", "cin-b cin-ghost", T.cinema.menu);
-    other.type = "button";
-    other.addEventListener("click", () => {
-      showFilmMenu();
-      cinema.menu.querySelector("button")?.focus({ preventScroll: true });
-    });
-    actions.append(other);
-    const parts = [element("p", "cin-t", failed ? T.cinema.failed : film.title), actions];
-    const exits = film.exits.map((id) => document.querySelector(`main a[data-go="${id}"]`)).filter(Boolean);
-    if (exits.length) {
-      const row = element("div", "cin-row");
-      for (const anchor of exits) {
-        const link = linkFrom(anchor, "cin-b", `${textOf(anchor)} ↗`);
-        link.target = "_blank";
-        link.rel = "noopener";
-        row.append(link);
-      }
-      parts.push(element("p", "cin-k", T.cinema.exits), row);
-    }
-    cinema.card.replaceChildren(...parts);
-    cinema.card.hidden = false;
-    cinema.card.querySelector("button, a")?.focus({ preventScroll: true });
+    watchOnScreen(false);
+    cinema.state = failed ? "failed" : "ended";
+    renderCinebar();
+    cinema.body.querySelector("button, a")?.focus({ preventScroll: true });
   }
 
-  /* 离开放映视图、离开房间、页面转到后台：停片、关机、灯亮回来。 */
+  /* 离开放映角、离开房间：停片、关机、灯亮回来，书桌机位回到全景。 */
   function stopCinema() {
-    if (!cinema.panel || (!cinema.current && cinema.video.hidden)) return;
-    showFilmMenu();
+    if (!cinema.bar || (cinema.bar.hidden && !cinema.current)) return;
+    resetFilm();
+    if (cinema.watching) {
+      cinema.watching = false;
+      cinema.panel.classList.remove("is-open");
+      cinema.panel.inert = true;
+      cinema.panel.hidden = true;
+    }
+    cinema.bar.hidden = true;
+    controller?.homeDesk();
+  }
+
+  /* 小人替访客做的事（它气泡上的按钮）："film" 去放映机前放第一盘，"light" 拉一下灯绳。
+     放映必须在访客这一下点击里开始（手机只允许点按时出声），所以这里同步调用，不等镜头飞过去。 */
+  function guideAct(id) {
+    if (state !== "open" || !controller) return;
+    if (id === "light") controller.toggleLight();
+    else if (id === "film") {
+      openView("cinema");
+      if (view === "cinema" && cinema.films[0]) playFilm(cinema.films[0]);
+    }
   }
 
   /* 天色（雨夜 / 晴天午后）：界面跟着换——白天画面亮，顶部和底部的衬底压深，按钮换成太阳。 */
@@ -1885,7 +1985,9 @@
     if (previous === "cinema") stopCinema();
     if (next === "cinema") {
       cinema.films = collectFilms();
-      showFilmMenu();
+      resetFilm();
+      cinema.bar.hidden = false;
+      renderCinebar();
     }
 
     closePanels();
@@ -1914,14 +2016,16 @@
       }
     }
 
-    const panel = ui.panels[next];
+    /* 放映角没有盖在屏幕上的面板（手机放片时那块视频面板由 watchOnScreen 自己管）。 */
+    const panel = next === "cinema" ? null : ui.panels[next];
     if (panel && FLOATING.has(next)) {
       /* 记事本和计算器不用等镜头：和镜头一起升起来。 */
       panel.hidden = false;
       panel.inert = false;
       requestAnimationFrame(() => panel.classList.add("is-open"));
     }
-    await controller.goTo(next);
+    if (next === "cinema") await controller.corner(0);
+    else await controller.goTo(next);
     if (token !== viewToken || state !== "open") return;
 
     if (panel && !FLOATING.has(next)) {
@@ -1933,6 +2037,7 @@
     }
     placeTapeVideo();
     if (panel) panel.querySelector("h2")?.focus({ preventScroll: true });
+    else if (next === "cinema") (cinema.body.querySelector("button") || overlay).focus({ preventScroll: true });
     else overlay.focus({ preventScroll: true });
   }
 
@@ -1974,7 +2079,7 @@
         event.preventDefault();
         return;
       }
-      if (/^[1-9]$/.test(key) && !cinema.menu.hidden && cinema.films[Number(key) - 1]) {
+      if (/^[1-9]$/.test(key) && cinema.state === "menu" && cinema.films[Number(key) - 1]) {
         playFilm(cinema.films[Number(key) - 1]);
         event.preventDefault();
         return;
@@ -2018,7 +2123,7 @@
       event.preventDefault();
       return;
     }
-    if (view === "desk" && controller) {
+    if ((view === "desk" || (view === "cinema" && !cinema.watching)) && controller) {
       const nudges = {
         arrowleft: { yaw: 0.12 }, arrowright: { yaw: -0.12 }, arrowup: { pitch: 0.08 }, arrowdown: { pitch: -0.08 },
         "+": { zoom: 0.88 }, "=": { zoom: 0.88 }, "-": { zoom: 1.14 },
@@ -2188,6 +2293,7 @@
           lang: LANG,
           coarse: matches("(pointer: coarse)"),
           openView: (id) => openView(id),
+          act: guideAct,
           session,
         });
         guide?.setView(view);
@@ -2442,7 +2548,7 @@
     pendingShow = null;
     if (!wanted || state !== "open") return;
     openView("cinema").then(() => {
-      cinema.menu?.querySelector(`button[data-film="${wanted}"]`)?.focus({ preventScroll: true });
+      cinema.body?.querySelector(`button[data-film="${wanted}"]`)?.focus({ preventScroll: true });
     });
   }
 

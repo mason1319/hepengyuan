@@ -39,6 +39,7 @@ const ACTIONS = {
   lamp: { label: "LAMP", sub: "开关台灯" },
   cord: { label: "LIGHT", sub: "灯绳 · 拉一下换个天色" },
   projector: { label: "CINEMA", sub: "放映机 · 在墙上放电影" },
+  fan: { label: "FAN", sub: "电风扇 · 开关" },
   tape: { label: "MUSIC", sub: "录音机 · 放磁带听音乐" },
   cassette: { label: "CASSETTE", sub: "放进录音机" },
   book: { label: "WORK", sub: "作品" },
@@ -1453,7 +1454,7 @@ function drawCardBack(g, W, H, data, images = []) {
 /* ------------------------------------------------------------------ 场景 */
 
 const BACK = -1.6;
-const LEFT = -1.95;
+const LEFT = -3.75; /* 原来是 -1.95：向左加宽，书架左边多出一张老物件桌 */
 const RIGHT = 3.0; /* 原来是 1.25：向右加宽出一个放映角（后墙右段挂幕布，对面是放映机） */
 const CEIL = 2.75;
 const FRONT = 2.4;
@@ -1797,17 +1798,43 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   shelfLight.position.set(-1.5, 2.05, -0.95);
   scene.add(shelfLight);
 
-  /* ---- 椅子（左前景） */
-  const chairMat = std(0xd8cfbd, 0.7);
+  /* ---- 椅子（左前景）：一把金丝楠木的宫廷式圈椅。椅圈是一根弯料，从左扶手头绕过后背到右扶手头；
+     靠背板上嵌一枚描金团花，座面中间是席面，四腿带牙条、管脚枨和脚踏。椅背朝着镜头（+z），人面向书桌坐。 */
+  const nanmu = std(0xffffff, 0.34, 0.22, { map: woodTexture("#b8813a", "#7d4c18", "#e6bd72", 53) });
   const chair = new THREE.Group();
   chair.position.set(-0.86, 0, -0.6);
   chair.rotation.y = 0.12;
-  chair.add(box(0.44, 0.035, 0.42, chairMat, 0, 0.46, 0));
-  for (const [x, z] of [[-0.19, -0.18], [0.19, -0.18], [-0.19, 0.18], [0.19, 0.18]]) chair.add(box(0.03, 0.46, 0.03, chairMat, x, 0.23, z));
-  chair.add(box(0.03, 0.5, 0.03, chairMat, -0.19, 0.73, 0.19));
-  chair.add(box(0.03, 0.5, 0.03, chairMat, 0.19, 0.73, 0.19));
-  chair.add(box(0.41, 0.07, 0.025, chairMat, 0, 0.94, 0.19));
-  for (let i = 0; i < 4; i += 1) chair.add(box(0.018, 0.4, 0.018, chairMat, -0.12 + i * 0.08, 0.7, 0.19));
+  chair.add(box(0.54, 0.045, 0.46, nanmu, 0, 0.47, 0));
+  chair.add(box(0.44, 0.006, 0.36, std(0xcfae72, 0.78), 0, 0.4955, 0));
+  for (const [x, z, top] of [[-0.24, -0.2, 0.47], [0.24, -0.2, 0.47], [-0.24, 0.2, 0.92], [0.24, 0.2, 0.92]]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.023, top, 12), nanmu);
+    leg.position.set(x, top / 2, z);
+    chair.add(shadowed(leg));
+  }
+  const chairHoop = new THREE.CatmullRomCurve3([
+    [-0.27, 0.71, -0.2], [-0.3, 0.75, -0.06], [-0.275, 0.88, 0.13], [-0.14, 0.97, 0.235], [0, 0.99, 0.255],
+    [0.14, 0.97, 0.235], [0.275, 0.88, 0.13], [0.3, 0.75, -0.06], [0.27, 0.71, -0.2],
+  ].map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+  chair.add(shadowed(new THREE.Mesh(new THREE.TubeGeometry(chairHoop, 56, 0.018, 10), nanmu)));
+  for (const side of [-1, 1]) {
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.025, 14, 10), nanmu);
+    knob.position.set(side * 0.27, 0.71, -0.2);
+    chair.add(knob);
+    chair.add(rod(new THREE.Vector3(side * 0.24, 0.49, -0.2), new THREE.Vector3(side * 0.27, 0.7, -0.2), 0.015, nanmu));
+    chair.add(rod(new THREE.Vector3(side * 0.255, 0.49, 0.01), new THREE.Vector3(side * 0.292, 0.79, 0.01), 0.011, nanmu));
+    chair.add(box(0.014, 0.05, 0.38, nanmu, side * 0.24, 0.425, 0));
+    chair.add(box(0.03, 0.028, 0.4, nanmu, side * 0.24, 0.17, 0));
+  }
+  const backSplat = box(0.12, 0.5, 0.016, nanmu, 0, 0.74, 0.236);
+  backSplat.rotation.x = 0.07;
+  chair.add(backSplat);
+  const chairCrest = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.004, 24), gold);
+  chairCrest.rotation.x = Math.PI / 2 + 0.07;
+  chairCrest.position.set(0, 0.8, 0.249);
+  chair.add(chairCrest);
+  for (const z of [-0.2, 0.2]) chair.add(box(0.46, 0.05, 0.014, nanmu, 0, 0.425, z));
+  chair.add(box(0.48, 0.03, 0.055, nanmu, 0, 0.085, -0.2));
+  chair.add(box(0.46, 0.028, 0.03, nanmu, 0, 0.2, 0.2));
   scene.add(chair);
 
   /* ================================================================ 90 年代的房间
@@ -3333,6 +3360,271 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   lightCord.add(cordPivot);
   scene.add(lightCord);
 
+  /* ---- 老物件桌：房间左段靠后墙的一张金丝楠木翘头案，摆着九十年代家里常见的东西和几件风水摆件。
+     全是程序建模的装饰，不写任何履历事实；只有电风扇可以点（开 / 关）。墙上的挂历显示访客当天的日期。 */
+  const RELIC = { x: -2.9, z: BACK + 0.36, w: 1.5, d: 0.56, top: 0.76 };
+  const relics = new THREE.Group();
+  /* 金丝楠木翘头案：案面两头上翘，四腿缩进，腿和案面之间是牙头，前牙条上一道描金线，两侧有挡板和托泥。 */
+  relics.add(box(RELIC.w, 0.05, RELIC.d, nanmu, RELIC.x, RELIC.top - 0.025, RELIC.z));
+  relics.add(box(1.06, 0.075, 0.02, nanmu, RELIC.x, RELIC.top - 0.0875, RELIC.z + RELIC.d / 2 - 0.07));
+  relics.add(box(1.06, 0.075, 0.02, nanmu, RELIC.x, RELIC.top - 0.0875, RELIC.z - RELIC.d / 2 + 0.07));
+  relics.add(noPick(box(0.98, 0.007, 0.004, gold, RELIC.x, RELIC.top - 0.0875, RELIC.z + RELIC.d / 2 - 0.058)));
+  for (const side of [-1, 1]) {
+    const legX = RELIC.x + side * 0.56;
+    const tip = box(0.075, 0.036, RELIC.d, nanmu, RELIC.x + side * (RELIC.w / 2 - 0.022), RELIC.top + 0.012, RELIC.z);
+    tip.rotation.z = side * 0.55;
+    relics.add(tip);
+    for (const sz of [-1, 1]) {
+      const legZ = RELIC.z + sz * (RELIC.d / 2 - 0.07);
+      relics.add(box(0.06, RELIC.top - 0.05, 0.05, nanmu, legX, (RELIC.top - 0.05) / 2, legZ));
+      for (const out of [-1, 1]) {
+        const spandrel = box(0.11, 0.022, 0.024, nanmu, legX + out * 0.062, RELIC.top - 0.1, legZ);
+        spandrel.rotation.z = out * -0.75;
+        relics.add(spandrel);
+      }
+    }
+    relics.add(box(0.03, 0.3, RELIC.d - 0.2, nanmu, legX, 0.36, RELIC.z));
+    const panelCrest = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.004, 24), gold);
+    panelCrest.rotation.z = Math.PI / 2;
+    panelCrest.position.set(legX + side * 0.018, 0.36, RELIC.z);
+    relics.add(panelCrest);
+    relics.add(box(0.09, 0.04, RELIC.d - 0.03, nanmu, legX, 0.02, RELIC.z));
+  }
+  /* 摆在桌面上：x 是离桌子正中的左右距离，z 是前后（正数靠前）。 */
+  const onTable = (mesh, x, y, z) => {
+    mesh.position.set(RELIC.x + x, RELIC.top + y, RELIC.z + z);
+    relics.add(shadowed(mesh));
+    return mesh;
+  };
+  const tube = (top, bottom, height, material, segments = 20) => new THREE.Mesh(new THREE.CylinderGeometry(top, bottom, height, segments), material);
+  const orb = (radius, material) => new THREE.Mesh(new THREE.SphereGeometry(radius, 18, 14), material);
+  const enamel = std(0xf2efe6, 0.3, 0.05);
+  const redPaint = std(0xb8322a, 0.42, 0.1);
+  const blackPaint = std(0x1b1b1d, 0.5, 0.3);
+
+  /* 电风扇（桌子左端）：底座、立杆、电机、网罩和三片扇叶；开着时扇叶转、机头慢慢摇头。 */
+  const fan = new THREE.Group();
+  fan.userData.action = "fan";
+  const fanGreen = std(0x6f9c8c, 0.45, 0.2);
+  const fanBase = tube(0.085, 0.1, 0.03, fanGreen, 24);
+  fanBase.position.y = 0.015;
+  fan.add(shadowed(fanBase));
+  const fanNeck = tube(0.014, 0.018, 0.2, chrome, 10);
+  fanNeck.position.y = 0.13;
+  fan.add(fanNeck);
+  const fanHead = new THREE.Group();
+  fanHead.position.y = 0.26;
+  const fanMotor = orb(0.045, fanGreen);
+  fanMotor.scale.set(1, 1, 1.35);
+  fanMotor.position.z = -0.03;
+  fanHead.add(shadowed(fanMotor));
+  for (const z of [0.015, 0.075]) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.125, 0.004, 6, 40), chrome);
+    ring.position.z = z;
+    fanHead.add(ring);
+  }
+  for (let i = 0; i < 12; i += 1) {
+    const wire = box(0.003, 0.25, 0.003, chrome, 0, 0, 0.078);
+    wire.rotation.z = (i / 12) * Math.PI;
+    fanHead.add(wire);
+  }
+  const fanBlades = new THREE.Group();
+  fanBlades.position.z = 0.045;
+  for (let i = 0; i < 3; i += 1) {
+    const blade = box(0.06, 0.11, 0.004, std(0xd9e6e2, 0.35, 0.1, { transparent: true, opacity: 0.85 }), 0, 0.062, 0);
+    blade.rotation.y = 0.35;
+    const arm = new THREE.Group();
+    arm.rotation.z = (i / 3) * TAU;
+    arm.add(blade);
+    fanBlades.add(arm);
+  }
+  fanBlades.add(tube(0.022, 0.022, 0.03, chrome, 14).rotateX(Math.PI / 2));
+  fanHead.add(fanBlades);
+  fan.add(fanHead);
+  fan.add(hitBox(0.3, 0.42, 0.24, 0, 0.2, 0.02));
+  fan.position.set(RELIC.x - 0.58, RELIC.top, RELIC.z - 0.04);
+  fan.rotation.y = 0.35;
+  let fanOn = true;
+  let fanSpeed = 0;
+  const toggleFan = () => {
+    fanOn = !fanOn;
+  };
+
+  /* 暖水瓶：红漆铁皮壳、银色瓶肩和瓶塞、一个提手。 */
+  const thermosBody = onTable(tube(0.052, 0.058, 0.26, redPaint, 24), -0.34, 0.13, -0.1);
+  onTable(tube(0.03, 0.052, 0.05, chrome, 24), -0.34, 0.285, -0.1);
+  onTable(tube(0.022, 0.026, 0.035, std(0xc9b48a, 0.7), 16), -0.34, 0.327, -0.1);
+  const thermosHandle = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.006, 8, 20, Math.PI), chrome);
+  thermosHandle.rotation.z = -Math.PI / 2;
+  onTable(thermosHandle, -0.285, 0.17, -0.1);
+  thermosBody.userData.relic = "thermos";
+  /* 搪瓷缸：白搪瓷、蓝边、一个把儿。 */
+  onTable(tube(0.044, 0.04, 0.085, enamel, 24), -0.2, 0.0425, 0.12);
+  const mugRim = new THREE.Mesh(new THREE.TorusGeometry(0.044, 0.004, 8, 28), std(0x2f4f8f, 0.35, 0.1));
+  mugRim.rotation.x = Math.PI / 2;
+  onTable(mugRim, -0.2, 0.085, 0.12);
+  const relicMugHandle = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.005, 8, 16, Math.PI), enamel);
+  relicMugHandle.rotation.z = -Math.PI / 2;
+  onTable(relicMugHandle, -0.152, 0.045, 0.12);
+  /* 铜葫芦，系一圈红绳。 */
+  onTable(orb(0.045, brass), -0.16, 0.045, -0.14);
+  onTable(orb(0.03, brass), -0.16, 0.108, -0.14);
+  onTable(tube(0.004, 0.006, 0.03, brass, 8), -0.16, 0.148, -0.14);
+  const gourdTie = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.004, 6, 18), redPaint);
+  gourdTie.rotation.x = Math.PI / 2;
+  onTable(gourdTie, -0.16, 0.08, -0.14);
+  /* 煤油灯：铜底座、玻璃灯罩、一点火苗。它是这张桌子的光源。 */
+  onTable(tube(0.035, 0.05, 0.06, brass, 20), 0.02, 0.03, -0.16);
+  onTable(tube(0.012, 0.02, 0.03, brass, 12), 0.02, 0.075, -0.16);
+  const lampGlass = std(0xfff3dc, 0.08, 0, { transparent: true, opacity: 0.28, emissive: 0xffb066, emissiveIntensity: 0.25 });
+  const chimneyGlass = tube(0.016, 0.034, 0.13, lampGlass, 20);
+  chimneyGlass.castShadow = false;
+  onTable(chimneyGlass, 0.02, 0.155, -0.16).castShadow = false;
+  const flame = noPick(orb(0.011, new THREE.MeshBasicMaterial({ color: 0xffc46a, toneMapped: false })));
+  flame.scale.set(0.8, 1.7, 0.8);
+  flame.position.set(RELIC.x + 0.02, RELIC.top + 0.118, RELIC.z - 0.16);
+  relics.add(flame);
+  const relicGlow = new THREE.PointLight(0xffb468, 1.1, 2.8, 2);
+  relicGlow.position.set(RELIC.x + 0.02, RELIC.top + 0.2, RELIC.z - 0.1);
+  relics.add(relicGlow);
+  /* 算盘：木框、一道横梁、九档，每档上二下五。 */
+  const abacusWood = std(0x3a2416, 0.55);
+  const abacus = new THREE.Group();
+  for (const z of [-0.075, 0.075]) abacus.add(box(0.36, 0.022, 0.012, abacusWood, 0, 0.011, z));
+  for (const x of [-0.174, 0.174]) abacus.add(box(0.012, 0.022, 0.162, abacusWood, x, 0.011, 0));
+  abacus.add(box(0.34, 0.016, 0.008, abacusWood, 0, 0.011, -0.03));
+  const beadGeometry = new THREE.SphereGeometry(0.0125, 12, 8);
+  beadGeometry.scale(1, 0.62, 1);
+  const beads = new THREE.InstancedMesh(beadGeometry, std(0x7a3b22, 0.4), 63);
+  const beadMatrix = new THREE.Matrix4();
+  let beadIndex = 0;
+  for (let column = 0; column < 9; column += 1) {
+    const x = -0.14 + column * 0.035;
+    abacus.add(box(0.003, 0.003, 0.15, brass, x, 0.013, 0));
+    for (const z of [-0.062, -0.046, -0.014, 0.004, 0.022, 0.04, 0.058]) {
+      beadMatrix.makeTranslation(x, 0.013, z);
+      beads.setMatrixAt(beadIndex, beadMatrix);
+      beadIndex += 1;
+    }
+  }
+  beads.instanceMatrix.needsUpdate = true;
+  abacus.add(beads);
+  abacus.position.set(RELIC.x + 0.06, RELIC.top, RELIC.z + 0.13);
+  abacus.rotation.y = -0.12;
+  relics.add(abacus);
+  /* 貔貅：一只蹲着的小金兽，脑袋昂着，头上一只角。 */
+  const pixiuBody = onTable(orb(0.04, gold), 0.26, 0.05, -0.13);
+  pixiuBody.scale.set(1.45, 0.95, 0.9);
+  onTable(orb(0.03, gold), 0.325, 0.085, -0.13);
+  const pixiuHorn = new THREE.Mesh(new THREE.ConeGeometry(0.008, 0.03, 8), gold);
+  pixiuHorn.rotation.z = 0.5;
+  onTable(pixiuHorn, 0.318, 0.122, -0.13);
+  for (const [x, z] of [[0.215, -0.155], [0.215, -0.105], [0.3, -0.155], [0.3, -0.105]]) onTable(tube(0.011, 0.013, 0.03, gold, 8), x, 0.015, z);
+  const pixiuTail = new THREE.Mesh(new THREE.TorusGeometry(0.018, 0.006, 6, 12, Math.PI * 1.2), gold);
+  onTable(pixiuTail, 0.2, 0.07, -0.13);
+  /* 海鸥双反相机：黑盒子、上下两只镜头、顶上的取景罩。 */
+  onTable(box(0.074, 0.11, 0.07, blackPaint), 0.46, 0.055, -0.1);
+  onTable(box(0.066, 0.03, 0.062, blackPaint), 0.46, 0.125, -0.1);
+  for (const y of [0.035, 0.078]) {
+    const tlrLens = tube(0.02, 0.022, 0.024, chrome, 18);
+    tlrLens.rotation.x = Math.PI / 2;
+    onTable(tlrLens, 0.46, y, -0.055);
+    const tlrGlass = tube(0.014, 0.014, 0.004, std(0x151a26, 0.1, 0.4), 16);
+    tlrGlass.rotation.x = Math.PI / 2;
+    onTable(tlrGlass, 0.46, y, -0.042);
+  }
+  /* 罗盘：红木方盘上一只铜圆盘，一圈一圈的刻度，中间的指针微微摆动。 */
+  onTable(box(0.17, 0.012, 0.17, std(0x5b1f1a, 0.5)), 0.45, 0.006, 0.13);
+  const luopanFace = canvasTexture(256, 256, (g, w, h) => {
+    g.fillStyle = "#c9a04a";
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = "#3a2410";
+    for (const [radius, ticks, width] of [[120, 72, 1.5], [96, 48, 1.5], [70, 24, 2], [44, 8, 2.5]]) {
+      g.lineWidth = width;
+      g.beginPath();
+      g.arc(w / 2, h / 2, radius, 0, TAU);
+      g.stroke();
+      for (let i = 0; i < ticks; i += 1) {
+        const angle = (i / ticks) * TAU;
+        g.beginPath();
+        g.moveTo(w / 2 + Math.cos(angle) * (radius - 12), h / 2 + Math.sin(angle) * (radius - 12));
+        g.lineTo(w / 2 + Math.cos(angle) * radius, h / 2 + Math.sin(angle) * radius);
+        g.stroke();
+      }
+    }
+    g.fillStyle = "#f3ead2";
+    g.beginPath();
+    g.arc(w / 2, h / 2, 22, 0, TAU);
+    g.fill();
+  });
+  const luopanDisc = tube(0.074, 0.074, 0.008, [brass, std(0xffffff, 0.35, 0.5, { map: luopanFace }), brass], 40);
+  onTable(luopanDisc, 0.45, 0.016, 0.13);
+  const luopanNeedle = onTable(box(0.004, 0.002, 0.034, redPaint), 0.45, 0.023, 0.13);
+  /* 文昌塔：七层小铜塔。 */
+  for (let tier = 0; tier < 7; tier += 1) {
+    const radius = 0.034 - tier * 0.0034;
+    onTable(tube(radius * 0.86, radius, 0.026, gold, 6), 0.64, 0.02 + tier * 0.036, -0.14);
+    onTable(tube(radius * 1.25, radius * 1.42, 0.006, brass, 6), 0.64, 0.036 + tier * 0.036, -0.14);
+  }
+  onTable(new THREE.Mesh(new THREE.ConeGeometry(0.008, 0.04, 6), gold), 0.64, 0.285, -0.14);
+  onTable(box(0.09, 0.012, 0.09, std(0x3a2416, 0.5)), 0.64, 0.006, -0.14);
+  /* 墙上：一串五帝钱（红绳、五枚方孔铜钱、一束穗子）和一本挂历。 */
+  const coinX = RELIC.x + 0.52;
+  relics.add(box(0.004, 0.36, 0.004, redPaint, coinX, 1.5, BACK + 0.012));
+  for (let i = 0; i < 5; i += 1) {
+    const coin = tube(0.026, 0.026, 0.004, gold, 24);
+    coin.rotation.x = Math.PI / 2;
+    coin.position.set(coinX, 1.62 - i * 0.056, BACK + 0.016);
+    relics.add(coin);
+    relics.add(box(0.012, 0.012, 0.006, std(0x2a1c10, 0.6), coinX, 1.62 - i * 0.056, BACK + 0.017));
+  }
+  const tassel = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.09, 10), redPaint);
+  tassel.position.set(coinX, 1.3, BACK + 0.016);
+  relics.add(tassel);
+  const calendarTexture = canvasTexture(256, 352, (g, w, h) => {
+    const today = new Date();
+    g.fillStyle = "#f6f0e2";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "#b8322a";
+    g.fillRect(0, 0, w, 74);
+    g.fillStyle = "#f6f0e2";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = '600 40px "Literata", Georgia, serif';
+    g.fillText(`${today.getFullYear()} · ${String(today.getMonth() + 1).padStart(2, "0")}`, w / 2, 39);
+    g.fillStyle = "#b8322a";
+    g.font = '700 178px "Literata", Georgia, serif';
+    g.fillText(String(today.getDate()), w / 2, 196);
+    /* 星期用七个圆点表示，今天那一个是实心的：不用文字，四种语言的页面都一样。 */
+    const weekday = (today.getDay() + 6) % 7;
+    for (let i = 0; i < 7; i += 1) {
+      g.beginPath();
+      g.arc(46 + i * 27.5, 312, 8, 0, TAU);
+      if (i === weekday) g.fill();
+      else {
+        g.lineWidth = 2.5;
+        g.strokeStyle = i >= 5 ? "#b8322a" : "#8a7f6c";
+        g.stroke();
+      }
+    }
+  });
+  const calendar = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.4125), std(0xffffff, 0.85, 0, { map: calendarTexture, emissive: 0xffffff, emissiveMap: calendarTexture, emissiveIntensity: 0.12 }));
+  calendar.position.set(RELIC.x - 0.22, 1.5, BACK + 0.012);
+  relics.add(shadowed(calendar));
+  relics.add(box(0.31, 0.02, 0.012, std(0x8a8f92, 0.4, 0.7), RELIC.x - 0.22, 1.714, BACK + 0.012));
+  scene.add(relics);
+  scene.add(fan);
+  tickers.push((time, dt) => {
+    fanSpeed = lerp(fanSpeed, fanOn ? 1 : 0, 1 - Math.exp(-dt * 1.6));
+    if (fanSpeed > 0.002) {
+      fanBlades.rotation.z -= dt * 22 * fanSpeed;
+      fanHead.rotation.y = Math.sin(time * 0.5) * 0.55 * fanSpeed;
+    }
+    luopanNeedle.rotation.y = 0.4 + Math.sin(time * 0.7) * 0.18 + Math.sin(time * 2.3) * 0.04;
+    relicGlow.intensity = 1.1 * (0.92 + 0.08 * Math.sin(time * 11) * Math.sin(time * 3.7));
+    flame.scale.y = 1.7 + Math.sin(time * 13) * 0.18;
+  });
+
   /* ---- 放映角：后墙右段挂一幅幕布，对面矮柜上是一台双片盘的老式放映机。
      墙上放什么由启动器决定（片子来自首页的登记表）：进入放映视图时，一块 HTML 面板盖在幕布上，视频就在那块面板里放。
      这里只负责物件、片盘转动、光柱，以及放映时把房间的灯压暗。 */
@@ -3348,65 +3640,221 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   cinema.add(box(SCREEN.w + 0.16, 0.06, 0.06, screenTrim, SCREEN.x, SCREEN.y + SCREEN.h / 2 + 0.07, BACK + 0.04));
   cinema.add(box(SCREEN.w + 0.1, 0.022, 0.022, screenTrim, SCREEN.x, SCREEN.y - SCREEN.h / 2 - 0.05, BACK + 0.022));
 
+  /* 放映机：一台 16 毫米双片盘放映机。片盘和胶片在靠房间中间的那一侧（-x），默认机位正好看得见。
+     机身、片门、镜头、后上方的灯箱；两根支臂撑起上片盘（供片）和下片盘（收片），胶片从上片盘下来，
+     穿过片门、绕过机身底下，再回到下片盘。运转时片盘转、胶片走、灯箱的散热缝透光。 */
   const PROJ = { x: 2.14, z: 0.78 };
-  const projectorMetal = std(0x3d4a44, 0.5, 0.5);
-  const projectorDark = std(0x1b1d1f, 0.45, 0.7);
+  const projectorMetal = std(0x7d8a80, 0.55, 0.55);
+  const projectorDark = std(0x232628, 0.5, 0.6);
+  const reelChrome = std(0xc9ccd0, 0.25, 0.9);
   cinema.add(box(0.56, 0.7, 0.44, std(0x5a4030, 0.75), PROJ.x, 0.35, PROJ.z));
   cinema.add(box(0.6, 0.02, 0.48, std(0x3b2a20, 0.6), PROJ.x, 0.71, PROJ.z));
-  cinema.add(box(0.2, 0.2, 0.34, projectorMetal, PROJ.x, 0.82, PROJ.z));
-  cinema.add(box(0.15, 0.1, 0.13, projectorDark, PROJ.x, 0.97, PROJ.z + 0.08));
-  const lensBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.04, 0.1, 20), projectorDark);
+  const rig = new THREE.Group(); /* 整台机器：运转时带一点抖动 */
+  cinema.add(rig);
+  rig.add(box(0.17, 0.03, 0.36, projectorDark, PROJ.x, 0.735, PROJ.z));
+  rig.add(box(0.15, 0.26, 0.34, projectorMetal, PROJ.x, 0.88, PROJ.z));
+  rig.add(box(0.11, 0.17, 0.07, projectorDark, PROJ.x, 0.9, PROJ.z - 0.2));
+  const lensBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.038, 0.13, 24), reelChrome);
   lensBarrel.rotation.x = Math.PI / 2;
-  lensBarrel.position.set(PROJ.x, 0.84, PROJ.z - 0.22);
-  cinema.add(shadowed(lensBarrel));
+  lensBarrel.position.set(PROJ.x, 0.9, PROJ.z - 0.29);
+  rig.add(shadowed(lensBarrel));
+  const lensHood = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.03, 24), projectorDark);
+  lensHood.rotation.x = Math.PI / 2;
+  lensHood.position.set(PROJ.x, 0.9, PROJ.z - 0.365);
+  rig.add(lensHood);
   const lensGlass = std(0x20242a, 0.15, 0.2, { emissive: 0xfff0c4, emissiveIntensity: 0 });
-  const lens = new THREE.Mesh(new THREE.CircleGeometry(0.03, 20), lensGlass);
+  const lens = new THREE.Mesh(new THREE.CircleGeometry(0.032, 24), lensGlass);
   lens.rotation.y = Math.PI;
-  lens.position.set(PROJ.x, 0.84, PROJ.z - 0.271);
-  cinema.add(lens);
-  /* 两只片盘：轴朝左右，装在机身一侧的两根支臂上。三根辐条让转动看得出来。 */
-  const reelMetal = std(0x8d9296, 0.35, 0.8);
-  const makeReel = (y, z, radius) => {
+  lens.position.set(PROJ.x, 0.9, PROJ.z - 0.381);
+  rig.add(lens);
+  const LENS = new THREE.Vector3(PROJ.x, 0.9, PROJ.z - 0.383);
+  /* 灯箱和它两侧的散热缝 */
+  rig.add(box(0.13, 0.2, 0.15, projectorDark, PROJ.x, 1.0, PROJ.z + 0.115));
+  const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.036, 0.04, 16), projectorDark);
+  chimney.position.set(PROJ.x, 1.12, PROJ.z + 0.115);
+  rig.add(chimney);
+  const ventGlow = std(0x1a1410, 0.6, 0, { emissive: 0xffa24a, emissiveIntensity: 0 });
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 4; i += 1) rig.add(noPick(box(0.004, 0.012, 0.11, ventGlow, PROJ.x + side * 0.067, 0.94 + i * 0.035, PROJ.z + 0.115)));
+  }
+  const pilot = new THREE.Mesh(new THREE.SphereGeometry(0.007, 10, 8), std(0x501010, 0.4, 0, { emissive: 0xff3b2a, emissiveIntensity: 0.9 }));
+  pilot.position.set(PROJ.x - 0.078, 0.8, PROJ.z - 0.06);
+  rig.add(pilot);
+
+  const REEL_X = PROJ.x - 0.1;
+  const REEL_R = 0.135;
+  const SUPPLY = new THREE.Vector3(REEL_X, 1.36, PROJ.z - 0.19);
+  const TAKEUP = new THREE.Vector3(REEL_X, 1.3, PROJ.z + 0.3);
+  for (const [foot, spindle] of [[PROJ.z - 0.1, SUPPLY], [PROJ.z + 0.08, TAKEUP]]) {
+    rig.add(rod(new THREE.Vector3(PROJ.x - 0.062, 1.0, foot), new THREE.Vector3(PROJ.x - 0.062, spindle.y, spindle.z), 0.011, projectorDark));
+    rig.add(rod(new THREE.Vector3(PROJ.x - 0.062, spindle.y, spindle.z), new THREE.Vector3(REEL_X - 0.02, spindle.y, spindle.z), 0.006, reelChrome));
+  }
+  const filmBase = std(0x221a14, 0.5);
+  const makeReel = (center) => {
     const reel = new THREE.Group();
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.008, 8, 32), reelMetal);
-    rim.rotation.y = Math.PI / 2;
-    reel.add(shadowed(rim));
-    const film = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.62, radius * 0.62, 0.016, 24), std(0x1a1512, 0.6));
-    film.rotation.z = Math.PI / 2;
-    reel.add(film);
-    for (let k = 0; k < 3; k += 1) {
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.006, radius * 2 - 0.01, 0.014), reelMetal);
-      spoke.rotation.x = (k * Math.PI) / 3;
-      reel.add(spoke);
+    reel.position.copy(center);
+    for (const side of [-1, 1]) {
+      const flange = new THREE.Mesh(new THREE.TorusGeometry(REEL_R, 0.006, 8, 40), reelChrome);
+      flange.rotation.y = Math.PI / 2;
+      flange.position.x = side * 0.012;
+      reel.add(shadowed(flange));
+      for (let k = 0; k < 3; k += 1) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.003, REEL_R * 2 - 0.006, 0.022), reelChrome);
+        spoke.rotation.x = (k * Math.PI) / 3;
+        spoke.position.x = side * 0.012;
+        reel.add(spoke);
+      }
     }
-    reel.position.set(PROJ.x + 0.118, y, z);
-    cinema.add(reel);
-    return reel;
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.032, 20), reelChrome);
+    hub.rotation.z = Math.PI / 2;
+    reel.add(hub);
+    /* 片盘上卷着的胶片：半径跟着放映进度变。 */
+    const pack = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.02, 40), filmBase);
+    pack.rotation.z = Math.PI / 2;
+    reel.add(pack);
+    rig.add(reel);
+    return { reel, pack, radius: 0.08 };
   };
-  const reels = [makeReel(1.09, PROJ.z - 0.08, 0.105), makeReel(1.03, PROJ.z + 0.17, 0.09)];
-  cinema.add(rod(new THREE.Vector3(PROJ.x + 0.105, 0.9, PROJ.z - 0.04), new THREE.Vector3(PROJ.x + 0.105, 1.09, PROJ.z - 0.08), 0.008, projectorDark));
-  cinema.add(rod(new THREE.Vector3(PROJ.x + 0.105, 0.9, PROJ.z + 0.1), new THREE.Vector3(PROJ.x + 0.105, 1.03, PROJ.z + 0.17), 0.008, projectorDark));
-  cinema.add(hitBox(0.5, 0.62, 0.5, PROJ.x, 0.98, PROJ.z));
-  /* 光柱：从镜头到幕布四角的一个薄薄的发光棱锥，只在放映时看得见。 */
+  const supplyReel = makeReel(SUPPLY);
+  const takeupReel = makeReel(TAKEUP);
+  const setFilmProgress = (value) => {
+    const progress = clamp(Number(value) || 0, 0, 1);
+    supplyReel.radius = lerp(0.115, 0.045, progress);
+    takeupReel.radius = lerp(0.045, 0.115, progress);
+    for (const item of [supplyReel, takeupReel]) item.pack.scale.set(item.radius, 1, item.radius);
+  };
+  setFilmProgress(0);
+
+  /* 胶片：一条带齿孔的窄带子，沿着走片路线铺开；运转时贴图往前滚。 */
+  const filmTexture = canvasTexture(32, 64, (g, w, h) => {
+    g.fillStyle = "#24170d";
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = "#6a4a2a";
+    for (let y = 2; y < h; y += 16) g.fillRect(8, y, 16, 12);
+    g.fillStyle = "#e6dcc4";
+    for (let y = 1; y < h; y += 8) {
+      g.fillRect(2, y, 3, 4);
+      g.fillRect(27, y, 3, 4);
+    }
+  });
+  filmTexture.wrapT = THREE.RepeatWrapping;
+  const filmPath = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(REEL_X, SUPPLY.y - 0.1, SUPPLY.z - 0.06),
+    new THREE.Vector3(REEL_X, 1.12, PROJ.z - 0.24),
+    new THREE.Vector3(REEL_X, 0.98, PROJ.z - 0.248),
+    new THREE.Vector3(REEL_X, 0.82, PROJ.z - 0.248),
+    new THREE.Vector3(REEL_X, 0.772, PROJ.z - 0.17),
+    new THREE.Vector3(REEL_X, 0.8, PROJ.z + 0.03),
+    new THREE.Vector3(REEL_X, 0.99, PROJ.z + 0.17),
+    new THREE.Vector3(REEL_X, TAKEUP.y - 0.1, TAKEUP.z - 0.07),
+  ]);
+  {
+    const steps = 72;
+    const points = filmPath.getSpacedPoints(steps);
+    const positions = new Float32Array((steps + 1) * 6);
+    const uvs = new Float32Array((steps + 1) * 4);
+    const indices = [];
+    const tiles = filmPath.getLength() / 0.035;
+    points.forEach((point, index) => {
+      positions.set([point.x - 0.009, point.y, point.z, point.x + 0.009, point.y, point.z], index * 6);
+      uvs.set([0, (index / steps) * tiles, 1, (index / steps) * tiles], index * 4);
+      if (index < steps) indices.push(index * 2, index * 2 + 1, index * 2 + 2, index * 2 + 1, index * 2 + 3, index * 2 + 2);
+    });
+    const ribbon = new THREE.BufferGeometry();
+    ribbon.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    ribbon.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+    ribbon.setIndex(indices);
+    ribbon.computeVertexNormals();
+    rig.add(noPick(new THREE.Mesh(ribbon, new THREE.MeshStandardMaterial({ map: filmTexture, roughness: 0.35, metalness: 0.1, side: THREE.DoubleSide }))));
+  }
+  cinema.add(hitBox(0.5, 0.78, 0.62, PROJ.x - 0.03, 1.08, PROJ.z + 0.03));
+
+  /* 光束：从镜头到幕布四角的发光棱锥，靠近镜头最亮、到幕布变淡；里面飘着灰尘。只在放映时看得见。 */
+  const screenPoint = (u, v, out) => out.set(SCREEN.x + (u * SCREEN.w) / 2, SCREEN.y + (v * SCREEN.h) / 2, BACK + 0.03);
   const beamGeometry = new THREE.BufferGeometry();
-  const bz = BACK + 0.03;
-  beamGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array([
-    PROJ.x, 0.84, PROJ.z - 0.275,
-    SCREEN.x - SCREEN.w / 2, SCREEN.y - SCREEN.h / 2, bz,
-    SCREEN.x + SCREEN.w / 2, SCREEN.y - SCREEN.h / 2, bz,
-    SCREEN.x + SCREEN.w / 2, SCREEN.y + SCREEN.h / 2, bz,
-    SCREEN.x - SCREEN.w / 2, SCREEN.y + SCREEN.h / 2, bz,
-  ]), 3));
+  const beamPositions = [LENS.x, LENS.y, LENS.z];
+  const beamColors = [1, 1, 1];
+  const corner = new THREE.Vector3();
+  for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+    screenPoint(u, v, corner);
+    beamPositions.push(corner.x, corner.y, corner.z);
+    beamColors.push(0.2, 0.2, 0.2);
+  }
+  beamGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(beamPositions), 3));
+  beamGeometry.setAttribute("color", new THREE.BufferAttribute(new Float32Array(beamColors), 3));
   beamGeometry.setIndex([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1]);
   const beam = noPick(new THREE.Mesh(beamGeometry, new THREE.MeshBasicMaterial({
-    color: 0xfff0c4, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+    color: 0xfff0c4, vertexColors: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
   })));
+  const BEAM_DUST = 80;
+  const beamDustSeeds = [];
+  const beamDustRng = makeRng(311);
+  for (let i = 0; i < BEAM_DUST; i += 1) {
+    beamDustSeeds.push([0.08 + beamDustRng() * 0.86, (beamDustRng() * 2 - 1) * 0.9, (beamDustRng() * 2 - 1) * 0.9, beamDustRng() * TAU, 0.4 + beamDustRng() * 0.8]);
+  }
+  const beamDustPositions = new Float32Array(BEAM_DUST * 3);
+  const beamDustGeometry = new THREE.BufferGeometry();
+  beamDustGeometry.setAttribute("position", new THREE.BufferAttribute(beamDustPositions, 3));
+  const beamDust = noPick(new THREE.Points(beamDustGeometry, new THREE.PointsMaterial({
+    color: 0xfff0c4, size: 0.014, sizeAttenuation: true, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, map: glow,
+  })));
+  beamDust.frustumCulled = false;
+  /* 幕布：没有画面时亮着放映灯的白光；有画面时（电脑上）画面是幕布前面的一层视频贴图。墙上围着一圈溢出的光。 */
+  wallScreen.material.emissive.set(0xfff3d6);
+  wallScreen.material.emissiveIntensity = 0;
+  const wallPicture = noPick(new THREE.Mesh(new THREE.PlaneGeometry(SCREEN.w, SCREEN.h), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })));
+  wallPicture.position.set(SCREEN.x, SCREEN.y, BACK + 0.023);
+  wallPicture.visible = false;
+  const screenHalo = noPick(new THREE.Mesh(new THREE.PlaneGeometry(SCREEN.w * 1.9, SCREEN.h * 2.3), new THREE.MeshBasicMaterial({
+    map: glow, color: 0xfff0c4, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+  })));
+  screenHalo.position.set(SCREEN.x, SCREEN.y, BACK + 0.004);
+  /* 灯箱漏出来的光：平时很弱，让这台机器在夜里也看得见；放映时变亮。这盏灯一开始就在场景里（灯的数量不变）。 */
+  const projectorGlow = new THREE.PointLight(0xffc58a, 0, 2.8, 2);
+  projectorGlow.position.set(PROJ.x - 0.24, 1.12, PROJ.z + 0.1);
   scene.add(cinema);
-  scene.add(beam);
+  scene.add(beam, beamDust, wallPicture, screenHalo, projectorGlow);
   const projector = { on: false };
   /* 开始放映：台灯灭，房间的光压暗（白天的阳光也先退场）；停了再恢复。不改访客选的天色。 */
   const setProjector = (on) => {
     projector.on = Boolean(on);
+  };
+  /* 电脑上：把正在放的 <video> 变成幕布上的画面，镜头怎么转它都在幕布上。传 null 收起。 */
+  const setWallVideo = (video) => {
+    wallPicture.material.map?.dispose();
+    wallPicture.material.map = video ? Object.assign(new THREE.VideoTexture(video), { colorSpace: THREE.SRGBColorSpace }) : null;
+    wallPicture.material.needsUpdate = true;
+    wallPicture.visible = Boolean(video);
+  };
+  const dustPoint = new THREE.Vector3();
+  const runProjector = (time, dt, run, day) => {
+    const flicker = 0.9 + 0.1 * Math.sin(time * 31) * Math.sin(time * 7.3);
+    projectorGlow.intensity = 0.32 * (1 - 0.7 * day) + 1.5 * run * flicker;
+    ventGlow.emissiveIntensity = 1.7 * run;
+    lensGlass.emissiveIntensity = 2.4 * run;
+    beam.material.opacity = 0.17 * run * flicker;
+    beamDust.material.opacity = 0.6 * run;
+    screenHalo.material.opacity = 0.3 * run * flicker;
+    wallScreen.material.emissiveIntensity = wallPicture.visible ? 0 : 0.95 * run * flicker;
+    wallPicture.material.color.setScalar(0.92 + 0.08 * flicker);
+    if (run <= 0) {
+      if (rig.position.y !== 0) rig.position.y = 0;
+      return;
+    }
+    /* 片盘上的胶片越少转得越快；胶片贴图顺着走片方向滚。 */
+    supplyReel.reel.rotation.x -= (dt * run * 0.42) / supplyReel.radius;
+    takeupReel.reel.rotation.x -= (dt * run * 0.42) / takeupReel.radius;
+    filmTexture.offset.y -= dt * run * 6;
+    rig.position.y = Math.sin(time * 61) * 0.0005 * run;
+    for (let i = 0; i < BEAM_DUST; i += 1) {
+      const [t, u, v, phase, speed] = beamDustSeeds[i];
+      const along = (t + time * 0.012 * speed) % 1;
+      screenPoint(u + 0.07 * Math.sin(time * 0.3 * speed + phase), v + 0.07 * Math.cos(time * 0.23 * speed + phase), dustPoint).sub(LENS).multiplyScalar(0.06 + along * 0.9).add(LENS);
+      beamDustPositions[i * 3] = dustPoint.x;
+      beamDustPositions[i * 3 + 1] = dustPoint.y;
+      beamDustPositions[i * 3 + 2] = dustPoint.z;
+    }
+    beamDustGeometry.attributes.position.needsUpdate = true;
   };
 
   const LIGHT_SECONDS = 2;
@@ -3436,7 +3884,6 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     bulbs.material.color.copy(NIGHT.fairy).lerp(DAY.fairy, fairyOff);
     fairyHalo.material.opacity = 0.5 * (1 - fairyOff);
     for (const light of moodLights) light.intensity = 0.25 * (1 - fairyOff);
-    lensGlass.emissiveIntensity = 2.2 * dim;
     /* 夜光拉珠：天黑才看得出它在发光，方便在暗处找到这根绳子。 */
     beadMaterial.emissiveIntensity = 0.6 * (1 - d);
   };
@@ -3484,14 +3931,7 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     const d = dayLight.level * dayLight.level * (3 - 2 * dayLight.level);
     const dim = dayLight.cinema * dayLight.cinema * (3 - 2 * dayLight.cinema);
     if (d !== dayLight.applied || dim !== dayLight.appliedCinema) applyLight(d, dim);
-    /* 放映机：片盘转，光柱带一点老胶片的闪烁。 */
-    if (dim > 0) {
-      beam.material.opacity = 0.075 * dim * (0.9 + 0.1 * Math.sin(time * 31) * Math.sin(time * 7.3));
-      reels[0].rotation.x -= dt * 4.2 * dim;
-      reels[1].rotation.x -= dt * 5.1 * dim;
-    } else if (beam.material.opacity !== 0) {
-      beam.material.opacity = 0;
-    }
+    runProjector(time, dt, dim, dayLight.shown);
 
     /* 绳子：一根带阻尼的弹簧（被拉下去再弹回）加一个小摆。分几小步算，帧率低时也不会发散。 */
     const moving = Math.abs(cordState.pull) + Math.abs(cordState.velocity) + Math.abs(cordState.swing) + Math.abs(cordState.swingVelocity) > 0.0004;
@@ -3561,6 +4001,12 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     shelf: { pos: new THREE.Vector3(-1.5, 1.02, -1.1) },
     photos: { pos: new THREE.Vector3(-0.8, 1.62, -1.4) },
     window: { pos: new THREE.Vector3(0.3, 1.58, -1.4) },
+    /* 新物件要让小人会去：在这里登记一个落脚点。stand 表示能落地站着；poses 是它在这儿可以摆的姿态
+       （stand 站、prone 趴、lie 侧躺、cute 撒娇），不写就用默认的一组。台词写在 avatar.js 的 stops 里，同一个 id。 */
+    relics: { pos: new THREE.Vector3(RELIC.x + 0.26, RELIC.top, RELIC.z + 0.17), stand: true, poses: ["stand", "prone", "lie", "cute"] },
+    projector: { pos: new THREE.Vector3(PROJ.x + 0.012, 1.012, PROJ.z - 0.07), stand: true, poses: ["stand", "prone", "cute", "stand"] },
+    screen: { pos: new THREE.Vector3(SCREEN.x - 0.3, SCREEN.y + SCREEN.h / 2 + 0.102, BACK + 0.045), stand: true, poses: ["lie", "prone", "stand"] },
+    cord: { pos: new THREE.Vector3(0.44, 1.5, BACK + 0.46) },
   };
 
   return {
@@ -3586,7 +4032,11 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     sun,
     lightCord,
     cinema,
+    fan,
+    toggleFan,
     setProjector,
+    setWallVideo,
+    setFilmProgress,
     pullCord,
     setLight,
     lightMode: () => dayLight.mode,
@@ -3693,7 +4143,7 @@ export async function mount({
   const byId = Object.fromEntries(HOTSPOTS.map((hotspot) => [hotspot.id, hotspot]));
   /* 这次访问里上次停在白天还是夜里，进来就是什么样，不放过渡。 */
   built.setLight(wantedLight === "day" ? "day" : "night", true);
-  const pickRoots = [...Object.values(built.hotspots).flatMap((entry) => entry.groups), built.lamp, built.lightCord, built.cinema, built.recorder, built.calculator, built.cassetteStack, built.workBooks, built.cardHolder, built.heroCard];
+  const pickRoots = [...Object.values(built.hotspots).flatMap((entry) => entry.groups), built.lamp, built.lightCord, built.cinema, built.fan, built.recorder, built.calculator, built.cassetteStack, built.workBooks, built.cardHolder, built.heroCard];
 
   /* 悬停时给受光材质一点暖色自发光。 */
   const highlight = new THREE.Color(CORAL);
@@ -3735,7 +4185,7 @@ export async function mount({
     return { pos: center.clone().addScaledVector(normal, distance), look: center };
   }
 
-  /* 书桌视角的六个机位（“视角”按钮 / V 键轮流切换）：全景、电脑桌、书架、窗台录音机、电视、放映角。 */
+  /* 书桌视角的机位（“视角”按钮 / V 键轮流切换）：全景、电脑桌、书架、窗台录音机、电视、老物件桌、放映角。 */
   let deskIndex = 0;
   let deskPresets = [];
   function computePoses() {
@@ -3746,8 +4196,14 @@ export async function mount({
       { pos: v(lerp(-1.42, -1.5, narrow), 1.24, lerp(0.35, 0.95, narrow)), look: v(-1.64, 1.0, -1.45) },
       { pos: v(0.66, 1.34, lerp(-0.3, 0.25, narrow)), look: v(0.68, 1.1, -1.62) },
       { pos: v(0.14, 1.3, lerp(0.35, 1.05, narrow)), look: v(0.16, 1.06, -1.35) },
-      /* 放映角：从放映机后面看过去，幕布在正前方。 */
-      { pos: v(2.14, 1.5, lerp(2.75, 3.4, narrow)), look: v(2.14, 1.12, -1.5) },
+      /* 老物件桌：房间左段，书架左边。 */
+      { pos: v(-2.9, 1.42, lerp(0.7, 1.5, narrow)), look: v(-2.9, 0.98, -1.4) },
+      /* 放映角的三个机位（6、7、8）。放映员位：放映机左后方，片盘和胶片在近处，光柱横过画面，幕布在墙上。 */
+      { pos: v(lerp(0.9, 0.8, narrow), 1.62, lerp(2.2, 3.0, narrow)), look: v(2.1, 1.06, -0.2) },
+      /* 特写：凑到片盘和镜头旁边。 */
+      { pos: v(lerp(1.08, 0.8, narrow), 1.32, lerp(0.12, -0.1, narrow)), look: v(2.04, 1.12, 0.78) },
+      /* 观众席：正对幕布。 */
+      { pos: v(2.14, 1.5, lerp(2.75, 3.4, narrow)), look: v(2.14, 1.2, -1.5) },
     ];
     poses.desk = deskPresets[deskIndex];
     poses.about = fitScreen(built.screens.computer, 0.8);
@@ -3955,7 +4411,10 @@ export async function mount({
   /* 书桌视角的旋转、平移、缩放：goal 是手指要去的地方，当前值每帧平滑地追过去。 */
   const ORBIT_KEYS = ["yaw", "pitch", "zoom", "panX", "panY"];
   const orbit = { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0, goal: { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 } };
-  const LIMIT = { yaw: 0.62, pitchDown: -0.14, pitchUp: 0.34, zoomIn: 0.42, zoomOut: 1.2, panX: 0.65, panY: 0.2 };
+  /* 整个房间都放开了看：左右各能转七十多度，凑近到物件跟前、退到房间外面一点，上下左右平移（从老物件桌一路拖到放映机）。
+     镜头和它盯着的那个点都被夹在房间里，不会穿墙。 */
+  const LIMIT = { yaw: 1.3, pitchDown: -0.35, pitchUp: 0.75, zoomIn: 0.26, zoomOut: 1.8, panX: 3.6, panY: 0.7 };
+  const CORNER_FIRST = 6; /* deskPresets 里放映角机位的起始序号；“视角”按钮只在它之前（含它）轮换 */
   let pivotDistance = 2;
   const pivot = new THREE.Vector3();
   const orbitDir = new THREE.Vector3();
@@ -4010,6 +4469,8 @@ export async function mount({
     pivot.copy(source.pos).addScaledVector(orbitDir, pivotDistance)
       .addScaledVector(orbitRight, orbit.panX)
       .addScaledVector(orbitUp, orbit.panY);
+    pivot.x = clamp(pivot.x, LEFT + 0.25, RIGHT - 0.25);
+    pivot.y = clamp(pivot.y, 0.35, CEIL - 0.4);
     orbitOffset.copy(orbitDir).multiplyScalar(-pivotDistance);
     spherical.setFromVector3(orbitOffset);
     spherical.theta += orbit.yaw;
@@ -4017,6 +4478,10 @@ export async function mount({
     spherical.radius *= orbit.zoom;
     orbitOffset.setFromSpherical(spherical);
     outPos.copy(pivot).add(orbitOffset);
+    /* 镜头留在房间里：不穿墙、不钻地板、不上天花板（房间正面是敞开的，可以退出去一点）。 */
+    outPos.x = clamp(outPos.x, LEFT + 0.12, RIGHT - 0.12);
+    outPos.y = clamp(outPos.y, 0.3, CEIL - 0.15);
+    outPos.z = clamp(outPos.z, BACK + 0.3, FRONT + 1.4);
     outLook.copy(pivot);
   }
 
@@ -4184,6 +4649,7 @@ export async function mount({
   function activate(hit) {
     if (hit.id === "lamp") built.toggleLamp();
     else if (hit.id === "cord") toggleLight();
+    else if (hit.id === "fan") built.toggleFan();
     else if (CONTROL_ACTIONS.has(hit.id)) built.operate(hit.id, hit.value);
     else {
       /* 录音机的琴键先在场景里按下去，播放逻辑交给启动器。 */
@@ -4689,13 +5155,31 @@ export async function mount({
     setProjector: (on) => built.setProjector(on),
     setCalcDisplay: (text) => built.setCalcDisplay(text),
     /* 键盘：方向键转视角，+ − 缩放，0 复位（只在书桌视角）。 */
-    nudge({ yaw = 0, pitch = 0, zoom = 1 } = {}) {
+    nudge({ yaw = 0, pitch = 0, zoom = 1, panX = 0, panY = 0 } = {}) {
       if (!canOrbit()) return;
       orbit.goal.yaw += yaw;
       orbit.goal.pitch += pitch;
       orbit.goal.zoom *= zoom;
+      orbit.goal.panX += panX;
+      orbit.goal.panY += panY;
       clampOrbit();
     },
+    /* 放映角：飞到它的某个机位（0 放映员位、1 特写、2 观众席），之后照常可以拖动、缩放、平移。 */
+    corner(which = 0) {
+      const index = CORNER_FIRST + which;
+      if (!deskPresets[index]) return Promise.resolve();
+      deskIndex = index;
+      computePoses();
+      return goTo("desk");
+    },
+    /* 离开放映角：书桌机位回到全景（不动镜头，下次回书桌时生效）。 */
+    homeDesk() {
+      if (deskIndex < CORNER_FIRST) return;
+      deskIndex = 0;
+      computePoses();
+    },
+    setWallVideo: (video) => built.setWallVideo(video),
+    setFilmProgress: (value) => built.setFilmProgress(value),
     resetOrbit: () => resetOrbit(),
     introPan,
     setTapes: (list) => built.setTapes(list),
@@ -4719,7 +5203,9 @@ export async function mount({
     /* 换到下一个书桌机位；只在书桌视角下有效。返回新的机位序号。 */
     cycleDeskView(step = 1) {
       if (current !== "desk") return deskIndex;
-      deskIndex = (deskIndex + step + deskPresets.length) % deskPresets.length;
+      /* 放映角只把“放映员位”放进轮换；特写和观众席从放映面板上选。 */
+      const count = Math.min(deskPresets.length, CORNER_FIRST + 1);
+      deskIndex = deskIndex >= count ? 0 : (deskIndex + step + count) % count;
       computePoses();
       goTo("desk");
       return deskIndex;

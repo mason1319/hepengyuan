@@ -34,7 +34,7 @@ const VOICE = new Set([
 
 const STRINGS = {
   zh: {
-    ui: { tour: "带我逛逛", next: "下一个", stop: "不逛了", open: "打开看看", mute: "静音", unmute: "开声音", tapSound: "点这里出声", noSound: "放不出声" },
+    ui: { play: "放给我看", pull: "拉一下", tour: "带我逛逛", next: "下一个", stop: "不逛了", open: "打开看看", mute: "静音", unmute: "开声音", tapSound: "点这里出声", noSound: "放不出声" },
     hello: "嗨！我是迷你版何鹏远，正在御剑巡房。点我说话，拖我也行。",
     greet: [
       "别戳啦，我在御剑飞行，驾照还没考下来。",
@@ -54,6 +54,9 @@ const STRINGS = {
     ],
     grab: ["哎哎哎——放我下来！", "卧槽，谁拎我？！", "轻点轻点，我恐高！"],
     drop: ["……行吧，这儿风景也不错。", "下次拎之前打个招呼，谢谢。", "还好我会御剑，摔不着。"],
+    /* 撒娇和耍赖：没有录音，只出文字气泡。 */
+    cute: ["哎呀～再陪我玩一会儿嘛。", "人家飞了一天了，夸我一句好不好？", "你别走嘛，我给你放电影看。"],
+    rogue: ["不管不管，我就躺这儿了，谁也别想让我起来。", "我不飞了，除非你夸我。", "累了，耍个赖，五秒钟就好。"],
     tourStart: "坐稳了，发车！带你把这屋逛一圈。",
     tourEnd: "逛完啦！剩下的随便点，我接着飞。",
     tourStop: "好嘞，你自己逛，有事戳我。",
@@ -68,10 +71,14 @@ const STRINGS = {
       card: "名片盒里是我的名片，抽一张，还能翻面。",
       online: "电话和调制解调器管「联系」和「服务」。拨号上网，够复古吧。",
       music: "录音机里的磁带是我写的歌，点一下就放。",
+      relics: "这张旧桌子上是九十年代家里的老物件：电风扇、暖水瓶、搪瓷缸、算盘、煤油灯，还有罗盘、貔貅、文昌塔这些摆件。电风扇可以点开关。",
+      projector: "这台老放映机是真的在转：片盘、胶片、光柱一样不少。要不要我放一段给你看？",
+      screen: "幕布上放的是 Aggie 的短片和我的宣传片。镜头可以拖着转，凑近了看片盘。",
+      cord: "这根是灯绳。拉一下，雨夜变晴天；再拉一下又变回来。",
     },
   },
   en: {
-    ui: { tour: "Show me around", next: "Next", stop: "Stop", open: "Open it", mute: "Mute", unmute: "Sound on", tapSound: "Tap for sound", noSound: "No sound" },
+    ui: { play: "Play it", pull: "Pull it", tour: "Show me around", next: "Next", stop: "Stop", open: "Open it", mute: "Mute", unmute: "Sound on", tapSound: "Tap for sound", noSound: "No sound" },
     hello: "Hi! I'm mini He Pengyuan, patrolling the room on a flying sword. Tap me to chat, or drag me around.",
     greet: [
       "Stop poking, I'm flying a sword here and I don't have a licence yet.",
@@ -91,6 +98,8 @@ const STRINGS = {
     ],
     grab: ["Hey hey hey, put me down!", "What the hell, who grabbed me?!", "Easy, easy! I'm scared of heights!"],
     drop: ["…Fine. Nice view from here anyway.", "Next time, ask before you pick me up. Thanks.", "Good thing I can fly. No harm done."],
+    cute: ["Aww, stay and play a little longer?", "I've been flying all day. Say something nice?", "Don't go yet, I'll put a film on for you."],
+    rogue: ["Nope. I'm lying right here and nobody can make me get up.", "I'm not flying again until you say I'm great.", "Tired. Five seconds of sulking, then I'm back."],
     tourStart: "Hold on tight! Let me show you around the room.",
     tourEnd: "That's the tour! Click anything you like. I'll keep flying.",
     tourStop: "Sure, explore on your own. Poke me if you need me.",
@@ -105,10 +114,14 @@ const STRINGS = {
       card: "My business cards are in this holder. Take one out and flip it over.",
       online: "The phone and modem handle “Online” and “Services”. Dial-up, how retro.",
       music: "The cassette in the boombox is a song I wrote. Click to play it.",
+      relics: "This old table holds things from a nineties home: a fan, a thermos, an enamel mug, an abacus and an oil lamp, plus a feng shui compass, a pixiu and a little pagoda. The fan switches on and off.",
+      projector: "This old projector really runs: reels, film and a beam of light. Want me to play something?",
+      screen: "The screen shows the Aggie shorts and my promo film. Drag to look around, zoom in on the reels.",
+      cord: "This is the light cord. One pull turns the rainy night into a sunny afternoon; pull again to go back.",
     },
   },
   de: {
-    ui: { tour: "Führ mich herum", next: "Weiter", stop: "Stopp", open: "Öffnen", mute: "Ton aus", unmute: "Ton an", tapSound: "Für Ton tippen", noSound: "Kein Ton" },
+    ui: { play: "Abspielen", pull: "Ziehen", tour: "Führ mich herum", next: "Weiter", stop: "Stopp", open: "Öffnen", mute: "Ton aus", unmute: "Ton an", tapSound: "Für Ton tippen", noSound: "Kein Ton" },
     hello: "Hi! Ich bin der Mini-He-Pengyuan und drehe auf dem fliegenden Schwert meine Runde. Tipp mich an oder zieh mich herum.",
     greet: [
       "Hör auf zu stupsen, ich fliege hier Schwert und habe noch keinen Führerschein.",
@@ -128,6 +141,8 @@ const STRINGS = {
     ],
     grab: ["Hey, hey, hey, lass mich runter!", "Was zum Teufel, wer hat mich gepackt?!", "Vorsicht, Vorsicht! Ich habe Höhenangst!"],
     drop: ["… Na gut. Die Aussicht hier ist auch nicht schlecht.", "Frag nächstes Mal, bevor du mich hochhebst. Danke.", "Zum Glück kann ich fliegen. Nichts passiert."],
+    cute: ["Och, bleib doch noch ein bisschen.", "Ich fliege schon den ganzen Tag. Ein kleines Lob?", "Geh noch nicht, ich lege dir einen Film ein."],
+    rogue: ["Nö. Ich bleibe hier liegen, mich bewegt keiner.", "Ich fliege erst wieder, wenn du mich lobst.", "Müde. Fünf Sekunden schmollen, dann geht es weiter."],
     tourStart: "Gut festhalten! Ich zeige dir das Zimmer.",
     tourEnd: "Das war die Runde! Klick an, was du magst. Ich fliege weiter.",
     tourStop: "Alles klar, schau dich selbst um. Stups mich, wenn du mich brauchst.",
@@ -142,10 +157,14 @@ const STRINGS = {
       card: "In diesem Halter stecken meine Visitenkarten. Zieh eine heraus und dreh sie um.",
       online: "Telefon und Modem stehen für „Kontakt“ und „Leistungen“. Einwahl per Modem, schön retro.",
       music: "Auf der Kassette im Rekorder ist ein Song von mir. Ein Klick spielt ihn ab.",
+      relics: "Auf dem alten Tisch stehen Dinge aus einem Zuhause der Neunziger: Ventilator, Thermoskanne, Emaillebecher, Abakus und Petroleumlampe, dazu Feng-Shui-Kompass, Pixiu und eine kleine Pagode. Den Ventilator kann man ein- und ausschalten.",
+      projector: "Dieser alte Projektor läuft wirklich: Spulen, Film und ein Lichtstrahl. Soll ich etwas abspielen?",
+      screen: "Auf der Leinwand laufen die Aggie-Kurzfilme und mein Imagefilm. Zieh, um dich umzusehen, und zoom an die Spulen heran.",
+      cord: "Das ist die Zugschnur. Einmal ziehen macht aus der Regennacht einen sonnigen Nachmittag, noch einmal und es regnet wieder.",
     },
   },
   ko: {
-    ui: { tour: "둘러보기", next: "다음", stop: "그만", open: "열어 보기", mute: "음소거", unmute: "소리 켜기", tapSound: "눌러서 소리 켜기", noSound: "소리 안 남" },
+    ui: { play: "틀어 줘", pull: "당기기", tour: "둘러보기", next: "다음", stop: "그만", open: "열어 보기", mute: "음소거", unmute: "소리 켜기", tapSound: "눌러서 소리 켜기", noSound: "소리 안 남" },
     hello: "안녕하세요! 미니 허펑위안이에요. 날아다니는 검을 타고 방을 순찰 중입니다. 저를 누르면 말하고, 끌어서 옮길 수도 있어요.",
     greet: [
       "그만 찔러요. 검 타는 중인데 아직 면허도 없다고요.",
@@ -165,6 +184,8 @@ const STRINGS = {
     ],
     grab: ["어어어, 내려 줘요!", "아 씨, 누가 날 집었어?!", "살살, 살살! 저 고소공포증 있어요!"],
     drop: ["…뭐, 여기 경치도 나쁘지 않네요.", "다음엔 들기 전에 말 좀 해 주세요. 감사합니다.", "검을 탈 줄 알아서 다행이네요. 안 다쳤어요."],
+    cute: ["에이, 조금만 더 놀아 줘요.", "하루 종일 날았어요. 칭찬 한마디만요?", "가지 마요, 영화 틀어 줄게요."],
+    rogue: ["몰라요. 여기 누울 거예요, 아무도 못 일으켜요.", "칭찬해 줄 때까지 안 날 거예요.", "피곤해요. 5초만 떼쓸게요."],
     tourStart: "꽉 잡으세요! 방을 한 바퀴 안내할게요.",
     tourEnd: "다 둘러봤어요! 나머지는 마음대로 눌러 보세요. 저는 계속 날게요.",
     tourStop: "네, 편하게 둘러보세요. 필요하면 저를 누르세요.",
@@ -179,6 +200,10 @@ const STRINGS = {
       card: "명함 케이스에 제 명함이 있어요. 한 장 꺼내서 뒤집어 볼 수도 있어요.",
       online: "전화기와 모뎀은 ‘연락처’와 ‘서비스’ 담당이에요. 전화 접속이라니, 복고풍이죠.",
       music: "카세트에는 제가 쓴 노래가 들어 있어요. 누르면 재생돼요.",
+      relics: "이 낡은 탁자에는 90년대 집에 있던 물건들이 있어요. 선풍기, 보온병, 법랑 컵, 주판, 석유등, 그리고 나침반과 비휴, 작은 탑 같은 풍수 소품이요. 선풍기는 눌러서 켜고 끌 수 있어요.",
+      projector: "이 낡은 영사기는 진짜로 돌아가요. 릴, 필름, 빛줄기까지요. 한 편 틀어 드릴까요?",
+      screen: "스크린에는 Aggie 단편과 제 홍보 영상이 나와요. 드래그해서 둘러보고 릴을 가까이서 보세요.",
+      cord: "이건 전등 줄이에요. 한 번 당기면 비 오는 밤이 맑은 오후가 되고, 다시 당기면 돌아와요.",
     },
   },
 };
@@ -188,6 +213,7 @@ const TOUR = [
   ["about", 1, "about", "about"],
   ["photos", 1, null, null],
   ["shelf", 2, null, "work"],
+  ["relics", 5, null, null],
   ["game", 4, "game", null],
   ["work", 4, "work", "work"],
   ["tv", 4, "film", "film"],
@@ -195,7 +221,13 @@ const TOUR = [
   ["card", 4, null, "card"],
   ["online", 4, "online", "online"],
   ["music", 3, null, "music"],
+  ["cord", 0, null, null],
+  ["projector", 6, null, "cinema"],
 ];
+/* 某一站除了“打开看看”之外小人还能替访客做的事：[按钮文字的键, 交给启动器的动作]。
+   以后新物件要让小人能“用”它，在这里加一行，再在 boot.js 的 guideAct 里接住。 */
+const STOP_ACTIONS = { projector: ["play", "film"], cord: ["pull", "light"] };
+const POSES = new Set(["stand", "prone", "lie", "tantrum", "cute"]);
 
 const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 const approach = (value, goal, step) => (value < goal ? Math.min(goal, value + step) : Math.max(goal, value - step));
@@ -232,6 +264,8 @@ function createActor(host, emit) {
   root.userData.action = "avatar";
   root.rotation.order = "YXZ";
   const rig = new THREE.Group();
+  /* 先绕身体的竖轴转（侧身、趴下时翻面），再整个人放倒：躺下的姿态靠这个顺序。 */
+  rig.rotation.order = "ZYX";
   root.add(rig);
 
   /* 阔腿裤 + 白鞋：以胯为轴，跑的时候前后摆。 */
@@ -373,6 +407,29 @@ function createActor(host, emit) {
     pos: perches.tv.pos.clone(), at: "tv", yaw: 0, mode: "idle",
     mount: 0, mountGoal: 0, show: 0, showGoal: 1, dwell: 5, roam: !reducedMotion,
     air: 0, spin: 0, pitch: 0, roll: 0, phase: 0, headYaw: 0, talking: false, lean: 0,
+    /* 姿态：站着之外还能趴着、侧躺、耍赖打滚、撒娇。pose 是现在摆的，poseGoal 是想摆的，poseAmt 是摆到了几成。 */
+    pose: "stand", poseGoal: "stand", poseRest: "stand", poseAmt: 0, poseTimer: 0,
+  };
+  /* 调试用：网址带 ?pose=prone（或 lie / tantrum / cute）时，落地就一直摆这个姿态，方便看效果。 */
+  const forcedPose = (() => {
+    try {
+      const wanted = new URLSearchParams(window.location.search).get("pose");
+      return POSES.has(wanted) ? wanted : null;
+    } catch {
+      return null;
+    }
+  })();
+  if (forcedPose) {
+    /* 调试时一进房间就在电视顶上摆好这个姿态，也不乱跑，方便凑近看。 */
+    Object.assign(st, { pose: forcedPose, poseGoal: forcedPose, poseRest: forcedPose, poseAmt: 1, roam: false });
+  }
+  /* 自己逛到某个落脚点时摆什么姿态：那个落脚点登记了 poses 就从里面挑，没登记用默认的一组。带逛时老实站着。 */
+  const idlePose = (perch) => {
+    if (!perch?.stand) return "stand";
+    if (forcedPose) return forcedPose;
+    if (!st.roam) return "stand";
+    const options = perch.poses || ["stand", "stand", "prone", "lie", "cute"];
+    return options[Math.floor(Math.random() * options.length)];
   };
   let path = null;
   let emote = null;
@@ -400,8 +457,10 @@ function createActor(host, emit) {
     st.mode = "idle";
     st.mountGoal = perch.stand ? 0 : 1;
     st.dwell = dwellTime();
+    st.poseGoal = st.poseRest = idlePose(perch);
+    st.poseTimer = 0;
     done.resolve(true);
-    emit({ type: "arrive", id: done.id });
+    emit({ type: "arrive", id: done.id, pose: st.poseGoal });
   }
 
   /* 去某个落脚点。桌面上两点之间跑着跳着去，其余踩剑飞过去。到了以后 resolve(true)；半路被打断 resolve(false)。 */
@@ -409,6 +468,8 @@ function createActor(host, emit) {
     const perch = perches[id];
     if (!perch || st.mode === "drag") return Promise.resolve(false);
     cancelPath();
+    st.poseGoal = st.poseRest = "stand";
+    st.poseTimer = 0;
     return new Promise((resolve) => {
       const from = st.pos.clone();
       const to = perch.pos.clone();
@@ -459,6 +520,8 @@ function createActor(host, emit) {
     st.mode = "drag";
     st.mountGoal = 0;
     st.at = null;
+    st.poseGoal = st.poseRest = "stand";
+    st.poseTimer = 0;
     emit({ type: "grab" });
   }
 
@@ -558,6 +621,24 @@ function createActor(host, emit) {
       if (emote.t >= 1) emote = null;
     }
 
+    /* 姿态只在落地站稳时摆；一动身、被拎起来、上了剑就先收回站姿。换姿态时先收再放，不会从趴着直接拧成躺着。 */
+    if (st.poseTimer > 0) {
+      st.poseTimer -= step;
+      if (st.poseTimer <= 0) st.poseGoal = st.poseRest;
+    }
+    const grounded = st.mode === "idle" && !path && st.mountGoal === 0 && st.mount < 0.05;
+    const wantPose = grounded ? st.poseGoal : "stand";
+    if (wantPose !== st.pose) {
+      st.poseAmt = approach(st.poseAmt, 0, step / 0.2);
+      if (st.poseAmt === 0) st.pose = wantPose;
+    } else if (st.pose !== "stand") {
+      st.poseAmt = approach(st.poseAmt, 1, step / 0.42);
+    }
+    const posed = st.pose === "stand" ? 0 : easeInOut(st.poseAmt);
+    const laid = st.pose === "prone" || st.pose === "lie" || st.pose === "tantrum" ? posed : 0;
+    const cute = st.pose === "cute" ? posed : 0;
+    const fit = st.pose === "tantrum" ? posed : 0;
+
     const hover = st.mount > 0.5 && !moving ? Math.sin(time * 2.1) * 0.012 : 0;
     const scale = BASE * lerp(1, 1.3, host.narrow) * easeInOut(st.show);
     root.scale.setScalar(scale);
@@ -568,23 +649,75 @@ function createActor(host, emit) {
     const dragging = st.mode === "drag";
     const running = moving && path?.run;
     const swing = running ? Math.sin(st.phase) : 0;
-    rig.rotation.y = stance;
+    /* 身体：放倒是绕前后轴转 90°（人横在镜头前）；趴着再绕身体的竖轴把胸口翻向下，耍赖是仰面左右打滚。 */
+    const turnOver = st.pose === "prone" ? Math.PI / 2 : st.pose === "tantrum" ? -Math.PI / 2 + Math.sin(time * 8) * 0.5 : 0;
+    rig.rotation.y = stance + turnOver * posed;
     rig.rotation.x = lerp(rig.rotation.x, running ? 0.2 : 0, k);
-    rig.rotation.z = dragging ? drag.sway : shake;
-    rig.position.y = st.mount < 0.5 && !moving && !dragging ? Math.sin(time * 2.3) * 0.0025 : 0;
+    rig.rotation.z = (dragging ? drag.sway : shake) - (Math.PI / 2) * laid + cute * Math.sin(time * 5) * 0.16;
+    const bob = st.mount < 0.5 && !moving && !dragging ? Math.sin(time * 2.3) * 0.0025 : 0;
+    rig.position.set(
+      -0.105 * laid,
+      bob * (1 - laid) + 0.036 * laid + fit * Math.abs(Math.sin(time * 11)) * 0.012 + cute * Math.abs(Math.sin(time * 5)) * 0.01,
+      0,
+    );
     const kick = dragging ? Math.sin(time * 9) * 0.4 : 0;
-    legs[0].rotation.x = lerp(legs[0].rotation.x, dragging ? kick : swing * 0.95 - st.mount * 0.22, k);
-    legs[1].rotation.x = lerp(legs[1].rotation.x, dragging ? -kick : -swing * 0.95 + st.mount * 0.22, k);
+    const sway = Math.sin(time * 1.7) * 0.03;
+    const goal = {
+      legL: dragging ? kick : swing * 0.95 - st.mount * 0.22,
+      legR: dragging ? -kick : -swing * 0.95 + st.mount * 0.22,
+      armLx: dragging ? 0 : -swing * 0.8 + st.mount * 0.75,
+      armRx: dragging || wave > 0 ? 0 : swing * 0.8 + st.mount * 0.75,
+      armLz: dragging ? -2.5 : -0.14 - sway + st.mount * 0.44,
+      armRz: dragging ? 2.5 : wave > 0 ? 2.3 + Math.sin(time * 16) * 0.35 : 0.14 + sway - st.mount * 0.44,
+      headX: st.talking ? Math.sin(time * 9) * 0.05 : 0,
+      headY: st.headYaw,
+      headZ: Math.sin(time * 0.9) * 0.03,
+    };
+    if (posed > 0) {
+      const to = (key, value) => {
+        goal[key] = lerp(goal[key], value, posed);
+      };
+      if (st.pose === "prone") {
+        /* 趴着：两只手垫在下巴前面，抬头看镜头，小腿一上一下地晃。 */
+        to("legL", 0.9 + Math.sin(time * 5) * 0.55);
+        to("legR", 0.9 + Math.sin(time * 5 + Math.PI) * 0.55);
+        to("armLx", -2.7);
+        to("armRx", -2.7);
+        to("armLz", -0.35);
+        to("armRz", 0.35);
+        to("headX", -1.1);
+        to("headY", -0.9);
+      } else if (st.pose === "lie") {
+        /* 侧躺：贴地那只手撑着头，上面那条腿屈着，脚尖一点一点。 */
+        to("legL", 0.55 + Math.sin(time * 1.6) * 0.12);
+        to("armRx", 0);
+        to("armRz", 2.55);
+        to("headZ", 0.75);
+      } else if (st.pose === "tantrum") {
+        /* 耍赖：仰面躺着打滚，手脚乱蹬。 */
+        to("legL", -0.9 + Math.sin(time * 13) * 0.8);
+        to("legR", -0.9 - Math.sin(time * 13) * 0.8);
+        to("armLx", -1.6 + Math.sin(time * 11) * 1.0);
+        to("armRx", -1.6 - Math.sin(time * 11) * 1.0);
+        to("headZ", Math.sin(time * 9) * 0.3);
+      } else if (st.pose === "cute") {
+        /* 撒娇：两只手捧着脸，歪着头左右晃，脚尖一踮一踮。 */
+        to("armLx", -0.45);
+        to("armRx", -0.45);
+        to("armLz", -2.75);
+        to("armRz", 2.75);
+        to("headZ", Math.sin(time * 5) * 0.22);
+      }
+    }
+    legs[0].rotation.x = lerp(legs[0].rotation.x, goal.legL, k);
+    legs[1].rotation.x = lerp(legs[1].rotation.x, goal.legR, k);
     legs[0].rotation.z = lerp(legs[0].rotation.z, -st.mount * 0.12, k);
     legs[1].rotation.z = lerp(legs[1].rotation.z, st.mount * 0.12, k);
-    const sway = Math.sin(time * 1.7) * 0.03;
-    arms[0].rotation.x = lerp(arms[0].rotation.x, dragging ? 0 : -swing * 0.8 + st.mount * 0.75, k);
-    arms[1].rotation.x = lerp(arms[1].rotation.x, dragging || wave > 0 ? 0 : swing * 0.8 + st.mount * 0.75, k);
-    arms[0].rotation.z = lerp(arms[0].rotation.z, dragging ? -2.5 : -0.14 - sway + st.mount * 0.44, k);
-    arms[1].rotation.z = lerp(arms[1].rotation.z, dragging ? 2.5 : wave > 0 ? 2.3 + Math.sin(time * 16) * 0.35 : 0.14 + sway - st.mount * 0.44, k);
-    head.rotation.y = st.headYaw;
-    head.rotation.x = st.talking ? Math.sin(time * 9) * 0.05 : 0;
-    head.rotation.z = Math.sin(time * 0.9) * 0.03;
+    arms[0].rotation.x = lerp(arms[0].rotation.x, goal.armLx, k);
+    arms[1].rotation.x = lerp(arms[1].rotation.x, goal.armRx, k);
+    arms[0].rotation.z = lerp(arms[0].rotation.z, goal.armLz, k);
+    arms[1].rotation.z = lerp(arms[1].rotation.z, goal.armRz, k);
+    head.rotation.set(goal.headX, goal.headY, goal.headZ);
 
     sword.position.lerpVectors(SWORD_BACK.pos, SWORD_FEET.pos, st.mount);
     sword.quaternion.slerpQuaternions(SWORD_BACK.quat, SWORD_FEET.quat, st.mount);
@@ -629,6 +762,13 @@ function createActor(host, emit) {
     drop,
     tap: () => emit({ type: "tap" }),
     emote: startEmote,
+    /* 临时摆个姿态（耍赖、撒娇、躺一会儿），到时间回到原来的样子。只有落地站着时摆得出来。 */
+    pose(name, seconds = 2.6) {
+      if (!POSES.has(name)) return;
+      st.poseGoal = name;
+      st.poseTimer = seconds;
+      st.dwell = Math.max(st.dwell, seconds + 1.2);
+    },
     talk(on) {
       st.talking = Boolean(on);
     },
@@ -643,7 +783,7 @@ function createActor(host, emit) {
       cancelPath();
       emote = null;
       history.length = 0;
-      Object.assign(st, { at: "tv", mode: "idle", mount: 0, mountGoal: 0, showGoal: 1, dwell: 5 });
+      Object.assign(st, { at: "tv", mode: "idle", mount: 0, mountGoal: 0, showGoal: 1, dwell: 5, pose: "stand", poseGoal: "stand", poseRest: "stand", poseAmt: 0, poseTimer: 0 });
       st.pos.copy(perches.tv.pos);
     },
     /* 头顶在页面上的位置（像素）和小人在屏幕上有多高，气泡跟着它。 */
@@ -679,7 +819,7 @@ function createActor(host, emit) {
 
 /* ------------------------------------------------------------------ 气泡、台词和带逛 */
 
-export function start({ room, overlay, lang = "zh", coarse = false, openView = () => {}, session = null }) {
+export function start({ room, overlay, lang = "zh", coarse = false, openView = () => {}, act = () => {}, session = null }) {
   const T = STRINGS[lang] || STRINGS.zh;
   const element = (tag, className, text) => {
     const node = document.createElement(tag);
@@ -716,7 +856,17 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
   let refocus = false;
   const warmed = new Set();
   const taps = [];
-  const turn = { greet: Math.floor(Math.random() * T.greet.length), swear: 0, grab: 0, drop: 0 };
+  const turn = { greet: Math.floor(Math.random() * T.greet.length), swear: 0, grab: 0, drop: 0, cute: 0, rogue: 0, poke: 0 };
+  /* 放映角也是可以到处看的房间视角：小人在那儿照样能点、能说话（带逛只从书桌视角开始）。 */
+  const roomy = () => view === "desk" || view === "cinema";
+  /* 这一站小人能替访客做的事（放映、拉灯绳）：气泡上多一个按钮。 */
+  const stopButtons = (id, before = () => {}) => {
+    const action = STOP_ACTIONS[id];
+    return action ? [[T.ui[action[0]], () => {
+      before();
+      act(action[1]);
+    }]] : [];
+  };
 
   const actor = room.addActor(createActor, onEvent);
   if (!actor) {
@@ -989,6 +1139,7 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
         openView(target);
       }]);
     }
+    buttons.push(...stopButtons(id, () => stopTour()));
     if (index + 1 < TOUR.length) buttons.push([T.ui.stop, () => stopTour(true)]);
     const shown = performance.now();
     const spoken = say(`stop-${id}`, T.stops[id], { buttons, counter: `${index + 1}/${TOUR.length}`, hold: 60000, sure });
@@ -1050,13 +1201,20 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
       /* 五秒里被戳三下以上：烦了，爆粗口。 */
       actor.emote("shake");
       say(...next("swear"));
+      /* 骂完往地上一躺，耍赖。 */
+      actor.pose("tantrum", 3.2);
       return;
     }
+    turn.poke += 1;
     if (!introduced && voiced("hello")) {
       /* 进房间时那句招呼只出了文字（浏览器不让没点过的页面出声）；第一次被点，先用本人的声音把它说出来。 */
       introduced = true;
       actor.emote("wave");
       say("hello", T.hello, { buttons: [tourButton()] });
+    } else if (turn.poke % 3 === 0) {
+      /* 每戳三下里有一下不好好说话：撒娇。 */
+      actor.pose("cute", 2.8);
+      say(...next("cute"), { buttons: [tourButton()] });
     } else {
       actor.emote(turn.greet % 2 ? "wave" : "jump");
       say(...next("greet"), { buttons: [tourButton()] });
@@ -1066,7 +1224,7 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
   }
 
   function onEvent(event) {
-    if (view !== "desk") return;
+    if (!roomy()) return;
     if (event.type === "tap") {
       poke();
     } else if (event.type === "grab") {
@@ -1074,10 +1232,15 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
       say(...next("grab"), { hold: 60000 });
     } else if (event.type === "drop") {
       say(...next("drop"));
-    } else if (event.type === "arrive" && !tour && bubble.hidden && T.stops[event.id]) {
-      /* 自己逛到某件东西旁边时，偶尔介绍一句；不出声，也不太频繁。 */
-      if (performance.now() - lastSaid > 22000 && Math.random() < 0.5) {
-        say(`stop-${event.id}`, T.stops[event.id], { hold: 4200, voice: false });
+    } else if (event.type === "arrive" && !tour && bubble.hidden) {
+      const quietFor = performance.now() - lastSaid;
+      const buttons = stopButtons(event.id);
+      if (T.stops[event.id] && quietFor > 22000 && Math.random() < 0.5) {
+        /* 自己逛到某件东西旁边时，偶尔介绍一句；不出声，也不太频繁。能替访客做的事（放映、拉灯绳）给个按钮。 */
+        say(`stop-${event.id}`, T.stops[event.id], { hold: buttons.length ? 7000 : 4200, voice: false, buttons });
+      } else if ((event.pose === "lie" || event.pose === "prone") && quietFor > 16000 && Math.random() < 0.4) {
+        /* 落下来就躺着或趴着：赖一句。 */
+        say(...next("rogue"), { hold: 3800, voice: false });
       }
     }
   }
