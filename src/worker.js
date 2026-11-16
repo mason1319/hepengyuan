@@ -41,6 +41,13 @@ const PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4";
    首页 <source media> 与 3D 房间在手机上选它，电脑仍用 1080p。 */
 const PROMO_VIDEO_MOBILE_ROUTE = "/media/promo/pengyuan-personal-promo-720p.mp4";
 const PROMO_VIDEO_MOBILE_KEY = "public/promo/pengyuan-personal-promo-720p.mp4";
+/* 流畅版：360p、约 270 kbps。国内不开 VPN 直连时 1.3 Mbps 的片子常常一直停在“正在上片”，
+   放映机上片太久就自动换成这一份（首页用 data-film-lite 登记）。三部都放在 R2，由 handleMediaFile 提供（支持 Range）。 */
+const LITE_FILMS = new Map([
+  ["/media/promo/pengyuan-personal-promo-360p.mp4", "public/promo/pengyuan-personal-promo-360p.mp4"],
+  ["/media/aggie/learning-15s-360p.mp4", "public/aggie/learning-15s-360p.mp4"],
+  ["/media/aggie/brand-film-360p.mp4", "public/aggie/brand-film-360p.mp4"],
+]);
 /* 首页 #music 的原创音乐：固定路由 → R2 固定键。新增一首时在这里加一行，并把文件传到对应的键。 */
 const MUSIC_ROUTES = new Map([
   ["/media/music/lai-zi-gao-wei-de-ni.mp3", "public/music/lai-zi-gao-wei-de-ni.mp3"],
@@ -664,6 +671,15 @@ async function handlePublicDynamic(request, env, baseUrl, ctx) {
       slug: "pengyuan-personal-promo-720p",
       mime_type: "video/mp4",
       object_key: PROMO_VIDEO_MOBILE_KEY,
+      cacheControl: FIXED_MEDIA_CACHE,
+    });
+  }
+
+  if (LITE_FILMS.has(path)) {
+    return handleMediaFile(request, env, {
+      slug: path.split("/").pop().replace(/\.mp4$/, ""),
+      mime_type: "video/mp4",
+      object_key: LITE_FILMS.get(path),
       cacheControl: FIXED_MEDIA_CACHE,
     });
   }

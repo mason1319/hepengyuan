@@ -152,6 +152,13 @@ assert(workerSource.includes('PROMO_VIDEO_ROUTE = "/media/promo/pengyuan-persona
 assert(workerSource.includes('PROMO_VIDEO_KEY = "public/promo/pengyuan-personal-promo-1080p.mp4"'), "personal promo video R2 key is missing");
 assert(workerSource.includes('PROMO_VIDEO_MOBILE_ROUTE = "/media/promo/pengyuan-personal-promo-720p.mp4"'), "mobile promo video route is missing");
 assert(workerSource.includes('PROMO_VIDEO_MOBILE_KEY = "public/promo/pengyuan-personal-promo-720p.mp4"'), "mobile promo video R2 key is missing");
+for (const [route, key] of [
+  ["/media/promo/pengyuan-personal-promo-360p.mp4", "public/promo/pengyuan-personal-promo-360p.mp4"],
+  ["/media/aggie/learning-15s-360p.mp4", "public/aggie/learning-15s-360p.mp4"],
+  ["/media/aggie/brand-film-360p.mp4", "public/aggie/brand-film-360p.mp4"],
+]) {
+  assert(workerSource.includes(`["${route}", "${key}"]`), `data-saver film route is missing: ${route}`);
+}
 assert(workerSource.includes('AGGIE_3A_ROUTE = "/aggie-3a/"'), "Aggie 3A public route is missing");
 assert(workerSource.includes('AGGIE_3A_OBJECT_KEY = "public/experiences/aggie-3a-v6.html"'), "Aggie 3A V6 R2 object key is missing");
 assert(workerSource.includes('"X-Aggie-Version": "V6"'), "Aggie 3A response does not expose the V6 version header");

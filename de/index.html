@@ -88,7 +88,7 @@
     <link rel="preload" href="/assets/fonts/fira-sans-400-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles.css?v=20261112-room">
     <script src="/script.js?v=20261112-room" defer></script>
-    <script src="/room/boot.js?v=20261116-voice2" defer></script>
+    <script src="/room/boot.js?v=20261116-lite" defer></script>
 
     <script type="application/ld+json">
       {
@@ -166,7 +166,7 @@
           <h2 id="personal-film-title" class="sr-only">Persönlicher Imagefilm</h2>
           <figure class="ph-hero">
             <video class="frame" controls preload="none" playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5-page"
-              poster="/assets/hpy-promo-poster.jpg"
+              poster="/assets/hpy-promo-poster.jpg" data-film-lite="/media/promo/pengyuan-personal-promo-360p.mp4"
               aria-label="Imagefilm von He Pengyuan, 1 Min. 48 Sek.">
               <source src="/media/promo/pengyuan-personal-promo-720p.mp4" type="video/mp4" media="(max-width: 900px), (pointer: coarse)">
               <source src="/media/promo/pengyuan-personal-promo.mp4" type="video/mp4">
@@ -219,10 +219,12 @@
               <a href="https://aggieai.me/" data-go="aggie">aggieai.me</a>
             </p>
             <!-- Projector reels: the 3D room reads its films from these links (data-film) and, when one ends, offers
-                 data-film-next and data-film-exits. The files are relayed from aggieai.me by src/worker.js (AGGIE_FILMS). -->
+                 data-film-next and data-film-exits. The files are relayed from aggieai.me by src/worker.js (AGGIE_FILMS).
+                 data-film-lite is the 360p data-saver version the projector switches to when a film takes too long
+                 to start; those files live in R2 (LITE_FILMS in src/worker.js). -->
             <p class="pb-tags" id="aggie-films">
-              <a href="/media/aggie/learning-15s.mp4" data-film="aggie-15s" data-film-length="0:15" data-film-next="aggie-brand" data-film-exits="aggie-word-bridge aggie-join">Aggie in 15 Sekunden (Video)</a>
-              <a href="/media/aggie/brand-film.mp4" data-film="aggie-brand" data-film-length="5:48" data-film-exits="aggie-word-bridge aggie-join">Aggie-Markenfilm (Video)</a>
+              <a href="/media/aggie/learning-15s.mp4" data-film="aggie-15s" data-film-lite="/media/aggie/learning-15s-360p.mp4" data-film-length="0:15" data-film-next="aggie-brand" data-film-exits="aggie-word-bridge aggie-join">Aggie in 15 Sekunden (Video)</a>
+              <a href="/media/aggie/brand-film.mp4" data-film="aggie-brand" data-film-lite="/media/aggie/brand-film-360p.mp4" data-film-length="5:48" data-film-exits="aggie-word-bridge aggie-join">Aggie-Markenfilm (Video)</a>
             </p>
           </section>
 

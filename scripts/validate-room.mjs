@@ -29,6 +29,7 @@ if (failures.length === 0) {
   const boot = await readFile("room/boot.js", "utf8");
   const scene = await readFile("room/scene.js", "utf8");
   const avatar = await readFile("room/avatar.js", "utf8");
+  const worker = await readFile("src/worker.js", "utf8");
   const three = await readFile(THREE_PATH);
 
   if (three.length >= 1_000_000) fail(`${THREE_PATH}: vendored library must stay below 1 MB`);
@@ -165,12 +166,22 @@ if (failures.length === 0) {
   if (!filmTags.length) fail("index.html: the projector needs at least one data-film link");
   for (const [tag, id] of filmTags) {
     if (!/\bhref="\/media\/[^"]+"/.test(tag)) fail(`index.html: film "${id}" must be served from this site under /media/`);
+    /* 流畅版（慢网络时放映机自动换成它）：同样只能是本站 /media/ 下的地址，并且 Worker 里要有这条固定路由。 */
+    const lite = /\bdata-film-lite="([^"]*)"/.exec(tag)?.[1];
+    if (!lite) fail(`index.html: film "${id}" needs a data-film-lite version for slow connections`);
+    else if (!/^\/media\/[a-z0-9/-]+-360p\.mp4$/.test(lite) || !worker.includes(`["${lite}", "public/`)) {
+      fail(`index.html: the data-film-lite of "${id}" must be a /media/…-360p.mp4 address registered in LITE_FILMS in src/worker.js`);
+    }
     const next = /\bdata-film-next="([^"]*)"/.exec(tag)?.[1];
     if (next && !filmIds.has(next)) fail(`index.html: film "${id}" names a next film that is not registered: ${next}`);
     for (const exit of (/\bdata-film-exits="([^"]*)"/.exec(tag)?.[1] || "").split(/\s+/).filter(Boolean)) {
       if (!html.includes(`data-go="${exit}"`)) fail(`index.html: film "${id}" names an exit that is not registered: ${exit}`);
     }
   }
+  /* 宣传片的流畅版登记在首页那个 <video> 上。 */
+  const promoLite = /<video\b[^>]*\bdata-film-lite="([^"]*)"/.exec(html)?.[1];
+  if (!promoLite || !worker.includes(`["${promoLite}", "public/`)) fail("index.html: the promo <video> needs a data-film-lite address registered in LITE_FILMS in src/worker.js");
+  if (!boot.includes("dataset.filmLite") || !boot.includes("function useLite(")) fail("room/boot.js: the projector must fall back to the data-film-lite version when a film is slow to start");
   if (!boot.includes('document.querySelectorAll("main a[data-film]")') || !scene.includes('cinema: "wall"') || !scene.includes("setProjector")) {
     fail("the projector view must read its films from the homepage and be backed by the wall screen in the scene");
   }
