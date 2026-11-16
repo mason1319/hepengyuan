@@ -101,6 +101,18 @@ if (failures.length === 0) {
       fail(`assets/room/voice/${file}: not listed in VOICE in room/avatar.js (only registered .mp3 clips belong here)`);
     }
   }
+  /* ---- 房间里的图片（照片、挂画）：场景引用的每一张都要在仓库里，WebP，单张小于 1MB */
+  const roomPictures = [...new Set([...scene.matchAll(/"\/assets\/room\/([\w-]+\.\w+)"/g)].map((match) => match[1]))];
+  if (roomPictures.length < 3) fail("room/scene.js: the room pictures could not be read");
+  for (const file of roomPictures) {
+    if (!file.endsWith(".webp")) fail(`room/scene.js: room pictures must be WebP (${file})`);
+    try {
+      const info = await stat(`assets/room/${file}`);
+      if (info.size >= 1_000_000) fail(`assets/room/${file}: room pictures must stay below 1 MB`);
+    } catch {
+      fail(`room/scene.js: /assets/room/${file} is referenced but the file is missing`);
+    }
+  }
   if (/speechSynthesis|SpeechSynthesisUtterance/.test(avatar)) fail("room/avatar.js: the avatar only speaks with recorded clips of He Pengyuan; do not use speech synthesis");
 
   for (const key of ["hpy-room", "hpy-room-seen"]) {

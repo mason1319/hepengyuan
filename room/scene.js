@@ -92,7 +92,7 @@ function canvasTexture(width, height, draw) {
   return texture;
 }
 
-function woodTexture(base, dark, light, seed) {
+function woodTexture(base, dark, light, seed, knots = 0) {
   return canvasTexture(512, 512, (g, w, h) => {
     const rnd = makeRng(seed);
     g.fillStyle = base;
@@ -109,6 +109,26 @@ function woodTexture(base, dark, light, seed) {
       g.moveTo(0, y);
       for (let x = 0; x <= w; x += 16) g.lineTo(x, y + Math.sin((x / w) * TAU * waves + phase) * amp);
       g.stroke();
+    }
+    /* “鬼脸”：黄花梨上一圈套一圈的结疤纹。 */
+    for (let k = 0; k < knots; k += 1) {
+      const cx = rnd() * w;
+      const cy = rnd() * h;
+      const rx = 12 + rnd() * 18;
+      const ry = 5 + rnd() * 8;
+      g.strokeStyle = dark;
+      for (let ring = 0; ring < 6; ring += 1) {
+        g.globalAlpha = 0.36 - ring * 0.045;
+        g.lineWidth = 1 + rnd() * 1.4;
+        g.beginPath();
+        g.ellipse(cx, cy, rx * (0.25 + ring * 0.28), ry * (0.25 + ring * 0.28), (rnd() - 0.5) * 0.3, 0, TAU);
+        g.stroke();
+      }
+      g.globalAlpha = 0.5;
+      g.fillStyle = dark;
+      g.beginPath();
+      g.ellipse(cx, cy, rx * 0.16, ry * 0.16, 0, 0, TAU);
+      g.fill();
     }
     g.globalAlpha = 1;
   });
@@ -1495,6 +1515,7 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   room.add(slab(LEFT - 0.14, RIGHT + 0.14, -0.1, 0, BACK - 0.14, FRONT, floor));
   room.add(slab(LEFT, RIGHT, 0, 0.09, BACK, BACK + 0.015, trim));
   room.add(slab(RIGHT - 0.015, RIGHT, 0, 0.09, BACK, FRONT, trim));
+  room.add(slab(LEFT, LEFT + 0.015, 0, 0.09, BACK, FRONT, trim));
   scene.add(room);
 
   /* ---- 窗：雨夜 */
@@ -2297,7 +2318,7 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     texture.anisotropy = anisotropy;
     return new THREE.MeshStandardMaterial({ map: texture, emissiveMap: texture, emissive: 0xffffff, emissiveIntensity: glow, roughness: 0.55 });
   };
-  const makeFrame = ({ src, pw, ph, matte, rim, depth = 0.016, frameMat, lipMat = null }) => {
+  const makeFrame = ({ src, pw, ph, matte, rim, depth = 0.016, frameMat, lipMat = null, matteMat = std(0xf3eee2, 0.9) }) => {
     const group = new THREE.Group();
     const ow = pw + 2 * (matte + rim);
     const oh = ph + 2 * (matte + rim);
@@ -2307,7 +2328,7 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     }
     const mw = pw + 2 * matte;
     const mh = ph + 2 * matte;
-    group.add(box(mw, mh, 0.002, std(0xf3eee2, 0.9), 0, 0, 0.001));
+    group.add(box(mw, mh, 0.002, matteMat, 0, 0, 0.001));
     if (lipMat) {
       for (const [w, h, x, y] of [[mw, 0.002, 0, mh / 2], [mw, 0.002, 0, -mh / 2], [0.002, mh, -mw / 2, 0], [0.002, mh, mw / 2, 0]]) group.add(box(w, h, 0.004, lipMat, x, y, 0.002));
     }
@@ -3360,10 +3381,15 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   lightCord.add(cordPivot);
   scene.add(lightCord);
 
-  /* ---- 老物件桌：房间左段靠后墙的一张金丝楠木翘头案，摆着九十年代家里常见的东西和几件风水摆件。
-     全是程序建模的装饰，不写任何履历事实；只有电风扇可以点（开 / 关）。墙上的挂历显示访客当天的日期。 */
-  const RELIC = { x: -2.9, z: BACK + 0.36, w: 1.5, d: 0.56, top: 0.76 };
+  /* ---- 老物件桌：一张金丝楠木翘头案，单独靠在左墙上（不和电脑桌排成一排），摆着九十年代家里常见的东西和几件风水摆件。
+     全是程序建模的装饰，不写任何履历事实；只有电风扇可以点（开 / 关）。
+     桌子和桌上的东西按桌子自己的坐标摆（x 沿桌子的长边，+z 是桌子正面），整组再转过去靠墙：
+     RELIC_AT 是桌子中心在房间里的位置，以后要挪桌子只改这一行。配的椅子、墙上的画都跟着它走。 */
+  const RELIC = { x: 0, z: 0, w: 1.5, d: 0.56, top: 0.76 };
+  const RELIC_AT = { x: LEFT + 0.36, z: -0.45 };
   const relics = new THREE.Group();
+  relics.position.set(RELIC_AT.x, 0, RELIC_AT.z);
+  relics.rotation.y = Math.PI / 2;
   /* 金丝楠木翘头案：案面两头上翘，四腿缩进，腿和案面之间是牙头，前牙条上一道描金线，两侧有挡板和托泥。 */
   relics.add(box(RELIC.w, 0.05, RELIC.d, nanmu, RELIC.x, RELIC.top - 0.025, RELIC.z));
   relics.add(box(1.06, 0.075, 0.02, nanmu, RELIC.x, RELIC.top - 0.0875, RELIC.z + RELIC.d / 2 - 0.07));
@@ -3568,19 +3594,21 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
   }
   onTable(new THREE.Mesh(new THREE.ConeGeometry(0.008, 0.04, 6), gold), 0.64, 0.285, -0.14);
   onTable(box(0.09, 0.012, 0.09, std(0x3a2416, 0.5)), 0.64, 0.006, -0.14);
-  /* 墙上：一串五帝钱（红绳、五枚方孔铜钱、一束穗子）和一本挂历。 */
-  const coinX = RELIC.x + 0.52;
-  relics.add(box(0.004, 0.36, 0.004, redPaint, coinX, 1.5, BACK + 0.012));
+  /* 后墙上（书架左边那一段）：一串五帝钱（红绳、五枚方孔铜钱、一束穗子）和一本挂历。 */
+  const wallDecor = new THREE.Group();
+  const coinX = -2.2;
+  const calendarX = -2.78;
+  wallDecor.add(box(0.004, 0.36, 0.004, redPaint, coinX, 1.5, BACK + 0.012));
   for (let i = 0; i < 5; i += 1) {
     const coin = tube(0.026, 0.026, 0.004, gold, 24);
     coin.rotation.x = Math.PI / 2;
     coin.position.set(coinX, 1.62 - i * 0.056, BACK + 0.016);
-    relics.add(coin);
-    relics.add(box(0.012, 0.012, 0.006, std(0x2a1c10, 0.6), coinX, 1.62 - i * 0.056, BACK + 0.017));
+    wallDecor.add(coin);
+    wallDecor.add(box(0.012, 0.012, 0.006, std(0x2a1c10, 0.6), coinX, 1.62 - i * 0.056, BACK + 0.017));
   }
   const tassel = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.09, 10), redPaint);
   tassel.position.set(coinX, 1.3, BACK + 0.016);
-  relics.add(tassel);
+  wallDecor.add(tassel);
   const calendarTexture = canvasTexture(256, 352, (g, w, h) => {
     const today = new Date();
     g.fillStyle = "#f6f0e2";
@@ -3609,11 +3637,124 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     }
   });
   const calendar = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.4125), std(0xffffff, 0.85, 0, { map: calendarTexture, emissive: 0xffffff, emissiveMap: calendarTexture, emissiveIntensity: 0.12 }));
-  calendar.position.set(RELIC.x - 0.22, 1.5, BACK + 0.012);
-  relics.add(shadowed(calendar));
-  relics.add(box(0.31, 0.02, 0.012, std(0x8a8f92, 0.4, 0.7), RELIC.x - 0.22, 1.714, BACK + 0.012));
+  calendar.position.set(calendarX, 1.5, BACK + 0.012);
+  wallDecor.add(shadowed(calendar));
+  wallDecor.add(box(0.31, 0.02, 0.012, std(0x8a8f92, 0.4, 0.7), calendarX, 1.714, BACK + 0.012));
+  scene.add(wallDecor);
+  relics.add(fan);
   scene.add(relics);
-  scene.add(fan);
+
+  /* ---- 老物件桌前的椅子：一把海南黄花梨（降香黄檀）的明式圈椅。
+     椅圈是一整根弯料：从左扶手头往后、往上绕过靠背，再顺着右边下来到右扶手头——扶手和靠背是连着的一圈，
+     两头外撇成“鳝鱼头”。后腿穿过座面一直顶到椅圈，前腿上去是鹅脖，中间一根 S 形联帮棍；
+     S 形靠背板上一枚如意团花，座面是藤席，座下壶门券口牙子，脚下步步高管脚枨和脚踏。
+     椅子自己的坐标：+z 是椅背，人朝 −z 坐。木料用 huali 这一组材质（圆料用 hualiRod，纹理顺着料走）。 */
+  const hualiMap = woodTexture("#a95a26", "#3f1608", "#e09a4c", 71, 5);
+  hualiMap.wrapS = hualiMap.wrapT = THREE.RepeatWrapping;
+  hualiMap.anisotropy = anisotropy;
+  const hualiRodMap = hualiMap.clone();
+  hualiRodMap.repeat.set(1.6, 0.3);
+  hualiRodMap.needsUpdate = true;
+  const huali = std(0xffffff, 0.3, 0.1, { map: hualiMap });
+  const hualiRod = std(0xffffff, 0.28, 0.1, { map: hualiRodMap });
+  const limb = (points, radius, material = hualiRod) => {
+    const curve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+    return shadowed(new THREE.Mesh(new THREE.TubeGeometry(curve, points.length === 2 ? 1 : points.length * 8, radius, 10), material));
+  };
+  const armchair = new THREE.Group();
+  /* 座面：边框、藤席、底下一道线脚。 */
+  armchair.add(box(0.58, 0.05, 0.47, huali, 0, 0.485, 0));
+  armchair.add(box(0.555, 0.012, 0.445, huali, 0, 0.454, 0));
+  armchair.add(box(0.47, 0.006, 0.36, std(0xd8bd84, 0.82), 0, 0.512, 0));
+  /* 椅圈：从靠背正中到右扶手头的半圈，左半圈是它的镜像。 */
+  const HOOP_HALF = [
+    [0, 0.995, 0.29], [0.125, 0.985, 0.262], [0.226, 0.95, 0.185], [0.281, 0.895, 0.086], [0.297, 0.84, -0.01],
+    [0.299, 0.79, -0.1], [0.304, 0.755, -0.19], [0.326, 0.735, -0.262], [0.366, 0.724, -0.298],
+  ];
+  armchair.add(limb([...HOOP_HALF.slice(1).reverse().map(([x, y, z]) => [-x, y, z]), ...HOOP_HALF], 0.019));
+  for (const side of [-1, 1]) {
+    const [tipX, tipY, tipZ] = HOOP_HALF[HOOP_HALF.length - 1];
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.0215, 16, 12), hualiRod);
+    tip.scale.set(1.2, 0.92, 1.1);
+    tip.position.set(side * tipX, tipY, tipZ);
+    armchair.add(shadowed(tip));
+    /* 后腿一木连做，穿过座面顶到椅圈；前腿到座面，上面接鹅脖。 */
+    armchair.add(limb([[side * 0.262, 0, 0.205], [side * 0.257, 0.49, 0.2], [side * 0.226, 0.94, 0.185]], 0.021));
+    armchair.add(limb([[side * 0.266, 0, -0.208], [side * 0.257, 0.49, -0.2]], 0.021));
+    armchair.add(limb([[side * 0.257, 0.5, -0.2], [side * 0.262, 0.59, -0.193], [side * 0.284, 0.68, -0.172], [side * 0.302, 0.765, -0.16]], 0.015));
+    /* 联帮棍 */
+    armchair.add(limb([[side * 0.272, 0.505, 0.015], [side * 0.302, 0.6, 0.012], [side * 0.312, 0.7, 0.005], [side * 0.298, 0.832, -0.005]], 0.0105));
+    /* 两侧的管脚枨比前面的脚踏高一级 */
+    armchair.add(limb([[side * 0.264, 0.135, -0.207], [side * 0.261, 0.135, 0.204]], 0.013));
+  }
+  armchair.add(limb([[-0.26, 0.19, 0.204], [0.26, 0.19, 0.204]], 0.013));
+  armchair.add(box(0.5, 0.024, 0.062, huali, 0, 0.085, -0.212));
+  armchair.add(box(0.42, 0.028, 0.01, huali, 0, 0.058, -0.222));
+  /* 壶门券口牙子：中间往上收成一个尖，两边顺着腿垂下去。 */
+  const apron = (halfWidth, drop) => {
+    const shape = new THREE.Shape();
+    const a = halfWidth;
+    shape.moveTo(-a, 0);
+    shape.lineTo(a, 0);
+    shape.lineTo(a, -drop);
+    shape.lineTo(a - 0.022, -drop);
+    shape.quadraticCurveTo(a - 0.03, -0.075, a - 0.11, -0.058);
+    shape.quadraticCurveTo(a * 0.3, -0.05, 0, -0.03);
+    shape.quadraticCurveTo(-a * 0.3, -0.05, -(a - 0.11), -0.058);
+    shape.quadraticCurveTo(-(a - 0.03), -0.075, -(a - 0.022), -drop);
+    shape.lineTo(-a, -drop);
+    shape.closePath();
+    return shadowed(new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.012, bevelEnabled: false, curveSegments: 10 }), huali));
+  };
+  const frontApron = apron(0.236, 0.21);
+  frontApron.position.set(0, 0.448, -0.206);
+  armchair.add(frontApron);
+  for (const side of [-1, 1]) {
+    const sideApron = apron(0.179, 0.2);
+    sideApron.rotation.y = Math.PI / 2;
+    sideApron.position.set(side * 0.257 - 0.006, 0.448, 0);
+    armchair.add(sideApron);
+  }
+  armchair.add(box(0.47, 0.045, 0.012, huali, 0, 0.4255, 0.2));
+  /* 靠背板：侧面看是一道 S 形——下半截往前鼓托住腰，上半截往后仰接到椅圈。 */
+  const splatZ = (t) => lerp(0.212, 0.286, t) - 0.024 * Math.sin(t * TAU);
+  const splatShape = new THREE.Shape();
+  for (let i = 0; i <= 14; i += 1) {
+    const t = i / 14;
+    const px = -(splatZ(t) - 0.0065);
+    const py = 0.51 + t * 0.475;
+    if (i) splatShape.lineTo(px, py);
+    else splatShape.moveTo(px, py);
+  }
+  for (let i = 14; i >= 0; i -= 1) splatShape.lineTo(-(splatZ(i / 14) + 0.0065), 0.51 + (i / 14) * 0.475);
+  splatShape.closePath();
+  const splat = shadowed(new THREE.Mesh(new THREE.ExtrudeGeometry(splatShape, { depth: 0.15, bevelEnabled: false }), huali));
+  splat.rotation.y = Math.PI / 2;
+  splat.position.x = -0.075;
+  armchair.add(splat);
+  /* 如意团花：靠背板正面（朝坐的人）偏上的位置，一圈线脚加一个小鼓钉。 */
+  const roundel = new THREE.Group();
+  roundel.position.set(0, 0.8425, splatZ(0.7) - 0.0075);
+  roundel.rotation.x = 0.249;
+  const roundelRing = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.0035, 8, 28), hualiRod);
+  roundel.add(roundelRing);
+  const roundelBoss = new THREE.Mesh(new THREE.SphereGeometry(0.012, 14, 10), hualiRod);
+  roundelBoss.scale.z = 0.4;
+  roundel.add(roundelBoss);
+  armchair.add(roundel);
+  /* 摆在老物件桌前：拉开一点、略微侧过来，不挡桌上的电风扇和煤油灯。 */
+  armchair.position.set(RELIC_AT.x + RELIC.d / 2 + 0.46, 0, RELIC_AT.z - 0.2);
+  armchair.rotation.y = Math.PI / 2 + 0.32;
+  scene.add(armchair);
+
+  /* ---- 左墙上的牡丹图：工笔牡丹《花开富贵》，镜框装裱——黄花梨边框、米色绫边、一道泥金线，挂在翘头案正上方。
+     纯装饰；图片在 assets/room/peony.webp（已去掉元数据）。 */
+  const silk = std(0xffffff, 0.92, 0, { map: speckleTexture("#d9d0b6", 17, 0.07) });
+  const PEONY = { w: 1.16, h: 1.16 * (645 / 1249) };
+  const peony = makeFrame({ src: "/assets/room/peony.webp", pw: PEONY.w, ph: PEONY.h, matte: 0.07, rim: 0.032, depth: 0.03, frameMat: huali, lipMat: std(0xc8ab6e, 0.3, 0.85), matteMat: silk });
+  peony.position.set(LEFT + 0.008, 1.66, RELIC_AT.z);
+  peony.rotation.y = Math.PI / 2;
+  scene.add(peony);
   tickers.push((time, dt) => {
     fanSpeed = lerp(fanSpeed, fanOn ? 1 : 0, 1 - Math.exp(-dt * 1.6));
     if (fanSpeed > 0.002) {
@@ -4003,7 +4144,8 @@ function buildScene({ scene, renderer, posterUrl, quality }) {
     window: { pos: new THREE.Vector3(0.3, 1.58, -1.4) },
     /* 新物件要让小人会去：在这里登记一个落脚点。stand 表示能落地站着；poses 是它在这儿可以摆的姿态
        （stand 站、prone 趴、lie 侧躺、cute 撒娇），不写就用默认的一组。台词写在 avatar.js 的 stops 里，同一个 id。 */
-    relics: { pos: new THREE.Vector3(RELIC.x + 0.26, RELIC.top, RELIC.z + 0.17), stand: true, poses: ["stand", "prone", "lie", "cute"] },
+    relics: { pos: perchOn(relics, 0.26, RELIC.top, 0.17), stand: true, poses: ["stand", "prone", "lie", "cute"] },
+    armchair: { pos: perchOn(armchair, 0, 1.014, 0.288), stand: true, poses: ["stand", "cute", "stand"] },
     projector: { pos: new THREE.Vector3(PROJ.x + 0.012, 1.012, PROJ.z - 0.07), stand: true, poses: ["stand", "prone", "cute", "stand"] },
     screen: { pos: new THREE.Vector3(SCREEN.x - 0.3, SCREEN.y + SCREEN.h / 2 + 0.102, BACK + 0.045), stand: true, poses: ["lie", "prone", "stand"] },
     cord: { pos: new THREE.Vector3(0.44, 1.5, BACK + 0.46) },
@@ -4196,8 +4338,8 @@ export async function mount({
       { pos: v(lerp(-1.42, -1.5, narrow), 1.24, lerp(0.35, 0.95, narrow)), look: v(-1.64, 1.0, -1.45) },
       { pos: v(0.66, 1.34, lerp(-0.3, 0.25, narrow)), look: v(0.68, 1.1, -1.62) },
       { pos: v(0.14, 1.3, lerp(0.35, 1.05, narrow)), look: v(0.16, 1.06, -1.35) },
-      /* 老物件桌：房间左段，书架左边。 */
-      { pos: v(-2.9, 1.42, lerp(0.7, 1.5, narrow)), look: v(-2.9, 0.98, -1.4) },
+      /* 老物件桌：靠在左墙上，从房间中间朝左看过去——翘头案、圈椅和案上方的牡丹图。 */
+      { pos: v(lerp(-0.85, -0.55, narrow), lerp(1.5, 1.55, narrow), lerp(0.4, 0.65, narrow)), look: v(LEFT + 0.2, 1.04, -0.5) },
       /* 放映角的三个机位（6、7、8）。放映员位：放映机左后方，片盘和胶片在近处，光柱横过画面，幕布在墙上。 */
       { pos: v(lerp(0.9, 0.8, narrow), 1.62, lerp(2.2, 3.0, narrow)), look: v(2.1, 1.06, -0.2) },
       /* 特写：凑到片盘和镜头旁边。 */

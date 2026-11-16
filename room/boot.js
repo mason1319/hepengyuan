@@ -13,9 +13,9 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261116-nanmu2";
+  const SCENE_URL = "/room/scene.js?v=20261116-huali";
   /* 小人（御剑飞行的迷你何鹏远）：房间亮起来之后才加载，版本号和上面保持一致。 */
-  const AVATAR_URL = "/room/avatar.js?v=20261116-nanmu2";
+  const AVATAR_URL = "/room/avatar.js?v=20261116-huali";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -98,7 +98,7 @@
       next: "下一段（→）",
       sound: "雨声",
       lofi: "切到静态版，并记住这个选择",
-      cinema: { name: "放映机", views: ["放映员位", "特写", "观众席"], pick: "选一盘胶片", again: "再放一遍", menu: "换一盘", exits: "接着去", loading: "正在上片…", failed: "这盘片子暂时取不到", own: "何鹏远的宣传片", hint: "拖动 转视角 · 滚轮 缩放 · 右键拖动 平移 · 1–9 选片 · 空格 暂停 · ESC 关掉放映机", back: "关掉放映机" },
+      cinema: { name: "放映机", views: ["放映员位", "特写", "观众席"], pick: "选一盘胶片", again: "再放一遍", menu: "换一盘", exits: "接着去", loading: "正在上片…", failed: "这盘片子暂时取不到", slow: "网络有点慢，已经等了 {s} 秒", direct: "直接打开影片", own: "何鹏远的宣传片", hint: "拖动 转视角 · 滚轮 缩放 · 右键拖动 平移 · 1–9 选片 · 空格 暂停 · ESC 关掉放映机", back: "关掉放映机" },
       light: { day: "天色：现在是晴天午后。拉一下灯绳回到雨夜", night: "天色：现在是雨夜。拉一下灯绳换成晴天午后" },
       loading: "正在布置房间…",
       loadingSlow: "网络有点慢，还在下载 3D 房间…",
@@ -165,7 +165,7 @@
       next: "Next (→)",
       sound: "Rain sound",
       lofi: "Switch to the static version and remember this choice",
-      cinema: { name: "Projector", views: ["Projectionist", "Close-up", "Audience"], pick: "Pick a reel", again: "Play again", menu: "Other reels", exits: "Next stop", loading: "Threading the film…", failed: "This reel can't be fetched right now", own: "He Pengyuan's promo film", hint: "Drag to look around · wheel to zoom · right-drag to pan · 1–9 pick a reel · Space pause · ESC switch off", back: "SWITCH PROJECTOR OFF" },
+      cinema: { name: "Projector", views: ["Projectionist", "Close-up", "Audience"], pick: "Pick a reel", again: "Play again", menu: "Other reels", exits: "Next stop", loading: "Threading the film…", failed: "This reel can't be fetched right now", slow: "Slow connection, {s} s so far", direct: "Open the film directly", own: "He Pengyuan's promo film", hint: "Drag to look around · wheel to zoom · right-drag to pan · 1–9 pick a reel · Space pause · ESC switch off", back: "SWITCH PROJECTOR OFF" },
       light: { day: "Light: a sunny afternoon now. Pull the cord for the rainy night", night: "Light: a rainy night now. Pull the cord for a sunny afternoon" },
       loading: "Setting up the room…",
       loadingSlow: "Slow connection — still downloading the 3D room…",
@@ -237,7 +237,7 @@
       next: "Weiter (→)",
       sound: "Regengeräusch",
       lofi: "Zur statischen Version wechseln und diese Wahl merken",
-      cinema: { name: "Projektor", views: ["Vorführer", "Nahaufnahme", "Publikum"], pick: "Eine Filmrolle wählen", again: "Noch einmal", menu: "Andere Rollen", exits: "Weiter zu", loading: "Film wird eingelegt …", failed: "Diese Rolle ist gerade nicht abrufbar", own: "Imagefilm von He Pengyuan", hint: "Ziehen dreht die Ansicht · Mausrad zoomt · Rechtsziehen verschiebt · 1–9 Rolle · Leertaste Pause · ESC aus", back: "PROJEKTOR AUS" },
+      cinema: { name: "Projektor", views: ["Vorführer", "Nahaufnahme", "Publikum"], pick: "Eine Filmrolle wählen", again: "Noch einmal", menu: "Andere Rollen", exits: "Weiter zu", loading: "Film wird eingelegt …", failed: "Diese Rolle ist gerade nicht abrufbar", slow: "Langsame Verbindung, bisher {s} s", direct: "Film direkt öffnen", own: "Imagefilm von He Pengyuan", hint: "Ziehen dreht die Ansicht · Mausrad zoomt · Rechtsziehen verschiebt · 1–9 Rolle · Leertaste Pause · ESC aus", back: "PROJEKTOR AUS" },
       light: { day: "Licht: jetzt ein sonniger Nachmittag. An der Schnur ziehen für die Regennacht", night: "Licht: jetzt eine Regennacht. An der Schnur ziehen für einen sonnigen Nachmittag" },
       loading: "Der Raum wird eingerichtet …",
       loadingSlow: "Langsame Verbindung – der 3D-Raum lädt noch …",
@@ -309,7 +309,7 @@
       next: "다음(→)",
       sound: "빗소리",
       lofi: "정적 버전으로 바꾸고 이 선택 기억하기",
-      cinema: { name: "영사기", views: ["영사 기사 자리", "클로즈업", "객석"], pick: "필름을 고르세요", again: "다시 보기", menu: "다른 필름", exits: "이어서 가기", loading: "필름을 거는 중…", failed: "이 필름을 지금 불러올 수 없어요", own: "허펑위안 홍보 영상", hint: "드래그 회전 · 휠 확대 · 오른쪽 드래그 이동 · 1–9 필름 · 스페이스 일시정지 · ESC 끄기", back: "영사기 끄기" },
+      cinema: { name: "영사기", views: ["영사 기사 자리", "클로즈업", "객석"], pick: "필름을 고르세요", again: "다시 보기", menu: "다른 필름", exits: "이어서 가기", loading: "필름을 거는 중…", failed: "이 필름을 지금 불러올 수 없어요", slow: "네트워크가 느려요. {s}초째 기다리는 중", direct: "영상 바로 열기", own: "허펑위안 홍보 영상", hint: "드래그 회전 · 휠 확대 · 오른쪽 드래그 이동 · 1–9 필름 · 스페이스 일시정지 · ESC 끄기", back: "영사기 끄기" },
       light: { day: "조명: 지금은 맑은 오후. 줄을 당기면 비 오는 밤으로", night: "조명: 지금은 비 오는 밤. 줄을 당기면 맑은 오후로" },
       loading: "방을 꾸미는 중…",
       loadingSlow: "연결이 느려 3D 방을 아직 내려받는 중…",
@@ -1717,7 +1717,7 @@
      放映角是自由镜头：拖动旋转、滚轮 / 双指缩放、右键 / 双指平移，底部一条小面板选片和换机位，不挡幕布。
      电脑上，影片是幕布上的一层视频贴图，镜头怎么转它都在幕布上，放映机、片盘、光柱同时看得见。
      手机和平板上（iPhone 和微信把视频画进 3D 不可靠），放片时镜头改成正对幕布、把 <video> 直接摆在幕布的位置。 */
-  const cinema = { films: [], current: null, state: "menu", watching: false, panel: null, video: null, status: null, bar: null, title: null, body: null, views: null };
+  const cinema = { films: [], current: null, state: "menu", watching: false, slow: false, errorCode: 0, timer: 0, panel: null, video: null, status: null, bar: null, title: null, body: null, views: null };
   const CINEMA_ONSCREEN = matches("(pointer: coarse)");
 
   function collectFilms() {
@@ -1737,7 +1737,9 @@
   }
 
   /* 幕布上的面板只给手机用（里面是那块直接显示的视频）；<video> 本身所有设备共用。
-     视频必须留在页面里、不能 display:none，有些 iPhone 不给脱离文档的视频解码。 */
+     视频必须一直留在页面里、一直是“渲染出来”的：iPhone 和微信对 display:none 里的视频不保证解码。
+     所以这块面板收起时不是 display:none，而是缩成看不见的一小点（styles.css 里的 .room-cinema[hidden]），
+     片子一点就先把它摆出来，再开始放（见 watchOnScreen）。 */
   function buildCinema() {
     const panel = element("section", "room-screen room-cinema");
     panel.dataset.view = "cinema";
@@ -1748,6 +1750,7 @@
     video.setAttribute("playsinline", "");
     video.setAttribute("webkit-playsinline", "");
     video.setAttribute("x5-playsinline", "");
+    video.setAttribute("x5-video-player-type", "h5-page");
     video.playsInline = true;
     video.preload = "none";
     const status = element("p", "cin-status");
@@ -1757,11 +1760,17 @@
     Object.assign(cinema, { panel, video, status, current: null, state: "menu", watching: false });
     video.addEventListener("ended", () => endFilm(false));
     video.addEventListener("error", () => {
-      if (cinema.current) endFilm(true);
+      if (!cinema.current || !video.getAttribute("src")) return;
+      /* 1 中断、2 网络、3 解码、4 格式不支持：写在片名那一行，访客截图就能看出是哪一种。 */
+      cinema.errorCode = video.error?.code || 0;
+      endFilm(true);
     });
     video.addEventListener("playing", () => {
       status.textContent = "";
       if (cinema.current) setFilmState("playing");
+    });
+    video.addEventListener("waiting", () => {
+      if (cinema.current && cinema.state === "playing") status.textContent = T.cinema.loading;
     });
     video.addEventListener("pause", () => {
       if (cinema.current && cinema.state === "playing" && !video.ended) setFilmState("paused");
@@ -1804,6 +1813,15 @@
     return button;
   };
 
+  /* 房间里放不出来时的出路：直接打开这部片子（地址就是首页登记的那个），交给手机自己的播放器。 */
+  const directLink = (film) => {
+    const link = element("a", "cin-b cin-ghost", `${T.cinema.direct} ↗`);
+    link.href = film.src;
+    link.target = "_blank";
+    link.rel = "noopener";
+    return link;
+  };
+
   const barButton = (label, onClick, className = "cin-b cin-ghost") => {
     const button = element("button", className, label);
     button.type = "button";
@@ -1823,13 +1841,15 @@
       /* 触屏上没有空格键：去掉文字里“（空格）”这样的按键提示。 */
       const label = cinema.state === "paused" ? T.play : T.pause;
       nodes.push(barButton(CINEMA_ONSCREEN ? label.replace(/\s*[（(][^（()）]*[）)]\s*$/, "") : label, toggleFilmPause, "cin-b"), barButton(T.cinema.menu, showFilmMenu));
+      if (cinema.slow && cinema.state === "loading") nodes.push(directLink(film));
     } else {
       const failed = cinema.state === "failed";
-      cinema.title.textContent = failed ? T.cinema.failed : film.title;
+      cinema.title.textContent = failed ? `${T.cinema.failed}${cinema.errorCode ? ` · E${cinema.errorCode}` : ""}` : film.title;
       const next = cinema.films.find((candidate) => candidate.id === film.next);
       if (next) nodes.push(filmButton(next));
       if (!failed) nodes.push(barButton(T.cinema.again, () => playFilm(film)));
       nodes.push(barButton(T.cinema.menu, showFilmMenu));
+      if (failed) nodes.push(directLink(film));
       for (const anchor of film.exits.map((id) => document.querySelector(`main a[data-go="${id}"]`)).filter(Boolean)) {
         const link = linkFrom(anchor, "cin-b", `${textOf(anchor)} ↗`);
         link.target = "_blank";
@@ -1858,18 +1878,27 @@
     } else syncLight(session.get(LIGHT_KEY) === "day" ? "day" : "night");
   }
 
-  /* 手机：镜头正对幕布，把视频面板摆到幕布上；收起时回到放映员位。 */
+  /* 手机：片子一点就把画面摆出来，同时镜头飞到幕布正前方；收起时回到放映员位。
+     画面先按幕布最后会在的位置摆（镜头正对幕布时，幕布在画面正中、占 82%，见 scene.js 的 poses.cinema），
+     镜头到位后再按幕布的真实投影对齐。不能等镜头到了才显示：play() 的那一刻视频必须已经渲染在页面上。 */
   function watchOnScreen(on) {
     if (!CINEMA_ONSCREEN || cinema.watching === on) return;
     cinema.watching = on;
     const panel = cinema.panel;
     if (on) {
+      const stageWidth = stage.clientWidth;
+      const stageHeight = stage.clientHeight;
+      const width = Math.min(stageWidth * 0.82, stageHeight * 0.82 * (16 / 9));
+      panel.classList.remove("is-fixed");
+      panel.style.left = `${((stageWidth - width) / 2).toFixed(1)}px`;
+      panel.style.top = `${((stageHeight - (width * 9) / 16) / 2).toFixed(1)}px`;
+      panel.style.width = `${width.toFixed(1)}px`;
+      panel.style.height = `${((width * 9) / 16).toFixed(1)}px`;
+      panel.hidden = false;
+      panel.inert = false;
+      panel.classList.add("is-open");
       controller?.goTo("cinema").then(() => {
-        if (!cinema.watching || view !== "cinema") return;
-        placePanel("cinema");
-        panel.hidden = false;
-        panel.inert = false;
-        requestAnimationFrame(() => panel.classList.add("is-open"));
+        if (cinema.watching && view === "cinema") placePanel("cinema");
       });
     } else {
       panel.classList.remove("is-open");
@@ -1884,6 +1913,9 @@
     if (!cinema.video) return;
     cinema.current = null;
     cinema.state = "menu";
+    cinema.slow = false;
+    cinema.errorCode = 0;
+    window.clearInterval(cinema.timer);
     cinema.video.pause();
     cinema.video.removeAttribute("src");
     cinema.video.load();
@@ -1905,29 +1937,64 @@
     const hadFocus = cinema.bar?.contains(document.activeElement);
     cinema.current = film;
     cinema.state = "loading";
+    cinema.slow = false;
+    cinema.errorCode = 0;
     cinema.status.textContent = T.cinema.loading;
+    /* 手机：先把画面摆出来（视频这时已经渲染在页面上），再给地址、再放。 */
+    if (CINEMA_ONSCREEN) watchOnScreen(true);
     cinema.video.src = film.src;
     controller?.setFilmProgress(0);
     runProjector(true);
-    if (CINEMA_ONSCREEN) watchOnScreen(true);
-    else controller?.setWallVideo(cinema.video);
-    /* 在这一次点击里开始放：手机只允许点按时出声。被拦下就留在画面上，等访客再点一下。 */
-    cinema.video.play()?.catch?.(() => {
-      if (cinema.current === film) cinema.status.textContent = T.filmTapPlay;
-    });
+    if (!CINEMA_ONSCREEN) controller?.setWallVideo(cinema.video);
+    /* 在这一次点击里开始放：手机只允许点按时出声。被系统拦下就停在画面上，等访客点一下画面或「继续播放」。 */
+    cinema.video.play()?.catch?.((error) => filmBlocked(film, error));
+    watchLoading(film);
     renderCinebar();
     if (hadFocus) cinema.body.querySelector("button")?.focus({ preventScroll: true });
   }
 
+  /* play() 被拒绝：只有“不允许播放”才提示去点；换片时被打断的 AbortError 忽略，取不到 / 解不了由 error 事件处理。 */
+  function filmBlocked(film, error) {
+    if (cinema.current !== film || error?.name !== "NotAllowedError") return;
+    window.clearInterval(cinema.timer);
+    cinema.status.textContent = T.filmTapPlay;
+    setFilmState("paused");
+  }
+
+  /* 上片太久（国内手机直连时常见）：每秒更新一次已经等了几秒，并给出「直接打开影片」这条出路。 */
+  function watchLoading(film) {
+    window.clearInterval(cinema.timer);
+    const started = performance.now();
+    cinema.timer = window.setInterval(() => {
+      if (cinema.current !== film || cinema.state !== "loading") {
+        window.clearInterval(cinema.timer);
+        return;
+      }
+      const seconds = Math.round((performance.now() - started) / 1000);
+      if (seconds < 6) return;
+      const text = T.cinema.slow.replace("{s}", seconds);
+      cinema.status.textContent = text;
+      if (!cinema.slow) {
+        cinema.slow = true;
+        const hadFocus = cinema.bar?.contains(document.activeElement);
+        renderCinebar();
+        if (hadFocus) cinema.body.querySelector("button")?.focus({ preventScroll: true });
+      }
+      cinema.title.textContent = `${film.title} · ${text}`;
+    }, 1000);
+  }
+
   function toggleFilmPause() {
-    if (!cinema.current || !cinema.video.getAttribute("src")) return;
-    if (cinema.video.paused) cinema.video.play()?.catch?.(() => {});
+    const film = cinema.current;
+    if (!film || !cinema.video.getAttribute("src")) return;
+    if (cinema.video.paused) cinema.video.play()?.catch?.((error) => filmBlocked(film, error));
     else cinema.video.pause();
   }
 
   /* 一盘放完（或者取不到）：灯亮回来，面板上给出下一步——接着放下一盘、再放一遍、换一盘，以及这盘片子登记的出口。 */
   function endFilm(failed) {
     if (!cinema.current) return;
+    window.clearInterval(cinema.timer);
     cinema.video.pause();
     controller?.setWallVideo(null);
     runProjector(false);
