@@ -63,7 +63,7 @@
 - 出口登记表：首页上每个通往项目的链接带 `data-go="<id>"`（`href` 仍是真实地址，给无 JS 和搜索引擎看）；同一个 id 可以出现多次但地址必须一致。`scripts/build.mjs` 把它们汇成 `/projects.json`。Worker 的 `/go/<id>` 只认这张表：GET 跳转（外站带 `utm_source=hepengyuan.com` 等来源标记）并记数，POST 只记数；`/script.js` 在点击时发 `sendBeacon` 并给外站地址补标记。记数只到“哪个出口、哪一天、页面还是房间”（D1 的 `go_clicks`），不记访客；`/api/admin/go-stats` 可以查。新增项目入口就是在首页加一个带 `data-go` 的链接，不改 Worker。
 - 放映机（房间右侧的放映角，按 R 或点放映机 / 幕布）：片子只来自首页带 `data-film` 的链接（必须是本站 `/media/` 下的地址）和 `#personal-film` 的宣传片；`data-film-next` 是放完推荐的下一盘，`data-film-exits` 是片尾给出的出口（`data-go` 的 id）。`room/` 里不写任何片子或项目的地址（校验脚本会查）。Aggie 的两部片子由 `src/worker.js` 的 `AGGIE_FILMS` 从 aggieai.me 代取（上游地址写死，Range 原样转发）；新增别的站的片子照这个办法加一条代取路由，或传到 R2。直达链接 `/?room=1&show=<片子 id>` 打开房间后直接到放映机前。
 - 放映角是自由镜头：它在场景里仍是“书桌视角”，用 `deskPresets` 里 `CORNER_FIRST` 起的三个机位（放映员位、特写、观众席，`controller.corner(0 / 1 / 2)`）。选片、暂停、片尾的下一步和机位按钮在底部的 `.room-cinebar`，不盖幕布。电脑上影片是幕布前的一层视频贴图（`setWallVideo`），镜头怎么转它都在幕布上；手机和平板（`(pointer: coarse)`）因为把视频画进 3D 不可靠，放片时改成正对幕布、把 `<video>` 摆在幕布的位置（`watchOnScreen`）。放映机是一台程序建模的 16 毫米双片盘放映机：片盘上胶片的多少跟着播放进度变（`setFilmProgress`），运转时片盘转、带齿孔的胶片走、灯箱散热缝透光、镜头到幕布有一束带灰尘的光（`runProjector` 这段），同时把房间的灯压暗（`setProjector`），不改访客选的天色。灯箱那盏点光源和太阳一样从一开始就在场景里。
-- 房间里第一个 Tab 停靠点是「静态版」跳转（`.room-skiplink`）；焦点在按钮或链接上时，Enter / 空格归那个控件，全局快捷键不得抢。
+- 房间里第一个 Tab 停靠点是「静态版」跳转（`.room-skiplink`）；焦点在按钮或链接上时，Enter / 空格归那个控件，全局快捷键不得抢。快捷键挂在房间外壳上；重画一组按钮时把焦点留在那一组里（`setFilmState`、`playFilm`），焦点万一掉到 `body` 上，房间开着时由 `onStrayKey` 把按键接过来，否则 Esc 和空格会失灵。
 
 ## Deployment
 

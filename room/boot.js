@@ -13,9 +13,9 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261116-nanmu";
+  const SCENE_URL = "/room/scene.js?v=20261116-nanmu2";
   /* 小人（御剑飞行的迷你何鹏远）：房间亮起来之后才加载，版本号和上面保持一致。 */
-  const AVATAR_URL = "/room/avatar.js?v=20261116-nanmu";
+  const AVATAR_URL = "/room/avatar.js?v=20261116-nanmu2";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -1647,10 +1647,19 @@
     overlay.append(skipLink, stage, ...Object.values(panels), hud, tip, creditsPanel, buildCinebar(), dock, status, skip, hint);
     if (!CINEMA_ONSCREEN) overlay.append(cinema.video);
     overlay.addEventListener("keydown", onKey);
+    /* 焦点所在的按钮被换掉或收起来时（选了一盘胶片、气泡收起），焦点会掉到 body 上，房间外壳就收不到按键了：
+       房间开着的时候，把落在 body 上的按键也接过来。 */
+    const onStrayKey = (event) => {
+      if (event.target === document.body && state === "open") onKey(event);
+    };
+    document.addEventListener("keydown", onStrayKey);
     document.body.append(overlay);
     ui = {
       navButtons, panels, tip, keys, back, flip: flipButton, play, next, sound: soundButton, light: lightButton, credits, creditsPanel, hint, status, skip,
-      unbind: () => narrow?.removeEventListener?.("change", placeTools),
+      unbind: () => {
+        narrow?.removeEventListener?.("change", placeTools);
+        document.removeEventListener("keydown", onStrayKey);
+      },
     };
     syncLight(session.get(LIGHT_KEY) === "day" ? "day" : "night");
     calcShow();
@@ -1892,6 +1901,8 @@
   }
 
   function playFilm(film) {
+    /* 被点的那盘片子的按钮马上会被换成「暂停」：焦点原来在放映栏里，就让它留在放映栏里。 */
+    const hadFocus = cinema.bar?.contains(document.activeElement);
     cinema.current = film;
     cinema.state = "loading";
     cinema.status.textContent = T.cinema.loading;
@@ -1905,6 +1916,7 @@
       if (cinema.current === film) cinema.status.textContent = T.filmTapPlay;
     });
     renderCinebar();
+    if (hadFocus) cinema.body.querySelector("button")?.focus({ preventScroll: true });
   }
 
   function toggleFilmPause() {
