@@ -577,8 +577,16 @@ html[data-room="on"] .room-status,html[data-room="leaving"] .room-status,html[da
 /* 手机放片时盖在幕布上的那块视频（电脑上影片是 3D 里的贴图，用不到它）。 */
 .room-cinema{background:#000}
 .room-cinema::after{content:none}
+/* 没在放片时这块面板只是收成看不见的一小点，不能 display:none：视频在它里面，iPhone 和微信对没渲染出来的视频不保证解码。 */
+.room-cinema[hidden]{display:block;left:0 !important;top:0 !important;width:2px !important;height:2px !important;opacity:.01;pointer-events:none;z-index:-1}
+/* 放映面板开着的时候，底部那句“左右拖动”的提示不要压在机位按钮上。 */
+.room-cinebar:not([hidden]) ~ .room-hint{display:none}
 .cin-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
 .cin-status{position:absolute;left:0;right:0;bottom:8cqh;margin:0;text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:#cfc8b8;pointer-events:none}
+/* 中等宽度（平板竖屏、窄窗口）：底部那排按钮会伸到左边，放映面板抬到它上面。 */
+@media (min-width:720px) and (max-width:1100px){
+  .room-cinebar{bottom:calc(64px + env(safe-area-inset-bottom))}
+}
 @media (max-width:719px){
   .room-cinebar{left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom));width:auto;max-width:none;padding:10px 12px;gap:7px}
   .cb-title{font-size:16px}
