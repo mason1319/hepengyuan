@@ -13,9 +13,9 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261116-voice2";
+  const SCENE_URL = "/room/scene.js?v=20261116-lite";
   /* 小人（御剑飞行的迷你何鹏远）：房间亮起来之后才加载，版本号和上面保持一致。 */
-  const AVATAR_URL = "/room/avatar.js?v=20261116-voice2";
+  const AVATAR_URL = "/room/avatar.js?v=20261116-lite";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -98,7 +98,7 @@
       next: "下一段（→）",
       sound: "雨声",
       lofi: "切到静态版，并记住这个选择",
-      cinema: { name: "放映机", views: ["放映员位", "特写", "观众席"], pick: "选一盘胶片", again: "再放一遍", menu: "换一盘", exits: "接着去", loading: "正在上片…", failed: "这盘片子暂时取不到", slow: "网络有点慢，已经等了 {s} 秒", direct: "直接打开影片", own: "何鹏远的宣传片", hint: "拖动 转视角 · 滚轮 缩放 · 右键拖动 平移 · 1–9 选片 · 空格 暂停 · ESC 关掉放映机", back: "关掉放映机" },
+      cinema: { name: "放映机", views: ["放映员位", "特写", "观众席"], pick: "选一盘胶片", again: "再放一遍", menu: "换一盘", exits: "接着去", loading: "正在上片…", failed: "这盘片子暂时取不到", slow: "网络有点慢，已经等了 {s} 秒", lite: "流畅版", slowLite: "网络有点慢，已换成流畅版，等了 {s} 秒", direct: "直接打开影片", own: "何鹏远的宣传片", hint: "拖动 转视角 · 滚轮 缩放 · 右键拖动 平移 · 1–9 选片 · 空格 暂停 · ESC 关掉放映机", back: "关掉放映机" },
       light: { day: "天色：现在是晴天午后。拉一下灯绳回到雨夜", night: "天色：现在是雨夜。拉一下灯绳换成晴天午后" },
       loading: "正在布置房间…",
       loadingSlow: "网络有点慢，还在下载 3D 房间…",
@@ -165,7 +165,7 @@
       next: "Next (→)",
       sound: "Rain sound",
       lofi: "Switch to the static version and remember this choice",
-      cinema: { name: "Projector", views: ["Projectionist", "Close-up", "Audience"], pick: "Pick a reel", again: "Play again", menu: "Other reels", exits: "Next stop", loading: "Threading the film…", failed: "This reel can't be fetched right now", slow: "Slow connection, {s} s so far", direct: "Open the film directly", own: "He Pengyuan's promo film", hint: "Drag to look around · wheel to zoom · right-drag to pan · 1–9 pick a reel · Space pause · ESC switch off", back: "SWITCH PROJECTOR OFF" },
+      cinema: { name: "Projector", views: ["Projectionist", "Close-up", "Audience"], pick: "Pick a reel", again: "Play again", menu: "Other reels", exits: "Next stop", loading: "Threading the film…", failed: "This reel can't be fetched right now", slow: "Slow connection, {s} s so far", lite: "data saver", slowLite: "Slow connection, switched to the data-saver version, {s} s so far", direct: "Open the film directly", own: "He Pengyuan's promo film", hint: "Drag to look around · wheel to zoom · right-drag to pan · 1–9 pick a reel · Space pause · ESC switch off", back: "SWITCH PROJECTOR OFF" },
       light: { day: "Light: a sunny afternoon now. Pull the cord for the rainy night", night: "Light: a rainy night now. Pull the cord for a sunny afternoon" },
       loading: "Setting up the room…",
       loadingSlow: "Slow connection — still downloading the 3D room…",
@@ -237,7 +237,7 @@
       next: "Weiter (→)",
       sound: "Regengeräusch",
       lofi: "Zur statischen Version wechseln und diese Wahl merken",
-      cinema: { name: "Projektor", views: ["Vorführer", "Nahaufnahme", "Publikum"], pick: "Eine Filmrolle wählen", again: "Noch einmal", menu: "Andere Rollen", exits: "Weiter zu", loading: "Film wird eingelegt …", failed: "Diese Rolle ist gerade nicht abrufbar", slow: "Langsame Verbindung, bisher {s} s", direct: "Film direkt öffnen", own: "Imagefilm von He Pengyuan", hint: "Ziehen dreht die Ansicht · Mausrad zoomt · Rechtsziehen verschiebt · 1–9 Rolle · Leertaste Pause · ESC aus", back: "PROJEKTOR AUS" },
+      cinema: { name: "Projektor", views: ["Vorführer", "Nahaufnahme", "Publikum"], pick: "Eine Filmrolle wählen", again: "Noch einmal", menu: "Andere Rollen", exits: "Weiter zu", loading: "Film wird eingelegt …", failed: "Diese Rolle ist gerade nicht abrufbar", slow: "Langsame Verbindung, bisher {s} s", lite: "Sparversion", slowLite: "Langsame Verbindung, auf die Sparversion gewechselt, bisher {s} s", direct: "Film direkt öffnen", own: "Imagefilm von He Pengyuan", hint: "Ziehen dreht die Ansicht · Mausrad zoomt · Rechtsziehen verschiebt · 1–9 Rolle · Leertaste Pause · ESC aus", back: "PROJEKTOR AUS" },
       light: { day: "Licht: jetzt ein sonniger Nachmittag. An der Schnur ziehen für die Regennacht", night: "Licht: jetzt eine Regennacht. An der Schnur ziehen für einen sonnigen Nachmittag" },
       loading: "Der Raum wird eingerichtet …",
       loadingSlow: "Langsame Verbindung – der 3D-Raum lädt noch …",
@@ -309,7 +309,7 @@
       next: "다음(→)",
       sound: "빗소리",
       lofi: "정적 버전으로 바꾸고 이 선택 기억하기",
-      cinema: { name: "영사기", views: ["영사 기사 자리", "클로즈업", "객석"], pick: "필름을 고르세요", again: "다시 보기", menu: "다른 필름", exits: "이어서 가기", loading: "필름을 거는 중…", failed: "이 필름을 지금 불러올 수 없어요", slow: "네트워크가 느려요. {s}초째 기다리는 중", direct: "영상 바로 열기", own: "허펑위안 홍보 영상", hint: "드래그 회전 · 휠 확대 · 오른쪽 드래그 이동 · 1–9 필름 · 스페이스 일시정지 · ESC 끄기", back: "영사기 끄기" },
+      cinema: { name: "영사기", views: ["영사 기사 자리", "클로즈업", "객석"], pick: "필름을 고르세요", again: "다시 보기", menu: "다른 필름", exits: "이어서 가기", loading: "필름을 거는 중…", failed: "이 필름을 지금 불러올 수 없어요", slow: "네트워크가 느려요. {s}초째 기다리는 중", lite: "절약 화질", slowLite: "네트워크가 느려 절약 화질로 바꿨어요. {s}초째 기다리는 중", direct: "영상 바로 열기", own: "허펑위안 홍보 영상", hint: "드래그 회전 · 휠 확대 · 오른쪽 드래그 이동 · 1–9 필름 · 스페이스 일시정지 · ESC 끄기", back: "영사기 끄기" },
       light: { day: "조명: 지금은 맑은 오후. 줄을 당기면 비 오는 밤으로", night: "조명: 지금은 비 오는 밤. 줄을 당기면 맑은 오후로" },
       loading: "방을 꾸미는 중…",
       loadingSlow: "연결이 느려 3D 방을 아직 내려받는 중…",
@@ -1151,7 +1151,7 @@
       /* 片名所在的那一格用 data-film-title 标出，译文页也一样；去掉粗体的「片名 / Title」前缀。 */
       const named = film.querySelector("figcaption [data-film-title]");
       const title = named ? textOf(named).slice(textOf(named.querySelector("b")).length).trim() : textOf(film.querySelector("h2"));
-      tapes.push({ id: "promo", label: T.tapes.promo, en: "PROMO", color: "#d9583a", items: [{ kind: "video", src, poster: sameOrigin(video.getAttribute("poster")), title }] });
+      tapes.push({ id: "promo", label: T.tapes.promo, en: "PROMO", color: "#d9583a", items: [{ kind: "video", src, lite: sameOrigin(video.dataset.filmLite) || "", poster: sameOrigin(video.getAttribute("poster")), title }] });
     }
     return tapes;
   }
@@ -1717,8 +1717,12 @@
      放映角是自由镜头：拖动旋转、滚轮 / 双指缩放、右键 / 双指平移，底部一条小面板选片和换机位，不挡幕布。
      电脑上，影片是幕布上的一层视频贴图，镜头怎么转它都在幕布上，放映机、片盘、光柱同时看得见。
      手机和平板上（iPhone 和微信把视频画进 3D 不可靠），放片时镜头改成正对幕布、把 <video> 直接摆在幕布的位置。 */
-  const cinema = { films: [], current: null, state: "menu", watching: false, slow: false, errorCode: 0, timer: 0, panel: null, video: null, status: null, bar: null, title: null, body: null, views: null };
+  const cinema = { films: [], current: null, state: "menu", watching: false, slow: false, lite: false, onLite: false, errorCode: 0, timer: 0, stall: 0, panel: null, video: null, status: null, bar: null, title: null, body: null, views: null };
   const CINEMA_ONSCREEN = matches("(pointer: coarse)");
+  /* 流畅版：首页给片子登记的低码率版本（data-film-lite，360p、约 270 kbps）。国内不开 VPN 直连时，1.3 Mbps 的片子
+     常常一直停在“正在上片”。上片或中途卡住超过这么多秒，就自动换成流畅版；这次进房间换过一次，后面的片子直接从
+     流畅版开始（网络慢不会只慢一部）。 */
+  const LITE_AFTER = 5;
 
   function collectFilms() {
     const films = [];
@@ -1727,12 +1731,12 @@
       const id = link.dataset.film;
       if (!src || !id) continue;
       films.push({
-        id, src, title: textOf(link), length: link.dataset.filmLength || "", next: link.dataset.filmNext || "",
+        id, src, lite: sameOrigin(link.dataset.filmLite) || "", title: textOf(link), length: link.dataset.filmLength || "", next: link.dataset.filmNext || "",
         exits: (link.dataset.filmExits || "").split(/\s+/).filter(Boolean),
       });
     }
     const promo = collectTapes()[0]?.items?.[0];
-    if (promo?.src) films.push({ id: "promo", src: promo.src, title: promo.title || T.cinema.own, length: "", next: "", exits: [] });
+    if (promo?.src) films.push({ id: "promo", src: promo.src, lite: promo.lite || "", title: promo.title || T.cinema.own, length: "", next: "", exits: [] });
     return films;
   }
 
@@ -1761,16 +1765,26 @@
     video.addEventListener("ended", () => endFilm(false));
     video.addEventListener("error", () => {
       if (!cinema.current || !video.getAttribute("src")) return;
+      /* 原版取不到（多半是网络）：先换流畅版再试一次（中途断的从断的地方接着放），流畅版也不行才算失败。 */
+      if (useLite(cinema.current, video.currentTime || 0, false)) return;
       /* 1 中断、2 网络、3 解码、4 格式不支持：写在片名那一行，访客截图就能看出是哪一种。 */
       cinema.errorCode = video.error?.code || 0;
       endFilm(true);
     });
     video.addEventListener("playing", () => {
+      window.clearTimeout(cinema.stall);
       status.textContent = "";
       if (cinema.current) setFilmState("playing");
     });
     video.addEventListener("waiting", () => {
-      if (cinema.current && cinema.state === "playing") status.textContent = T.cinema.loading;
+      const film = cinema.current;
+      if (!film || cinema.state !== "playing") return;
+      status.textContent = T.cinema.loading;
+      /* 放着放着卡住了（码率跟不上网速）：卡过 LITE_AFTER 秒还没缓过来，换成流畅版，从卡住的地方接着放。 */
+      window.clearTimeout(cinema.stall);
+      cinema.stall = window.setTimeout(() => {
+        if (cinema.current === film && cinema.state === "playing" && !video.paused && video.readyState < 3) useLite(film, video.currentTime);
+      }, LITE_AFTER * 1000);
     });
     video.addEventListener("pause", () => {
       if (cinema.current && cinema.state === "playing" && !video.ended) setFilmState("paused");
@@ -1813,10 +1827,11 @@
     return button;
   };
 
-  /* 房间里放不出来时的出路：直接打开这部片子（地址就是首页登记的那个），交给手机自己的播放器。 */
+  /* 房间里放不出来时的出路：直接打开这部片子（地址就是首页登记的那个；已经换成流畅版时给流畅版的地址），
+     交给手机自己的播放器。 */
   const directLink = (film) => {
     const link = element("a", "cin-b cin-ghost", `${T.cinema.direct} ↗`);
-    link.href = film.src;
+    link.href = (cinema.onLite && film.lite) || film.src;
     link.target = "_blank";
     link.rel = "noopener";
     return link;
@@ -1837,7 +1852,9 @@
       cinema.title.textContent = T.cinema.pick;
       nodes.push(...cinema.films.map((candidate) => filmButton(candidate)));
     } else if (cinema.state === "playing" || cinema.state === "paused" || cinema.state === "loading") {
-      cinema.title.textContent = cinema.state === "loading" ? `${film.title} · ${T.cinema.loading}` : film.title;
+      /* 放的是流畅版时在片名后面标出来：画面糊一点不是坏了，访客截图也能看出放的是哪一份。 */
+      const name = cinema.onLite ? `${film.title} · ${T.cinema.lite}` : film.title;
+      cinema.title.textContent = cinema.state === "loading" ? `${name} · ${T.cinema.loading}` : name;
       /* 触屏上没有空格键：去掉文字里“（空格）”这样的按键提示。 */
       const label = cinema.state === "paused" ? T.play : T.pause;
       nodes.push(barButton(CINEMA_ONSCREEN ? label.replace(/\s*[（(][^（()）]*[）)]\s*$/, "") : label, toggleFilmPause, "cin-b"), barButton(T.cinema.menu, showFilmMenu));
@@ -1914,8 +1931,10 @@
     cinema.current = null;
     cinema.state = "menu";
     cinema.slow = false;
+    cinema.onLite = false;
     cinema.errorCode = 0;
     window.clearInterval(cinema.timer);
+    window.clearTimeout(cinema.stall);
     cinema.video.pause();
     cinema.video.removeAttribute("src");
     cinema.video.load();
@@ -1942,7 +1961,9 @@
     cinema.status.textContent = T.cinema.loading;
     /* 手机：先把画面摆出来（视频这时已经渲染在页面上），再给地址、再放。 */
     if (CINEMA_ONSCREEN) watchOnScreen(true);
-    cinema.video.src = film.src;
+    window.clearTimeout(cinema.stall);
+    cinema.onLite = Boolean(cinema.lite && film.lite);
+    cinema.video.src = cinema.onLite ? film.lite : film.src;
     controller?.setFilmProgress(0);
     runProjector(true);
     if (!CINEMA_ONSCREEN) controller?.setWallVideo(cinema.video);
@@ -1961,7 +1982,38 @@
     setFilmState("paused");
   }
 
-  /* 上片太久（国内手机直连时常见）：每秒更新一次已经等了几秒，并给出「直接打开影片」这条出路。 */
+  /* 换成流畅版：同一个 <video> 换地址接着放（这个元素已经在访客那一下点击里 play() 过，手机允许它再放；
+     万一还是被拦下，filmBlocked 会提示点画面）。at 是中途卡住或出错时的进度，流畅版从那里接着放。
+     slow：是因为慢才换的，这次进房间后面的片子也直接用流畅版；原版只是报错（比如上游一时取不到）就不连带别的片子。
+     访客自己按了暂停时只换地址、不替他接着放。没有流畅版、或者已经在放流畅版，返回 false。 */
+  function useLite(film, at = 0, slow = true) {
+    if (!film?.lite || cinema.onLite || cinema.current !== film) return false;
+    if (slow) cinema.lite = true;
+    cinema.onLite = true;
+    window.clearTimeout(cinema.stall);
+    const video = cinema.video;
+    const held = cinema.state === "paused";
+    video.src = film.lite;
+    if (at > 0) {
+      video.addEventListener("loadedmetadata", () => {
+        if (cinema.current === film && cinema.onLite) video.currentTime = at;
+      }, { once: true });
+    }
+    if (held) {
+      renderCinebar();
+      return true;
+    }
+    video.play()?.catch?.((error) => filmBlocked(film, error));
+    if (cinema.state !== "loading") {
+      setFilmState("loading");
+      watchLoading(film);
+    } else renderCinebar();
+    cinema.status.textContent = T.cinema.loading;
+    return true;
+  }
+
+  /* 上片太久（国内手机直连时常见）：先自动换成流畅版；还是慢，就每秒更新一次已经等了几秒，
+     并给出「直接打开影片」这条出路。 */
   function watchLoading(film) {
     window.clearInterval(cinema.timer);
     const started = performance.now();
@@ -1971,8 +2023,13 @@
         return;
       }
       const seconds = Math.round((performance.now() - started) / 1000);
+      if (seconds >= LITE_AFTER && !cinema.onLite && film.lite) {
+        const hadFocus = cinema.bar?.contains(document.activeElement);
+        useLite(film);
+        if (hadFocus) cinema.body.querySelector("button")?.focus({ preventScroll: true });
+      }
       if (seconds < 6) return;
-      const text = T.cinema.slow.replace("{s}", seconds);
+      const text = (cinema.onLite ? T.cinema.slowLite : T.cinema.slow).replace("{s}", seconds);
       cinema.status.textContent = text;
       if (!cinema.slow) {
         cinema.slow = true;
@@ -1995,6 +2052,7 @@
   function endFilm(failed) {
     if (!cinema.current) return;
     window.clearInterval(cinema.timer);
+    window.clearTimeout(cinema.stall);
     cinema.video.pause();
     controller?.setWallVideo(null);
     runProjector(false);

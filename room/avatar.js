@@ -963,6 +963,7 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
         window.clearTimeout(timer);
         audio.removeEventListener("ended", onEnded);
         audio.removeEventListener("error", onError);
+        audio.removeEventListener("playing", onPlaying);
         resolve(played === true);
       };
       /* 没放出来：记下原因，气泡里的声音按钮变成「点这里出声」（那个按钮的点击一定算点按）。 */
@@ -974,6 +975,14 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
       };
       const onEnded = () => finish(true);
       const onError = () => fail(`E${audio.error?.code ?? 0}`);
+      /* 开始出声了：限时改成“这句剩下的长度 + 余量”。最长的一句有 17 秒多，网络慢、晚几秒才开口时，
+         开头定的 20 秒会在它说完之前到点，带逛就把它掐断去下一站了；中途卡住又接上时，也按剩下的长度重算。 */
+      const onPlaying = () => {
+        if (voiceEnd !== finish) return;
+        window.clearTimeout(timer);
+        const left = Number.isFinite(audio.duration) ? audio.duration - audio.currentTime : 30;
+        timer = window.setTimeout(() => fail("timeout"), (Math.max(0, left) + 8) * 1000);
+      };
       /* 可以试不止一次：第一次不在点按里被拦下，紧接着的 touchend / click 里再试（见 prime）。只认最后一次的结果。 */
       finish.retry = () => {
         const mine = ++tries;
@@ -997,9 +1006,10 @@ export function start({ room, overlay, lang = "zh", coarse = false, openView = (
         );
       };
       voiceEnd = finish;
-      timer = window.setTimeout(() => fail("timeout"), 20000); /* 网络卡住时别让带逛一直等下去 */
+      timer = window.setTimeout(() => fail("timeout"), 20000); /* 20 秒还没开口：网络卡住了，别让带逛一直等下去 */
       audio.addEventListener("ended", onEnded);
       audio.addEventListener("error", onError);
+      audio.addEventListener("playing", onPlaying);
       finish.retry();
     });
     return speech;

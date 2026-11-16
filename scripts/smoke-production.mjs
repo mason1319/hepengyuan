@@ -17,6 +17,10 @@ const checks = [
   { path: "/aggie-3a/", type: "text/html", includes: '<script id="hpy-aggie-guard"' },
   { path: "/media/promo/pengyuan-personal-promo.mp4", type: "video/mp4", method: "HEAD" },
   { path: "/media/promo/pengyuan-personal-promo-720p.mp4", type: "video/mp4", method: "HEAD" },
+  /* 流畅版（360p）：慢网络时放映机自动换成它，三部都在 R2，必须支持分段请求。 */
+  { path: "/media/promo/pengyuan-personal-promo-360p.mp4", type: "video/mp4", range: true },
+  { path: "/media/aggie/learning-15s-360p.mp4", type: "video/mp4", range: true },
+  { path: "/media/aggie/brand-film-360p.mp4", type: "video/mp4", range: true },
   { path: "/media/music/lai-zi-gao-wei-de-ni.mp3", type: "audio/mpeg", method: "HEAD" },
   { path: "/en/", type: "text/html", includes: "Hi, I'm He Pengyuan." },
   { path: "/de/", type: "text/html", includes: "Hallo, ich bin He Pengyuan." },
