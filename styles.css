@@ -465,6 +465,9 @@ html[data-room="on"] .room-dock{opacity:1}
 .room-say.is-right::after{left:-6px;bottom:auto;top:50%;margin:-6.5px 0 0}
 .room-say.is-left::after{left:auto;right:-6px;bottom:auto;top:50%;margin:-6.5px 0 0}
 .room-say.is-below::after{bottom:auto;top:-6px}
+/* 助理胡以沫的气泡：同一套样式，窄一点，顶上多一行名字，左边一道酒红色（她的发圈）。 */
+.room-say.is-aide{max-width:min(236px,calc(100% - 16px));box-shadow:0 10px 26px rgba(0,0,0,.5),inset 3px 0 0 #a6212f}
+.say-who{display:block;margin:0 0 2px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:#a6212f}
 .say-t{margin:0}
 .say-n{margin-right:.6em;font-family:var(--mono);font-size:11px;letter-spacing:.06em;opacity:.6}
 .say-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}

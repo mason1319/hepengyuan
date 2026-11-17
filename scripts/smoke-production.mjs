@@ -31,6 +31,9 @@ const checks = [
   { path: "/assets/room/voice/hello.mp3", type: "audio/mpeg", minBytes: 10_000 },
   { path: "/assets/room/voice/hello.mp3", type: "audio/mpeg", range: true },
   { path: "/assets/room/voice/stop-tv.mp3", type: "audio/mpeg", minBytes: 10_000 },
+  /* 助理胡以沫本人的录音（yimo- 前缀），同样要支持分段请求。 */
+  { path: "/assets/room/voice/yimo-hi.mp3", type: "audio/mpeg", minBytes: 10_000 },
+  { path: "/assets/room/voice/yimo-hi.mp3", type: "audio/mpeg", range: true },
   { path: "/assets/vendor/three-0.170.0.module.min.js", type: "javascript", includes: "SPDX-License-Identifier: MIT" },
 ];
 
