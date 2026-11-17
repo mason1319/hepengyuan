@@ -95,12 +95,44 @@ if (failures.length === 0) {
       fail(`room/avatar.js: VOICE lists "${id}" but assets/room/voice/${id}.mp3 is missing`);
     }
   }
+  /* 助理胡以沫只用她本人的录音：文件名带 yimo- 前缀，登记在 AIDE_VOICE 里。id 必须是一句真的会出声的台词
+     （hi，或 组名 + 序号）；她自己冒出来的话（giveWay）只出文字，不该有录音。 */
+  const aideVoiceBlock = avatar.match(/const AIDE_VOICE = new Set\(\[([\s\S]*?)\]\);/)?.[1];
+  if (aideVoiceBlock === undefined || !avatar.includes('const AIDE_VOICE_PREFIX = "yimo-";')) {
+    fail("room/avatar.js: AIDE_VOICE (the assistant's own recordings, files named yimo-<id>.mp3) could not be read");
+  }
+  const aideVoiceIds = [...(aideVoiceBlock ?? "").matchAll(/"([\w-]+)"/g)].map((match) => match[1]);
+  const aideZh = avatar.match(/const AIDE_LINES = \{\n  zh: \{([\s\S]*?)\n  \},/)?.[1] ?? "";
+  const aideSpoken = new Set(["hi"]);
+  for (const group of ["chat", "fuss", "held", "freed", "scold", "escort", "bossHeld"]) {
+    const lines = aideZh.match(new RegExp(`\\n    ${group}: \\[([\\s\\S]*?)\\],`))?.[1] ?? "";
+    const count = (lines.match(/"(?:[^"\\]|\\.)*"/g) || []).length;
+    if (!count) fail(`room/avatar.js: AIDE_LINES.zh.${group} could not be read`);
+    for (let index = 1; index <= count; index += 1) aideSpoken.add(`${group}${index}`);
+  }
+  for (const id of aideVoiceIds) {
+    if (!aideSpoken.has(id)) {
+      fail(`room/avatar.js: AIDE_VOICE lists "${id}", which is not a line the assistant says aloud (hi, or group + number from AIDE_LINES; giveWay stays text-only)`);
+      continue;
+    }
+    try {
+      const info = await stat(`assets/room/voice/yimo-${id}.mp3`);
+      if (info.size >= 1_000_000) fail(`assets/room/voice/yimo-${id}.mp3: voice clips must stay below 1 MB`);
+    } catch {
+      fail(`room/avatar.js: AIDE_VOICE lists "${id}" but assets/room/voice/yimo-${id}.mp3 is missing`);
+    }
+  }
   /* 反过来也一样：目录里不放没登记的录音（多半是切错的或被替换掉的），免得发布出去没人用。 */
+  const voiceFiles = new Set([...voiceIds, ...aideVoiceIds.map((id) => `yimo-${id}`)]);
   for (const file of await readdir("assets/room/voice").catch(() => [])) {
     if (file.startsWith(".")) continue;
-    if (!file.endsWith(".mp3") || !voiceIds.includes(file.slice(0, -4))) {
-      fail(`assets/room/voice/${file}: not listed in VOICE in room/avatar.js (only registered .mp3 clips belong here)`);
+    if (!file.endsWith(".mp3") || !voiceFiles.has(file.slice(0, -4))) {
+      fail(`assets/room/voice/${file}: not listed in VOICE or AIDE_VOICE in room/avatar.js (only registered .mp3 clips belong here)`);
     }
+  }
+  /* 两个人的声音不能串：他的录音 id 不带 yimo- 前缀。 */
+  for (const id of voiceIds) {
+    if (id.startsWith("yimo-")) fail(`room/avatar.js: VOICE lists "${id}"; the yimo- prefix is reserved for the assistant's own recordings (AIDE_VOICE)`);
   }
   /* ---- 房间里的图片（照片、挂画）：场景引用的每一张都要在仓库里，WebP，单张小于 1MB */
   const roomPictures = [...new Set([...scene.matchAll(/"\/assets\/room\/([\w-]+\.\w+)"/g)].map((match) => match[1]))];
@@ -114,7 +146,7 @@ if (failures.length === 0) {
       fail(`room/scene.js: /assets/room/${file} is referenced but the file is missing`);
     }
   }
-  if (/speechSynthesis|SpeechSynthesisUtterance/.test(avatar)) fail("room/avatar.js: the avatar only speaks with recorded clips of He Pengyuan; do not use speech synthesis");
+  if (/speechSynthesis|SpeechSynthesisUtterance/.test(avatar)) fail("room/avatar.js: the avatars only speak with their own recorded clips (He Pengyuan's, and the assistant's own); do not use speech synthesis");
 
   for (const key of ["hpy-room", "hpy-room-seen"]) {
     if (!html.includes(`"${key}"`) || !boot.includes(`"${key}"`)) {
@@ -198,6 +230,30 @@ if (failures.length === 0) {
   for (const [, , action] of (avatarSource.match(/const STOP_ACTIONS = \{([^}]*)\}/)?.[1] ?? "").matchAll(/(\w+): \["\w+", "(\w+)"\]/g)) {
     if (!boot.includes(`id === "${action}"`)) fail(`room/boot.js: guideAct does not handle the avatar action "${action}"`);
   }
+  /* 助理胡以沫（坐小飞机的第二个小人）：四种语言的台词要齐、句数一致；她是个小朋友，台词里不能有脏话；
+     她停飞机的地方要是场景里登记过的落脚点；她和飞机都不能带灯（房间里灯的数量不能变）；悬停提示四种语言都要有。 */
+  const aideBlock = avatarSource.match(/const AIDE_LINES = \{([\s\S]*?)\n\};/)?.[1] ?? "";
+  const aideShape = ["zh", "en", "de", "ko"].map((lang) => {
+    const block = aideBlock.match(new RegExp(`\\n  ${lang}: \\{([\\s\\S]*?)\\n  \\},`))?.[1] ?? "";
+    return [...block.matchAll(/\n    (\w+): (\[[\s\S]*?\n?\s*\]|"[^"\n]*"),/g)]
+      .map((entry) => `${entry[1]}:${(entry[2].match(/"(?:[^"\\]|\\.)*"/g) || []).length}`)
+      .join(" ");
+  });
+  if (!aideShape[0] || !/\bchat:\d/.test(aideShape[0])) fail("room/avatar.js: the assistant's lines (AIDE_LINES) could not be read");
+  aideShape.forEach((shape, index) => {
+    if (shape !== aideShape[0]) fail(`room/avatar.js: AIDE_LINES.${["zh", "en", "de", "ko"][index]} must have the same lines as AIDE_LINES.zh (${shape || "missing"} vs ${aideShape[0]})`);
+  });
+  const rude = aideBlock.match(/卧槽|我靠|妈的|他妈|牛逼|傻逼|操你|\b(?:fuck\w*|shit\w*|crap|damn\w*|hell|bloody|ass|asshole|bitch\w*)\b|scheiß|scheiss|verdammt|zum teufel|\barsch|씨발|젠장|제기랄|망할|지랄/i);
+  if (rude) fail(`room/avatar.js: the assistant is a child and never swears; remove "${rude[0]}" from AIDE_LINES`);
+  const padIds = [...(avatarSource.match(/const PADS = \[([^\]]*)\];/)?.[1] ?? "").matchAll(/"([a-z]+)"/g)].map((match) => match[1]);
+  if (!padIds.length) fail("room/avatar.js: the assistant's landing spots (PADS) could not be read");
+  for (const id of padIds) {
+    if (!new RegExp(`\\n\\s+${id}: \\{ pos:[^\\n]*stand: true`).test(perchBlock)) fail(`room/scene.js: the assistant's landing spot "${id}" must be a perch she can stand on`);
+  }
+  if (/new THREE\.\w*Light\(/.test(avatarSource)) fail("room/avatar.js: the avatars must not add lights (the number of lights in the room is fixed); use emissive materials");
+  if (!/\n  aide: \{ label: "/.test(scene)) fail("room/scene.js: ACTIONS needs the hover label for the assistant (aide)");
+  if ((boot.match(/ aide: "/g) || []).length !== 3) fail("room/boot.js: the assistant's hover hint (hotspots.aide) is needed in English, German and Korean");
+  if (!css.includes(".room-say.is-aide{") || !css.includes(".say-who{")) fail("styles.css: the assistant's speech bubble styles are missing");
   if (!boot.includes("room-skiplink") || !css.includes(".room-skiplink:focus{")) fail("the room needs a keyboard skip link to the static version as its first Tab stop");
   if (!/@media print\{[^}]*\.room\{display:none !important\}/.test(css.replace(/\n\s*/g, ""))
     && !/\.room\{display:none !important\}/.test(css)) {

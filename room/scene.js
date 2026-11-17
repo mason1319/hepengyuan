@@ -52,6 +52,7 @@ const ACTIONS = {
   calc: { label: "CALC", sub: "计算器 · 拿起来用" },
   card: { label: "CARD", sub: "名片 · 拿一张出来" },
   avatar: { label: "HPY", sub: "点我说话 · 拖我试试" },
+  aide: { label: "YIMO", sub: "小人的助理 · 点我说话 · 拖我试试" },
   tvPower: { label: "POWER", sub: "电视开关" },
   tvPreset: { label: "CH", sub: "预选台 1–6" },
   tvChannel: { label: "TUNE", sub: "换台" },
@@ -4462,9 +4463,13 @@ export async function mount({
     return { left, top, width: right - left, height: bottom - top };
   }
 
-  /* ---- 小人：/room/avatar.js 在房间亮起来之后才加载，通过 addActor 挂进来。
+  /* ---- 小人：/room/avatar.js 在房间亮起来之后才加载，通过 addActor 挂进来。可以不止一个
+     （何鹏远小人，和坐小飞机的助理胡以沫），各自的 pickRoot.userData.action 就是它被点中时的 id。
      这里只做三件事：把点和拖交给它、每帧让它动一下、离开书桌视角时把它收起来。没加载到就没有小人，别的不受影响。 */
-  let actor = null;
+  const actors = new Map(); /* 建它的函数 → 小人：同一个函数再来一次，拿到的是原来那个 */
+  const actorList = () => [...actors.values()];
+  const actorAt = (id) => actorList().find((item) => item.pickRoot.userData.action === id && item.visible) || null;
+  const isActor = (id) => actorList().some((item) => item.pickRoot.userData.action === id);
   let tourHot = null;
   const actorHost = {
     THREE,
@@ -4484,11 +4489,27 @@ export async function mount({
     },
   };
   function addActor(create, onEvent) {
-    if (actor || disposed) return actor;
-    actor = create(actorHost, onEvent);
+    if (disposed) return null;
+    if (actors.has(create)) return actors.get(create);
+    const actor = create(actorHost, onEvent);
+    actors.set(create, actor);
     pickRoots.push(actor.pickRoot);
     actor.setVisible(current === "desk");
     return actor;
+  }
+  /* 某个小人自己出了错（每帧更新时抛异常）：只把它撤掉，房间和别的小人照常。
+     原因记在 stage 的 data-actor-error 上，排查时在页面里就能看到。 */
+  function dropActor(actor, error) {
+    stage.dataset.actorError = String(error?.message || error).slice(0, 160);
+    for (const [create, item] of actors) if (item === actor) actors.delete(create);
+    const at = pickRoots.indexOf(actor.pickRoot);
+    if (at >= 0) pickRoots.splice(at, 1);
+    if (gesture?.actor === actor) gesture.actor = null;
+    try {
+      actor.dispose();
+    } catch {
+      /* 撤不干净也不再更新它了。 */
+    }
   }
 
   /* ---- 指针
@@ -4521,7 +4542,11 @@ export async function mount({
       while (node) {
         if (Number.isInteger(node.userData.tape)) tape = node.userData.tape;
         if (node.userData.hotspot) return { id: node.userData.hotspot, tape, value: null };
-        if (node.userData.action) return { id: node.userData.action, tape: null, value: node.userData.value ?? null };
+        if (node.userData.action) {
+          /* 收起来的小人（比如看片时退场的助理）不挡后面的东西：接着看这条线上的下一个。 */
+          if (isActor(node.userData.action) && !actorAt(node.userData.action)) break;
+          return { id: node.userData.action, tape: null, value: node.userData.value ?? null };
+        }
         node = node.parent;
       }
     }
@@ -4637,7 +4662,7 @@ export async function mount({
   /* 抬手事件丢了（切到别的 App、被系统手势打断）时，残留的触点会让之后的单指操作一直被当成多指：
      点物件没反应、拖动变成缩放。回到书桌或页面转到后台时清掉。 */
   function clearPointers() {
-    if (gesture?.dragging) actor?.drop();
+    if (gesture?.dragging) gesture.actor?.drop();
     pointers.clear();
     gesture = null;
   }
@@ -4676,12 +4701,12 @@ export async function mount({
         startTime: performance.now(),
         pinch: 0,
         pinchZoom: orbit.goal.zoom,
-        actor: false,
+        actor: null,
         dragging: false,
       };
-      if (actor?.visible && canOrbit() && event.button !== 2) {
+      if (actors.size && canOrbit() && event.button !== 2) {
         toNdc(event);
-        gesture.actor = pick()?.id === "avatar";
+        gesture.actor = actorAt(pick()?.id);
       }
     } else if (gesture) {
       gesture.multi = true;
@@ -4723,14 +4748,14 @@ export async function mount({
       return;
     }
     if (!canOrbit()) return;
-    if (gesture.actor && actor && pointers.size === 1) {
+    if (gesture.actor && pointers.size === 1) {
       /* 拖的是小人：让它跟着手指走。 */
       raycaster.setFromCamera(pointer, camera);
       if (!gesture.dragging) {
         gesture.dragging = true;
-        actor.grab(raycaster.ray);
+        gesture.actor.grab(raycaster.ray);
       }
-      actor.dragTo(raycaster.ray);
+      gesture.actor.dragTo(raycaster.ray);
       return;
     }
     if (pointers.size >= 2) {
@@ -4758,7 +4783,7 @@ export async function mount({
     const finished = gesture;
     gesture = null;
     if (finished?.type === "mouse") stage.style.cursor = "";
-    if (finished?.dragging) actor?.drop();
+    if (finished?.dragging) finished.actor?.drop();
     if (pendingTap) window.clearTimeout(pendingTap.timer);
     pendingTap = null;
     if (!finished || finished.moved || finished.multi || event.type === "pointercancel") return;
@@ -4800,16 +4825,16 @@ export async function mount({
     }
   }
 
-  function tap(event, type, onActor = false) {
+  function tap(event, type, onActor = null) {
     if (current === "card") {
       if (!flight) flipCard();
       return;
     }
     if (!canOrbit()) return;
-    if (onActor && actor?.visible) {
+    if (onActor?.visible) {
       /* 按下时点中的是小人（它会动，抬手时未必还在原地）：直接算点它，手机上也不用点两下。 */
       disarm();
-      actor.tap();
+      onActor.tap();
       return;
     }
     toNdc(event);
@@ -4974,7 +4999,7 @@ export async function mount({
     built.liftCalculator(target === "calc", reducedMotion);
     built.setDeckOpen(target === "music");
     cardAnim.goal = target === "card" ? 1 : 0;
-    actor?.setVisible(target === "desk");
+    for (const actor of actorList()) actor.setVisible(target === "desk");
     built.computerState.mode = target === "about" || target === "online" ? target : "desk";
     built.redrawComputer();
     if (target === "posts") tv({ mode: "teletext" });
@@ -5024,7 +5049,7 @@ export async function mount({
     tourHot = null;
     clearPointers();
     built.setProjector(false);
-    actor?.reset();
+    for (const actor of actorList()) actor.reset();
   }
 
   /* ---- 电视、录像机与录音机：由启动器驱动 */
@@ -5134,7 +5159,7 @@ export async function mount({
     if (pointerMoved && pointerActive && atDesk && !gesture?.moved) {
       pointerMoved = false;
       const hit = pick();
-      stage.style.cursor = hit ? (hit.id === "avatar" ? "grab" : "pointer") : "";
+      stage.style.cursor = hit ? (actorAt(hit.id) ? "grab" : "pointer") : "";
       setHover(hit?.id ?? null);
     }
 
@@ -5150,7 +5175,13 @@ export async function mount({
     }
 
     for (const tick of built.tickers) tick(time, dt, realDt);
-    actor?.update(dt, realDt, time);
+    for (const actor of actorList()) {
+      try {
+        actor.update(dt, realDt, time);
+      } catch (error) {
+        dropActor(actor, error);
+      }
+    }
 
     blinkAt += dt;
     if (blinkAt > 0.5) {
@@ -5239,8 +5270,8 @@ export async function mount({
     canvas.removeEventListener("webglcontextlost", onContextLost);
     window.clearTimeout(armTimer);
     stopIntro();
-    actor?.dispose();
-    actor = null;
+    for (const actor of actorList()) actor.dispose();
+    actors.clear();
     stage.removeEventListener("pointerdown", onPointerDown);
     stage.removeEventListener("pointermove", onPointerMove);
     stage.removeEventListener("pointerup", onPointerUp);

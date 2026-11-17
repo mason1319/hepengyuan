@@ -13,9 +13,9 @@
 (() => {
   "use strict";
 
-  const SCENE_URL = "/room/scene.js?v=20261116-lite";
-  /* 小人（御剑飞行的迷你何鹏远）：房间亮起来之后才加载，版本号和上面保持一致。 */
-  const AVATAR_URL = "/room/avatar.js?v=20261116-lite";
+  const SCENE_URL = "/room/scene.js?v=20261117-yimo";
+  /* 小人（御剑飞行的迷你何鹏远，和坐小飞机的助理胡以沫）：房间亮起来之后才加载，版本号和上面保持一致。 */
+  const AVATAR_URL = "/room/avatar.js?v=20261117-yimo";
   const POSTER_URL = "/assets/hpy-promo-poster.jpg";
 
   const PREF_KEY = "hpy-room"; /* "off" 访客自己选了静态版；"auto-off" 实测跑不动 */
@@ -182,7 +182,7 @@
       ],
       hotspots: {
         about: "About me", work: "Career & projects", posts: "Posts & archives", film: "Tapes · promo film & media",
-        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", cord: "Pull cord · change the light", projector: "Projector · films on the wall", fan: "Table fan · on / off", tape: "Boombox · play a cassette", card: "Business card · take one out", avatar: "Tap to talk · drag me", cassette: "Put it in the boombox", book: "Projects",
+        online: "Contact", services: "Services (in Chinese)", game: "Aggie 3A interactive demo", lamp: "Lamp on/off", cord: "Pull cord · change the light", projector: "Projector · films on the wall", fan: "Table fan · on / off", tape: "Boombox · play a cassette", card: "Business card · take one out", avatar: "Tap to talk · drag me", aide: "The avatar's assistant · tap to talk · drag me", cassette: "Put it in the boombox", book: "Projects",
         deckPlay: "Play / pause", deckPause: "Pause", deckStop: "Stop · eject", deckNext: "Next track", deckPrev: "Previous track", deckRec: "Record key (just for fun)", calc: "Calculator · pick it up",
         tvPower: "TV on/off", tvPreset: "Channel presets 1–6", tvChannel: "Change channel", tvVolume: "Volume", pcPower: "Computer on/off", pcBright: "Screen brightness",
       },
@@ -254,7 +254,7 @@
       ],
       hotspots: {
         about: "Über mich", work: "Werdegang & Projekte", posts: "Beiträge & Archive", film: "Kassetten · Imagefilm & Medien",
-        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", cord: "Zugschalter · Licht wechseln", projector: "Projektor · Filme an der Wand", fan: "Tischventilator · an / aus", tape: "Kassettenrekorder · Kassette abspielen", card: "Visitenkarte · eine herausnehmen", avatar: "Antippen zum Reden · zieh mich", cassette: "In den Rekorder legen", book: "Projekte",
+        online: "Kontakt", services: "Leistungen (auf Chinesisch)", game: "Interaktive Aggie-3A-Demo", lamp: "Lampe an/aus", cord: "Zugschalter · Licht wechseln", projector: "Projektor · Filme an der Wand", fan: "Tischventilator · an / aus", tape: "Kassettenrekorder · Kassette abspielen", card: "Visitenkarte · eine herausnehmen", avatar: "Antippen zum Reden · zieh mich", aide: "Assistentin des Mini-He-Pengyuan · antippen zum Reden · zieh mich", cassette: "In den Rekorder legen", book: "Projekte",
         deckPlay: "Wiedergabe / Pause", deckPause: "Pause", deckStop: "Stopp · Auswurf", deckNext: "Nächster Titel", deckPrev: "Vorheriger Titel", deckRec: "Aufnahmetaste (nur zum Spaß)", calc: "Taschenrechner · in die Hand nehmen",
         tvPower: "Fernseher ein/aus", tvPreset: "Programmtasten 1–6", tvChannel: "Kanal wechseln", tvVolume: "Lautstärke", pcPower: "Computer ein/aus", pcBright: "Bildschirmhelligkeit",
       },
@@ -326,7 +326,7 @@
       ],
       hotspots: {
         about: "소개", work: "이력과 작업", posts: "글과 아카이브", film: "테이프 · 홍보 영상과 미디어",
-        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", cord: "당김줄 스위치 · 빛 바꾸기", projector: "영사기 · 벽에 영화 상영", fan: "선풍기 · 켜기 / 끄기", tape: "카세트 · 음악 듣기", card: "명함 · 한 장 꺼내기", avatar: "누르면 말해요 · 끌어 보세요", cassette: "카세트에 넣기", book: "작업",
+        online: "연락처", services: "서비스(중국어)", game: "Aggie 3A 인터랙티브 데모", lamp: "스탠드 켜기/끄기", cord: "당김줄 스위치 · 빛 바꾸기", projector: "영사기 · 벽에 영화 상영", fan: "선풍기 · 켜기 / 끄기", tape: "카세트 · 음악 듣기", card: "명함 · 한 장 꺼내기", avatar: "누르면 말해요 · 끌어 보세요", aide: "미니 허펑위안의 조수 · 누르면 말해요 · 끌어 보세요", cassette: "카세트에 넣기", book: "작업",
         deckPlay: "재생 / 일시정지", deckPause: "일시정지", deckStop: "정지 · 꺼내기", deckNext: "다음 곡", deckPrev: "이전 곡", deckRec: "녹음 버튼(그냥 눌러 보기)", calc: "계산기 · 들어서 쓰기",
         tvPower: "TV 켜기/끄기", tvPreset: "채널 프리셋 1–6", tvChannel: "채널 바꾸기", tvVolume: "볼륨", pcPower: "컴퓨터 켜기/끄기", pcBright: "화면 밝기",
       },
@@ -2240,7 +2240,7 @@
       event.preventDefault();
       return;
     }
-    /* G：小人带逛 / 停止；H：让小人说话。 */
+    /* G：小人带逛 / 停止；H：让小人说话；Y：让助理胡以沫说话。 */
     if (view === "desk" && guide?.key(key)) {
       event.preventDefault();
       return;
